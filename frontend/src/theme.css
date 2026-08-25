@@ -1,0 +1,70 @@
+/* Design system variables matching reference screenshot */
+:root {
+  /* Primary purple palette */
+  --color-primary: #4F2BCB;
+  --color-primary-hover: #39209A;
+  --color-primary-light: #F3F0FF;
+  --color-secondary: #7C3AED;
+
+  /* Backgrounds */
+  --color-bg: #FAF9FF;
+  --color-bg-secondary: #F3F0FF;
+  --color-header-bg: #4F2BCB;
+
+  /* Surfaces */
+  --color-surface: #FFFFFF;
+
+  /* Text */
+  --color-text-primary: #20202A;
+  --color-text-secondary: #6E6D7A;
+  --color-text-muted: #9DA0AE;
+
+  /* Borders */
+  --color-border: #E9E7F2;
+
+  /* Status colors */
+  --color-success: #10B981;
+  --color-warning: #F59E0B;
+  --color-danger: #EF4444;
+  --color-info: #0EA5E9;
+}
+
+/* Global reset */
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background-color: var(--color-bg);
+  color: var(--color-text-primary);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--color-primary-hover);
+}
+
+button, input, textarea, select {
+  font-family: inherit;
+}
+
+/* Scrollbar customization */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #D4D4E2;
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #B5B5C9;
+}

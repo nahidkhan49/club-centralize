@@ -1,0 +1,268 @@
+import React, { useEffect, useState } from 'react';
+import { useParams, useNavigate, Link as RouterLink } from 'react-router-dom';
+import {
+  Typography,
+  Box,
+  Alert,
+  Paper,
+  Grid,
+  CircularProgress,
+  TextField,
+  Button as MuiButton,
+} from '@mui/material';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import { getEvent, updateEvent } from '../api/eventApi';
+import ImageUpload from '../components/ImageUpload';
+
+const EventEdit = () => {
+  const { clubId, eventId } = useParams();
+  const navigate = useNavigate();
+
+  const [form, setForm] = useState({
+    title: '',
+    date: '',
+    location: '',
+    description: '',
+    image_url: '',
+  });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetch = async () => {
+      try {
+        setLoading(true);
+        const data = await getEvent(eventId);
+        setForm({
+          title: data.title || data.name || '',
+          date: data.start_time ? new Date(data.start_time).toISOString().slice(0, 16) : '',
+          location: data.location || '',
+          description: data.description || '',
+          image_url: data.image_url || '',
+        });
+        setError(null);
+      } catch (err) {
+        console.error('Failed to load event', err);
+        setError(err?.response?.data?.detail || 'Failed to load event details');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetch();
+  }, [eventId]);
+
+  const handleChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!form.title.trim() || !form.date || !form.location.trim()) {
+      setError('Title, date, and location are required.');
+      return;
+    }
+
+    try {
+      setSaving(true);
+      setError(null);
+      await updateEvent(eventId, {
+        title: form.title.trim(),
+        start_time: new Date(form.date).toISOString(),
+        location: form.location.trim(),
+        description: form.description.trim(),
+        image_url: form.image_url.trim() || undefined,
+      });
+      navigate(`/clubs/${clubId}/events/${eventId}`);
+    } catch (err) {
+      console.error('Failed to update event', err);
+      setError(err?.response?.data?.detail || 'Failed to update event.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
+        <CircularProgress sx={{ color: '#4F2BCB' }} />
+      </Box>
+    );
+  }
+
+  return (
+    <Box sx={{ maxWidth: 850, mx: 'auto', py: 2 }}>
+      <Box sx={{ mb: 4 }}>
+        <Box
+          component={RouterLink}
+          to={`/clubs/${clubId}/events/${eventId}`}
+          sx={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 0.8,
+            color: '#4F2BCB',
+            fontWeight: 600,
+            fontSize: '0.9rem',
+            textDecoration: 'none',
+            mb: 2,
+            '&:hover': { textDecoration: 'underline' },
+          }}
+        >
+          <ArrowBackIcon sx={{ fontSize: 18 }} /> Back to Event Details
+        </Box>
+
+        <Typography variant="h4" sx={{ fontWeight: 800, color: '#20202A', fontSize: '1.8rem', mb: 0.5 }}>
+          Edit Event
+        </Typography>
+        <Typography variant="body2" sx={{ color: '#777788' }}>
+          Update schedule, promotional banner, venue location, or event details.
+        </Typography>
+      </Box>
+
+      {error && (
+        <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }} onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      )}
+
+      <Paper
+        elevation={0}
+        sx={{
+          p: { xs: 3, sm: 4 },
+          borderRadius: '20px',
+          border: '1px solid #E9E7F2',
+          backgroundColor: '#FFFFFF',
+        }}
+      >
+        <Box component="form" onSubmit={handleSubmit} noValidate>
+          <Grid container spacing={3}>
+            <Grid item xs={12}>
+              <ImageUpload
+                label="Event Photo / Banner"
+                value={form.image_url}
+                onChange={(url) => setForm({ ...form, image_url: url })}
+                aspect="banner"
+                helperText="Upload event promotional banner or photo (PNG, JPG, WEBP under 5MB)"
+              />
+            </Grid>
+
+            <Grid item xs={12}>
+              <Typography variant="body2" sx={{ fontWeight: 600, color: '#20202A', mb: 0.8 }}>
+                Event Title *
+              </Typography>
+              <TextField
+                fullWidth
+                name="title"
+                value={form.title}
+                onChange={handleChange}
+                required
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: '#F3F6FC',
+                    borderRadius: '10px',
+                    '& fieldset': { borderColor: '#E9E7F2' },
+                    '&.Mui-focused fieldset': { borderColor: '#4F2BCB' },
+                  },
+                }}
+              />
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <Typography variant="body2" sx={{ fontWeight: 600, color: '#20202A', mb: 0.8 }}>
+                Date & Time *
+              </Typography>
+              <TextField
+                fullWidth
+                name="date"
+                type="datetime-local"
+                value={form.date}
+                onChange={handleChange}
+                InputLabelProps={{ shrink: true }}
+                required
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: '#F3F6FC',
+                    borderRadius: '10px',
+                    '& fieldset': { borderColor: '#E9E7F2' },
+                    '&.Mui-focused fieldset': { borderColor: '#4F2BCB' },
+                  },
+                }}
+              />
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <Typography variant="body2" sx={{ fontWeight: 600, color: '#20202A', mb: 0.8 }}>
+                Location / Venue *
+              </Typography>
+              <TextField
+                fullWidth
+                name="location"
+                value={form.location}
+                onChange={handleChange}
+                required
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: '#F3F6FC',
+                    borderRadius: '10px',
+                    '& fieldset': { borderColor: '#E9E7F2' },
+                    '&.Mui-focused fieldset': { borderColor: '#4F2BCB' },
+                  },
+                }}
+              />
+            </Grid>
+
+            <Grid item xs={12}>
+              <Typography variant="body2" sx={{ fontWeight: 600, color: '#20202A', mb: 0.8 }}>
+                Description
+              </Typography>
+              <TextField
+                fullWidth
+                multiline
+                rows={4}
+                name="description"
+                value={form.description}
+                onChange={handleChange}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: '#F3F6FC',
+                    borderRadius: '10px',
+                    '& fieldset': { borderColor: '#E9E7F2' },
+                    '&.Mui-focused fieldset': { borderColor: '#4F2BCB' },
+                  },
+                }}
+              />
+            </Grid>
+
+            <Grid item xs={12} sx={{ mt: 1, display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+              <MuiButton
+                onClick={() => navigate(`/clubs/${clubId}/events/${eventId}`)}
+                disabled={saving}
+                sx={{ color: '#777788', textTransform: 'none', fontWeight: 600 }}
+              >
+                Cancel
+              </MuiButton>
+              <MuiButton
+                type="submit"
+                disabled={saving}
+                sx={{
+                  backgroundColor: '#4F2BCB',
+                  color: '#FFFFFF',
+                  px: 4,
+                  py: 1.1,
+                  borderRadius: '10px',
+                  fontWeight: 700,
+                  textTransform: 'none',
+                  '&:hover': { backgroundColor: '#39209A' },
+                }}
+              >
+                {saving ? 'Saving...' : 'Save Changes'}
+              </MuiButton>
+            </Grid>
+          </Grid>
+        </Box>
+      </Paper>
+    </Box>
+  );
+};
+
+export default EventEdit;

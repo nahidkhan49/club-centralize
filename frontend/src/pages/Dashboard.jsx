@@ -8,6 +8,7 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import DeveloperIllustration from '../components/DeveloperIllustration';
+import { useAuth } from '../context/AuthContext';
 
 const actionCards = [
   {
@@ -46,6 +47,19 @@ const actionCards = [
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const { systemRole, loading } = useAuth();
+
+  React.useEffect(() => {
+    if (!loading) {
+      if (systemRole === 'admin') {
+        navigate('/admin/dashboard', { replace: true });
+      } else if (systemRole === 'president') {
+        navigate('/president/dashboard', { replace: true });
+      } else if (systemRole === 'secretary') {
+        navigate('/secretary/dashboard', { replace: true });
+      }
+    }
+  }, [systemRole, loading, navigate]);
 
   return (
     <Box sx={{ maxWidth: 1200, mx: 'auto', py: 2 }}>

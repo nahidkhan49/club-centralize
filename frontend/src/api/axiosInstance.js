@@ -8,7 +8,7 @@ const getBaseURL = () => {
   if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
     return 'http://localhost:8000';
   }
-  return 'https://club-centralize-1.onrender.com';
+  return 'https://club-centralize.onrender.com';
 };
 
 const api = axios.create({

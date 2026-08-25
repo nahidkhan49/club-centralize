@@ -13,7 +13,8 @@ export const AuthContext = createContext(null);
  */
 function deriveSystemRole(isAdmin, memberships) {
   if (isAdmin) return 'admin';
-  const roles = memberships.map((m) => m.role);
+  const list = Array.isArray(memberships) ? memberships : [];
+  const roles = list.map((m) => m.role);
   if (roles.includes('president')) return 'president';
   if (roles.includes('secretary')) return 'secretary';
   if (roles.includes('vice_president')) return 'vice_president';
@@ -37,11 +38,11 @@ export const AuthProvider = ({ children }) => {
     try {
       const [userRes, membershipsRes] = await Promise.all([
         api.get('/users/me'),
-        api.get('/clubs/my/memberships'),
+        api.get('/clubs/my/memberships').catch(() => ({ data: [] })),
       ]);
 
       const userData = userRes.data;
-      const memberships = membershipsRes.data || [];
+      const memberships = Array.isArray(membershipsRes?.data) ? membershipsRes.data : [];
 
       localStorage.setItem('user_id', String(userData.id));
       localStorage.setItem('user_username', userData.username);

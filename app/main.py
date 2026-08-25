@@ -19,13 +19,10 @@ app = FastAPI(
 os.makedirs(os.path.join(os.getcwd(), "static", "uploads"), exist_ok=True)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# Enable CORS for frontend development
+# Enable CORS for frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "https://club-centralize-1.onrender.com",
-    ],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

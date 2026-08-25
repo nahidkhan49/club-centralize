@@ -59,6 +59,29 @@ def get_clubs(db: Session = Depends(get_db)):
     return clubs
 
 
+@router.get("/my/memberships")
+def get_my_memberships(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get current user's club memberships with roles."""
+    memberships = db.query(Membership).filter(
+        Membership.user_id == current_user.id
+    ).all()
+
+    result = []
+    for m in memberships:
+        club = db.query(Club).filter(Club.id == m.club_id).first()
+        if club:
+            result.append({
+                "club_id": m.club_id,
+                "club_name": club.name,
+                "role": m.role,
+                "is_active": club.is_active,
+            })
+    return result
+
+
 @router.get("/{club_id}", response_model=ClubResponse)
 def get_club(club_id: int, db: Session = Depends(get_db)):
     """Public: Get a specific club."""
@@ -418,26 +441,5 @@ def get_club_stats(
     }
 
 
-@router.get("/my/memberships")
-def get_my_memberships(
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """Get current user's club memberships with roles."""
-    memberships = db.query(Membership).filter(
-        Membership.user_id == current_user.id
-    ).all()
-
-    result = []
-    for m in memberships:
-        club = db.query(Club).filter(Club.id == m.club_id).first()
-        if club:
-            result.append({
-                "club_id": m.club_id,
-                "club_name": club.name,
-                "role": m.role,
-                "is_active": club.is_active,
-            })
-    return result
 
 

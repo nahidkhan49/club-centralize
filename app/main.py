@@ -22,7 +22,10 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 # Enable CORS for frontend development
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins; adjust for production
+    allow_origins=[
+        "http://localhost:5173",
+        "https://club-centralize-1.onrender.com",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -25,10 +25,15 @@ def register(user_data: RegisterRequest, db: Session = Depends(get_db)):
     if existing_email:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already exists")
 
+    # Auto make superuser if first user or admin/nahid
+    user_count = db.query(User).count()
+    is_first_or_admin = (user_count == 0) or (user_data.username.lower() in ["admin", "nahid"])
+
     new_user = User(
         username=user_data.username,
         email=user_data.email,
-        password=hash_password(user_data.password)
+        password=hash_password(user_data.password),
+        is_superuser=is_first_or_admin
     )
 
     db.add(new_user)

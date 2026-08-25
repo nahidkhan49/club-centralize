@@ -24,11 +24,11 @@ const AdminDashboard = () => {
     const load = async () => {
       try {
         const [statsData, clubsData] = await Promise.all([
-          fetchPlatformStats(),
-          fetchAllClubs(),
+          fetchPlatformStats().catch(() => null),
+          fetchAllClubs().catch(() => []),
         ]);
         setStats(statsData);
-        setClubs(clubsData.slice(0, 6));
+        setClubs(Array.isArray(clubsData) ? clubsData.slice(0, 6) : []);
       } catch (e) {
         console.error('Failed to load admin dashboard', e);
       } finally {

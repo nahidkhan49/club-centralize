@@ -1,8 +1,18 @@
 import axios from 'axios';
 
-// Create an Axios instance with base URL from Vite env variable
+// Determine default base URL based on environment
+const getBaseURL = () => {
+  if (import.meta.env.VITE_API_BASE_URL) {
+    return import.meta.env.VITE_API_BASE_URL;
+  }
+  if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+    return 'http://localhost:8000';
+  }
+  return 'https://club-centralize-1.onrender.com';
+};
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'https://club-centralize-1.onrender.com',
+  baseURL: getBaseURL(),
   headers: {
     'Content-Type': 'application/json',
   },

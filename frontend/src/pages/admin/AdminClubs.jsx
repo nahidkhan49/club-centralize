@@ -43,19 +43,21 @@ const AdminClubs = () => {
     try {
       setLoading(true);
       const [clubsData, usersData] = await Promise.all([fetchAllClubs(), fetchAllUsers()]);
-      setClubs(clubsData || []);
-      setUsers(usersData || []);
+      const validClubs = Array.isArray(clubsData) ? clubsData : [];
+      const validUsers = Array.isArray(usersData) ? usersData : [];
+      setClubs(validClubs);
+      setUsers(validUsers);
 
       const membersMap = {};
       const statsMap = {};
       await Promise.all(
-        (clubsData || []).map(async (c) => {
+        validClubs.map(async (c) => {
           try {
             const [m, s] = await Promise.all([
               fetchClubMembers(c.id),
               fetchClubStats(c.id).catch(() => ({ member_count: 0, event_count: 0 }))
             ]);
-            membersMap[c.id] = m || [];
+            membersMap[c.id] = Array.isArray(m) ? m : [];
             statsMap[c.id] = s || {};
           } catch {
             membersMap[c.id] = [];
@@ -137,9 +139,9 @@ const AdminClubs = () => {
     }
   };
 
-  const filtered = clubs.filter((c) =>
-    c.name.toLowerCase().includes(search.toLowerCase()) ||
-    (c.category || '').toLowerCase().includes(search.toLowerCase())
+  const filtered = (Array.isArray(clubs) ? clubs : []).filter((c) =>
+    (c?.name || '').toLowerCase().includes(search.toLowerCase()) ||
+    (c?.category || '').toLowerCase().includes(search.toLowerCase())
   );
 
   if (loading) {

@@ -58,7 +58,7 @@ const Events = () => {
       setError(null);
 
       const clubsRes = await api.get('/clubs');
-      const clubsList = clubsRes.data || [];
+      const clubsList = Array.isArray(clubsRes?.data) ? clubsRes.data : [];
       setClubs(clubsList);
 
       const currentUserId = Number(localStorage.getItem('user_id'));
@@ -69,7 +69,8 @@ const Events = () => {
         clubsList.map(async (c) => {
           try {
             const memRes = await api.get(`/clubs/${c.id}/members`);
-            const myMem = (memRes.data || []).find((m) => m.user_id === currentUserId);
+            const memList = Array.isArray(memRes?.data) ? memRes.data : [];
+            const myMem = memList.find((m) => m.user_id === currentUserId);
             if (myMem) {
               membershipsMap[c.id] = myMem.role;
             }
@@ -82,12 +83,13 @@ const Events = () => {
 
       if (clubId) {
         const evData = await fetchEventsByClub(clubId);
-        setEvents(evData || []);
+        setEvents(Array.isArray(evData) ? evData : []);
       } else {
         const allEventsPromises = clubsList.map(async (c) => {
           try {
             const res = await fetchEventsByClub(c.id);
-            return (res || []).map((ev) => ({ ...ev, clubName: c.name, club_id: c.id }));
+            const evList = Array.isArray(res) ? res : [];
+            return evList.map((ev) => ({ ...ev, clubName: c.name, club_id: c.id }));
           } catch {
             return [];
           }
@@ -151,15 +153,15 @@ const Events = () => {
     }
   };
 
-  const filteredEvents = events.filter((ev) => {
+  const filteredEvents = (Array.isArray(events) ? events : []).filter((ev) => {
     const matchesSearch =
-      (ev.title || ev.name || '').toLowerCase().includes(search.toLowerCase()) ||
-      (ev.description || '').toLowerCase().includes(search.toLowerCase()) ||
-      (ev.location || '').toLowerCase().includes(search.toLowerCase());
+      (ev?.title || ev?.name || '').toLowerCase().includes(search.toLowerCase()) ||
+      (ev?.description || '').toLowerCase().includes(search.toLowerCase()) ||
+      (ev?.location || '').toLowerCase().includes(search.toLowerCase());
 
     const matchesClub =
       selectedClubId === 'all' ||
-      String(ev.club_id || clubId) === String(selectedClubId);
+      String(ev?.club_id || clubId) === String(selectedClubId);
 
     return matchesSearch && matchesClub;
   });
@@ -255,7 +257,7 @@ const Events = () => {
           }}
         />
 
-        {!clubId && clubs.length > 0 && (
+        {!clubId && Array.isArray(clubs) && clubs.length > 0 && (
           <TextField
             select
             value={selectedClubId}

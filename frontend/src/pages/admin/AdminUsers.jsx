@@ -25,15 +25,18 @@ const AdminUsers = () => {
     try {
       setLoading(true);
       const [usersData, clubsData] = await Promise.all([fetchAllUsers(), fetchAllClubs()]);
-      setUsers(usersData);
-      setClubs(clubsData);
+      const validUsers = Array.isArray(usersData) ? usersData : [];
+      const validClubs = Array.isArray(clubsData) ? clubsData : [];
+      setUsers(validUsers);
+      setClubs(validClubs);
       // Load all memberships for role display
       const allMemberships = [];
       await Promise.all(
-        clubsData.map(async (c) => {
+        validClubs.map(async (c) => {
           try {
             const res = await api.get(`/clubs/${c.id}/members`);
-            (res.data || []).forEach((m) => allMemberships.push({ ...m, club_name: c.name }));
+            const memList = Array.isArray(res?.data) ? res.data : [];
+            memList.forEach((m) => allMemberships.push({ ...m, club_name: c.name }));
           } catch {}
         })
       );
@@ -70,9 +73,9 @@ const AdminUsers = () => {
     }
   };
 
-  const filtered = users.filter((u) =>
-    u.username.toLowerCase().includes(search.toLowerCase()) ||
-    u.email.toLowerCase().includes(search.toLowerCase())
+  const filtered = (Array.isArray(users) ? users : []).filter((u) =>
+    (u?.username || '').toLowerCase().includes(search.toLowerCase()) ||
+    (u?.email || '').toLowerCase().includes(search.toLowerCase())
   );
 
   if (loading) return <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh"><CircularProgress sx={{ color: '#4F2BCB' }} /></Box>;

@@ -48,7 +48,7 @@ const Clubs = () => {
     try {
       setLoading(true);
       const response = await api.get('/clubs');
-      setClubs(response.data || []);
+      setClubs(Array.isArray(response?.data) ? response.data : []);
       setError(null);
     } catch (err) {
       console.error('Failed to fetch clubs', err);
@@ -62,12 +62,12 @@ const Clubs = () => {
     fetchClubs();
   }, []);
 
-  const filteredClubs = clubs.filter((club) => {
+  const filteredClubs = (Array.isArray(clubs) ? clubs : []).filter((club) => {
     const matchesSearch =
-      club.name.toLowerCase().includes(search.toLowerCase()) ||
-      (club.description && club.description.toLowerCase().includes(search.toLowerCase()));
+      (club?.name || '').toLowerCase().includes(search.toLowerCase()) ||
+      (club?.description && club.description.toLowerCase().includes(search.toLowerCase()));
     const matchesCategory =
-      selectedCategory === 'All' || club.category === selectedCategory;
+      selectedCategory === 'All' || club?.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 

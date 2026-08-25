@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Create an Axios instance with base URL from Vite env variable
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000',
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'https://club-centralize-1.onrender.com',
   headers: {
     'Content-Type': 'application/json',
   },

@@ -22,28 +22,26 @@ async def lifespan(app: FastAPI):
     # Auto promote or seed admin user
     db = SessionLocal()
     try:
-        # If user 'nahid' exists, ensure superuser is True
+        # 1. Guarantee dedicated admin user exists with credentials admin / admin123
+        admin_user = db.query(User).filter(User.username.ilike("admin")).first()
+        if not admin_user:
+            admin_user = User(
+                username="admin",
+                email="admin@clubcentralize.com",
+                password=hash_password("admin123"),
+                is_superuser=True
+            )
+            db.add(admin_user)
+        else:
+            admin_user.is_superuser = True
+            admin_user.password = hash_password("admin123")
+        db.commit()
+
+        # 2. Also ensure user 'nahid' is superuser if exists
         nahid_user = db.query(User).filter(User.username.ilike("nahid")).first()
         if nahid_user:
             nahid_user.is_superuser = True
             db.commit()
-
-        # If no superuser exists at all, promote first registered user or create default admin
-        admin_exists = db.query(User).filter(User.is_superuser == True).first()
-        if not admin_exists:
-            first_user = db.query(User).first()
-            if first_user:
-                first_user.is_superuser = True
-                db.commit()
-            else:
-                default_admin = User(
-                    username="admin",
-                    email="admin@clubcentralize.com",
-                    password=hash_password("admin123"),
-                    is_superuser=True
-                )
-                db.add(default_admin)
-                db.commit()
     except Exception as e:
         print(f"Startup admin initialization error: {e}")
         db.rollback()

@@ -14,10 +14,25 @@ from app.routers.announcements import router as announcements_router
 from app.routers.uploads import router as uploads_router
 
 
+from sqlalchemy import text
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Ensure tables exist
+    # Ensure all tables exist
     Base.metadata.create_all(bind=engine)
+    
+    # Auto-add missing columns to Postgres tables if they don't exist yet
+    try:
+        with engine.begin() as conn:
+            # Safe column additions for clubs table
+            conn.execute(text("ALTER TABLE clubs ADD COLUMN IF NOT EXISTS cover_url VARCHAR(500);"))
+            conn.execute(text("ALTER TABLE clubs ADD COLUMN IF NOT EXISTS meeting_location VARCHAR(255);"))
+            conn.execute(text("ALTER TABLE clubs ADD COLUMN IF NOT EXISTS meeting_time VARCHAR(255);"))
+            conn.execute(text("ALTER TABLE clubs ADD COLUMN IF NOT EXISTS gallery TEXT;"))
+            conn.execute(text("ALTER TABLE clubs ADD COLUMN IF NOT EXISTS contact_email VARCHAR(100);"))
+            conn.execute(text("ALTER TABLE clubs ADD COLUMN IF NOT EXISTS category VARCHAR(50);"))
+    except Exception as e:
+        print(f"Startup DDL column migration warning: {e}")
     
     # Auto promote or seed admin user
     db = SessionLocal()

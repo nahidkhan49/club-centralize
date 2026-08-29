@@ -27,4 +27,20 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// Response interceptor to handle 401 Unauthorized gracefully
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error?.response?.status === 401) {
+      // Clear expired credentials
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('user_id');
+      localStorage.removeItem('username');
+      localStorage.removeItem('system_role');
+      localStorage.removeItem('user');
+    }
+    return Promise.reject(error);
+  }
+);
+
 export default api;

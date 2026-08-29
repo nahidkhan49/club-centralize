@@ -4,6 +4,7 @@ import './index.css';
 import App from './App.jsx';
 import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext.jsx';
+import { SiteSettingsProvider } from './context/SiteSettingsContext.jsx';
 import { ThemeProvider, CssBaseline } from '@mui/material';
 import { lightTheme } from './theme';
 
@@ -13,7 +14,9 @@ createRoot(document.getElementById('root')).render(
       <CssBaseline />
       <BrowserRouter>
         <AuthProvider>
-          <App />
+          <SiteSettingsProvider>
+            <App />
+          </SiteSettingsProvider>
         </AuthProvider>
       </BrowserRouter>
     </ThemeProvider>

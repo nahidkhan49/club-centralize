@@ -12,6 +12,7 @@ from app.routers.clubs import router as clubs_router
 from app.routers.events import router as events_router
 from app.routers.announcements import router as announcements_router
 from app.routers.uploads import router as uploads_router
+from app.routers.settings import router as settings_router
 
 
 from sqlalchemy import text
@@ -95,3 +96,4 @@ app.include_router(clubs_router)
 app.include_router(events_router)
 app.include_router(announcements_router)
 app.include_router(uploads_router)
+app.include_router(settings_router)

@@ -13,10 +13,12 @@ import {
 import { NotificationsNone, ShieldOutlined, Menu as MenuIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
+import { useSiteSettings } from '../context/SiteSettingsContext';
 import { getImageUrl } from '../api/axiosInstance';
 
 export default function Navbar({ onDrawerToggle }) {
   const { user, logout } = useContext(AuthContext);
+  const { siteName, siteLogo } = useSiteSettings();
   const username = user?.username || 'User';
   const initial = username.charAt(0).toUpperCase();
   const navigate = useNavigate();
@@ -75,33 +77,32 @@ export default function Navbar({ onDrawerToggle }) {
             sx={{ display: 'flex', alignItems: 'center', gap: 1.5, cursor: 'pointer' }}
             onClick={() => navigate('/dashboard')}
           >
-            <Box
+            <Avatar
+              src={siteLogo}
               sx={{
-                width: 34,
-                height: 34,
-                borderRadius: '50%',
+                width: 36,
+                height: 36,
+                borderRadius: '10px',
                 backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                border: '1px solid rgba(255, 255, 255, 0.3)',
+                border: '1.5px solid rgba(255, 255, 255, 0.4)',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
                 flexShrink: 0,
               }}
             >
               <ShieldOutlined sx={{ color: '#FFFFFF', fontSize: 20 }} />
-            </Box>
+            </Avatar>
             <Typography
               variant="h6"
               component="div"
               sx={{
-                fontWeight: 700,
+                fontWeight: 800,
                 color: '#FFFFFF',
                 letterSpacing: '-0.02em',
                 fontSize: { xs: '1rem', sm: '1.15rem' },
                 whiteSpace: 'nowrap',
               }}
             >
-              Club Centralize
+              {siteName}
             </Typography>
           </Box>
         </Box>

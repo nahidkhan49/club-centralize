@@ -16,8 +16,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import AddIcon from '@mui/icons-material/Add';
 import GroupsIcon from '@mui/icons-material/Groups';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
-import DesktopWindowsOutlinedIcon from '@mui/icons-material/DesktopWindowsOutlined';
-import api from '../api/axiosInstance';
+import api, { getClubLogoUrl } from '../api/axiosInstance';
 import { useAuth } from '../context/AuthContext';
 import Button from '../components/Button';
 
@@ -234,7 +233,7 @@ const Clubs = () => {
               >
                 <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
                   <Avatar
-                    src={club.logo_url || ''}
+                    src={getClubLogoUrl(club)}
                     variant="rounded"
                     sx={{
                       width: 52,
@@ -242,12 +241,13 @@ const Clubs = () => {
                       borderRadius: '12px',
                       backgroundColor: '#F3F0FF',
                       color: '#4F2BCB',
-                      fontWeight: 700,
+                      fontWeight: 800,
                       fontSize: '1.2rem',
-                      border: '1px solid #E2D9FF',
+                      border: '1.5px solid #E2D9FF',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
                     }}
                   >
-                    {club.logo_url ? null : club.name.charAt(0).toUpperCase()}
+                    {club.name?.charAt(0).toUpperCase()}
                   </Avatar>
 
                   {club.category && (

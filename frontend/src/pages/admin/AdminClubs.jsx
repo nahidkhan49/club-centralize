@@ -20,6 +20,7 @@ import {
   fetchAllClubs, fetchClubMembers, assignClubRole, removeClubRole,
   deleteClub, fetchAllUsers, fetchClubStats
 } from '../../api/adminApi';
+import { getClubLogoUrl } from '../../api/axiosInstance';
 import RoleChip from '../../components/RoleChip';
 import EmptyState from '../../components/EmptyState';
 import Button from '../../components/Button';
@@ -256,7 +257,7 @@ const AdminClubs = () => {
                   <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
                     <Box display="flex" alignItems="center" gap={2}>
                       <Avatar
-                        src={club.logo_url || ''}
+                        src={getClubLogoUrl(club)}
                         variant="rounded"
                         sx={{
                           width: 54,
@@ -267,6 +268,7 @@ const AdminClubs = () => {
                           fontWeight: 800,
                           fontSize: '1.3rem',
                           border: '1px solid #E2D9FF',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
                         }}
                       >
                         {club.name.charAt(0).toUpperCase()}

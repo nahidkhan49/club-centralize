@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Typography, Card, Grid } from '@mui/material';
+import { Box, Typography, Card, Grid, Avatar } from '@mui/material';
 import {
   GroupsOutlined,
   CalendarTodayOutlined,
@@ -9,6 +9,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import DeveloperIllustration from '../components/DeveloperIllustration';
 import { useAuth } from '../context/AuthContext';
+import { useSiteSettings } from '../context/SiteSettingsContext';
 
 const actionCards = [
   {
@@ -32,7 +33,7 @@ const actionCards = [
     title: 'Announcements',
     subtitle: 'Stay updated with latest news.',
     icon: <CampaignOutlined sx={{ fontSize: 32, color: '#F59E0B' }} />,
-    bg: '#FEF3C7',
+    bg: '#FEF3F0FF',
     path: '/announcements',
   },
   {
@@ -48,6 +49,7 @@ const actionCards = [
 export default function Dashboard() {
   const navigate = useNavigate();
   const { systemRole, loading } = useAuth();
+  const { siteName, siteLogo, tagline } = useSiteSettings();
 
   React.useEffect(() => {
     if (!loading) {
@@ -81,40 +83,109 @@ export default function Dashboard() {
             <DeveloperIllustration />
           </Grid>
 
-          {/* Right: Welcome Text */}
+          {/* Right: Welcome Text with Website Logo */}
           <Grid item xs={12} md={7}>
-            <Typography
-              variant="h3"
-              component="h1"
-              sx={{
-                fontWeight: 800,
-                color: '#20202A',
-                fontSize: { xs: '1.8rem', sm: '2.2rem', md: '2.5rem' },
-                lineHeight: 1.25,
-                mb: 1.5,
-              }}
-            >
-              Welcome to <br />
-              <Box component="span" sx={{ color: '#4F2BCB' }}>
-                Club Centralize!
+            <Box display="flex" alignItems="center" gap={2} mb={2}>
+              <Avatar
+                src={siteLogo}
+                variant="rounded"
+                sx={{
+                  width: { xs: 54, sm: 64 },
+                  height: { xs: 54, sm: 64 },
+                  borderRadius: '16px',
+                  border: '2px solid #E9E7F2',
+                  boxShadow: '0 4px 15px rgba(79, 43, 203, 0.1)',
+                  backgroundColor: '#FFFFFF',
+                  flexShrink: 0,
+                }}
+              >
+                {siteName?.charAt(0).toUpperCase()}
+              </Avatar>
+
+              <Box>
+                <Typography
+                  variant="h3"
+                  component="h1"
+                  sx={{
+                    fontWeight: 900,
+                    color: '#20202A',
+                    fontSize: { xs: '1.6rem', sm: '2.1rem', md: '2.4rem' },
+                    lineHeight: 1.2,
+                  }}
+                >
+                  Welcome to{' '}
+                  <Box component="span" sx={{ color: '#4F2BCB' }}>
+                    {siteName}!
+                  </Box>
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#777788', mt: 0.5, fontWeight: 500 }}>
+                  {tagline}
+                </Typography>
               </Box>
-            </Typography>
+            </Box>
+
             <Typography
               variant="body1"
               sx={{
                 color: '#6E6D7A',
-                fontSize: { xs: '0.95rem', md: '1.05rem' },
-                maxWidth: 480,
+                fontSize: { xs: '0.95rem', sm: '1.05rem' },
                 lineHeight: 1.6,
+                mb: 3,
               }}
             >
-              Use the navigation menu to explore clubs, events, and your profile.
+              Your central hub for university student life. Join registered organizations, participate in upcoming campus events, view announcements, and connect with peer leaders.
             </Typography>
+
+            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+              <Box
+                component="button"
+                onClick={() => navigate('/clubs')}
+                sx={{
+                  backgroundColor: '#4F2BCB',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  borderRadius: '10px',
+                  px: 3,
+                  py: 1.2,
+                  fontSize: '0.95rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 12px rgba(79, 43, 203, 0.25)',
+                  transition: 'background-color 0.2s',
+                  '&:hover': {
+                    backgroundColor: '#39209A',
+                  },
+                }}
+              >
+                Browse Clubs
+              </Box>
+              <Box
+                component="button"
+                onClick={() => navigate('/events')}
+                sx={{
+                  backgroundColor: '#F3F0FF',
+                  color: '#4F2BCB',
+                  border: '1px solid #E0DBFF',
+                  borderRadius: '10px',
+                  px: 3,
+                  py: 1.2,
+                  fontSize: '0.95rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  transition: 'background-color 0.2s',
+                  '&:hover': {
+                    backgroundColor: '#EAEAFF',
+                  },
+                }}
+              >
+                Upcoming Events
+              </Box>
+            </Box>
           </Grid>
         </Grid>
       </Card>
 
-      {/* 4 Action Cards Grid */}
+      {/* Action Cards Grid */}
       <Grid container spacing={3}>
         {actionCards.map((card) => (
           <Grid item xs={12} sm={6} md={3} key={card.id}>
@@ -124,15 +195,13 @@ export default function Dashboard() {
               sx={{
                 p: 3,
                 height: '100%',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                textAlign: 'center',
                 borderRadius: '16px',
                 border: '1px solid #E9E7F2',
                 backgroundColor: '#FFFFFF',
                 cursor: 'pointer',
-                transition: 'transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease',
+                transition: 'all 0.2s ease-in-out',
+                display: 'flex',
+                flexDirection: 'column',
                 '&:hover': {
                   transform: 'translateY(-4px)',
                   boxShadow: '0 12px 24px rgba(79, 43, 203, 0.08)',
@@ -142,37 +211,22 @@ export default function Dashboard() {
             >
               <Box
                 sx={{
-                  width: 58,
-                  height: 58,
-                  borderRadius: '14px',
+                  width: 56,
+                  height: 56,
+                  borderRadius: '12px',
                   backgroundColor: card.bg,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  mb: 2,
+                  mb: 2.5,
                 }}
               >
                 {card.icon}
               </Box>
-              <Typography
-                variant="h6"
-                sx={{
-                  fontWeight: 700,
-                  fontSize: '1rem',
-                  color: '#20202A',
-                  mb: 0.8,
-                }}
-              >
+              <Typography variant="h6" sx={{ fontWeight: 700, color: '#20202A', mb: 1, fontSize: '1.1rem' }}>
                 {card.title}
               </Typography>
-              <Typography
-                variant="body2"
-                sx={{
-                  color: '#777788',
-                  fontSize: '0.85rem',
-                  lineHeight: 1.5,
-                }}
-              >
+              <Typography variant="body2" sx={{ color: '#777788', lineHeight: 1.5, flex: 1 }}>
                 {card.subtitle}
               </Typography>
             </Card>

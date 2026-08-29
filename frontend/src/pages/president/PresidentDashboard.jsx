@@ -20,8 +20,9 @@ import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined';
 import GroupsOutlinedIcon from '@mui/icons-material/GroupsOutlined';
 
 import { useAuth } from '../../context/AuthContext';
+import { useSiteSettings } from '../../context/SiteSettingsContext';
 import { fetchClubStats } from '../../api/adminApi';
-import api, { getImageUrl } from '../../api/axiosInstance';
+import api, { getImageUrl, getClubLogoUrl } from '../../api/axiosInstance';
 import Button from '../../components/Button';
 
 const PresidentDashboard = () => {
@@ -80,11 +81,12 @@ const PresidentDashboard = () => {
     );
   }
 
+  const { siteName, siteLogo } = useSiteSettings();
   const pathPrefix = isPresident ? '/president' : '/secretary';
 
   return (
     <Box sx={{ maxWidth: 1150, mx: 'auto', pb: 5 }}>
-      {/* 1. Purple Welcome Banner (Matching Mockup) */}
+      {/* 1. Purple Welcome Banner (Matching Mockup with Site & Club Logo) */}
       <Box
         sx={{
           background: 'linear-gradient(135deg, #4F2BCB 0%, #6838EE 100%)',
@@ -102,19 +104,30 @@ const PresidentDashboard = () => {
           overflow: 'hidden',
         }}
       >
-        <Box sx={{ zIndex: 1 }}>
-          <Typography
-            sx={{
-              fontWeight: 700,
-              fontSize: '0.8rem',
-              color: 'rgba(255, 255, 255, 0.8)',
-              textTransform: 'uppercase',
-              letterSpacing: '0.08em',
-              mb: 1,
-            }}
-          >
-            {isPresident ? 'President Dashboard' : 'Secretary Dashboard'}
-          </Typography>
+        <Box sx={{ zIndex: 1, flex: 1, minWidth: 260 }}>
+          <Box display="flex" alignItems="center" gap={1.2} mb={1}>
+            <Avatar
+              src={siteLogo}
+              sx={{
+                width: 28,
+                height: 28,
+                borderRadius: '8px',
+                backgroundColor: 'rgba(255, 255, 255, 0.25)',
+                border: '1px solid rgba(255, 255, 255, 0.4)',
+              }}
+            />
+            <Typography
+              sx={{
+                fontWeight: 700,
+                fontSize: '0.82rem',
+                color: 'rgba(255, 255, 255, 0.9)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.08em',
+              }}
+            >
+              {siteName} • {isPresident ? 'President Dashboard' : 'Secretary Dashboard'}
+            </Typography>
+          </Box>
 
           <Typography
             variant="h4"
@@ -125,7 +138,7 @@ const PresidentDashboard = () => {
               letterSpacing: '-0.02em',
             }}
           >
-            Welcome back, {user?.username || 'President'}! 👋
+            Welcome to {siteName}, {user?.username || 'President'}! 👋
           </Typography>
 
           <Typography sx={{ color: 'rgba(255, 255, 255, 0.9)', fontSize: '0.95rem', fontWeight: 500 }}>
@@ -134,17 +147,18 @@ const PresidentDashboard = () => {
         </Box>
 
         <Avatar
-          src={getImageUrl(club?.logo_url)}
+          src={getClubLogoUrl(club)}
           variant="rounded"
           sx={{
-            width: { xs: 64, sm: 80 },
-            height: { xs: 64, sm: 80 },
+            width: { xs: 68, sm: 84 },
+            height: { xs: 68, sm: 84 },
             borderRadius: '20px',
-            backgroundColor: 'rgba(255, 255, 255, 0.2)',
-            color: '#FFFFFF',
+            backgroundColor: '#FFFFFF',
+            color: '#4F2BCB',
             fontWeight: 800,
             fontSize: '2rem',
-            border: '2px solid rgba(255, 255, 255, 0.4)',
+            border: '3px solid rgba(255, 255, 255, 0.6)',
+            boxShadow: '0 8px 25px rgba(0,0,0,0.2)',
             backdropFilter: 'blur(10px)',
             flexShrink: 0,
             zIndex: 1,

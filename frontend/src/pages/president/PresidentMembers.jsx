@@ -23,6 +23,10 @@ import {
   Menu,
   MenuItem,
   IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import AddIcon from '@mui/icons-material/Add';
@@ -82,7 +86,10 @@ const PresidentMembers = () => {
   const [submittingRole, setSubmittingRole] = useState(false);
 
   const loadData = async () => {
-    if (!myClubId) return;
+    if (!myClubId) {
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
       const [membersData, requestsData] = await Promise.all([

@@ -72,7 +72,10 @@ const SecretaryMembers = () => {
   const [selectedMember, setSelectedMember] = useState(null);
 
   const loadData = async () => {
-    if (!myClubId) return;
+    if (!myClubId) {
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
       const [membersData, requestsData] = await Promise.all([

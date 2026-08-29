@@ -10,26 +10,39 @@ import {
   InputAdornment,
   MenuItem,
   Paper,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions,
+  Chip,
   IconButton,
+  Stack,
   Tooltip,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import AddIcon from '@mui/icons-material/Add';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import EventAvailableIcon from '@mui/icons-material/EventAvailable';
-import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
-import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
-import api from '../api/axiosInstance';
-import { fetchEventsByClub, deleteEvent } from '../api/eventApi';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import HistoryIcon from '@mui/icons-material/History';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
+
+import api, { getImageUrl } from '../api/axiosInstance';
+import { fetchEventsByClub } from '../api/eventApi';
 import { AuthContext } from '../context/AuthContext';
 import Button from '../components/Button';
+import EmptyState from '../components/EmptyState';
+
+const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const MONTH_NAMES = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'
+];
+
+const DEFAULT_EVENT_IMAGES = [
+  'https://images.unsplash.com/photo-1515187029135-18ee286d815b?auto=format&fit=crop&w=600&q=80',
+  'https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=600&q=80',
+  'https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&w=600&q=80',
+  'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=600&q=80',
+];
 
 const Events = () => {
   const { clubId } = useParams();
@@ -38,19 +51,13 @@ const Events = () => {
 
   const [events, setEvents] = useState([]);
   const [clubs, setClubs] = useState([]);
-  const [userClubMemberships, setUserClubMemberships] = useState({});
   const [selectedClubId, setSelectedClubId] = useState(clubId || 'all');
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [filterType, setFilterType] = useState('ALL');
 
-  // Event Creation Dialog State
-  const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [targetClubForCreate, setTargetClubForCreate] = useState('');
-
-  // Event Deletion State
-  const [deleteEventItem, setDeleteEventItem] = useState(null);
-  const [actionLoading, setActionLoading] = useState(false);
+  const [currentDate, setCurrentDate] = useState(new Date());
 
   const loadData = async () => {
     try {
@@ -61,45 +68,21 @@ const Events = () => {
       const clubsList = Array.isArray(clubsRes?.data) ? clubsRes.data : [];
       setClubs(clubsList);
 
-      const currentUserId = Number(localStorage.getItem('user_id'));
-      const membershipsMap = {};
-
-      // Check memberships for each club to determine user role in each club
-      await Promise.all(
-        clubsList.map(async (c) => {
-          try {
-            const memRes = await api.get(`/clubs/${c.id}/members`);
-            const memList = Array.isArray(memRes?.data) ? memRes.data : [];
-            const myMem = memList.find((m) => m.user_id === currentUserId);
-            if (myMem) {
-              membershipsMap[c.id] = myMem.role;
-            }
-          } catch (err) {
-            console.error(`Failed to fetch members for club ${c.id}`, err);
-          }
-        })
-      );
-      setUserClubMemberships(membershipsMap);
-
-      if (clubId) {
-        const evData = await fetchEventsByClub(clubId);
-        setEvents(Array.isArray(evData) ? evData : []);
+      let fetchedEvents = [];
+      if (selectedClubId !== 'all') {
+        fetchedEvents = await fetchEventsByClub(selectedClubId);
       } else {
-        const allEventsPromises = clubsList.map(async (c) => {
-          try {
-            const res = await fetchEventsByClub(c.id);
-            const evList = Array.isArray(res) ? res : [];
-            return evList.map((ev) => ({ ...ev, clubName: c.name, club_id: c.id }));
-          } catch {
-            return [];
-          }
-        });
-        const resolved = await Promise.all(allEventsPromises);
-        setEvents(resolved.flat());
+        const eventsPromises = clubsList.map((c) =>
+          fetchEventsByClub(c.id).catch(() => [])
+        );
+        const results = await Promise.all(eventsPromises);
+        fetchedEvents = results.flat();
       }
+
+      setEvents(fetchedEvents);
     } catch (err) {
-      console.error('Failed to load events', err);
-      setError(err?.response?.data?.detail || 'Failed to load events');
+      console.error('Failed to load events:', err);
+      setError('Failed to load events. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -107,450 +90,419 @@ const Events = () => {
 
   useEffect(() => {
     loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [clubId]);
+  }, [selectedClubId]);
 
-  const handleDeleteConfirmed = async () => {
-    if (!deleteEventItem) return;
-    try {
-      setActionLoading(true);
-      await deleteEvent(deleteEventItem.id);
-      setDeleteEventItem(null);
-      await loadData();
-    } catch (err) {
-      setError(err?.response?.data?.detail || 'Failed to delete event.');
-    } finally {
-      setActionLoading(false);
-    }
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth();
+
+  const firstDayOfMonth = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  const handlePrevMonth = () => {
+    setCurrentDate(new Date(year, month - 1, 1));
+  };
+  const handleNextMonth = () => {
+    setCurrentDate(new Date(year, month + 1, 1));
   };
 
-  const handleOpenCreateModal = () => {
-    if (clubId) {
-      navigate(`/clubs/${clubId}/events/create`);
-    } else {
-      // Find clubs where user is President, Vice President, or Secretary
-      const leaderClubs = clubs.filter((c) => {
-        const role = userClubMemberships[c.id];
-        return role === 'president' || role === 'vice_president' || role === 'secretary';
-      });
+  const eventDays = new Set(
+    events
+      .filter((ev) => ev.start_time)
+      .map((ev) => {
+        const d = new Date(ev.start_time);
+        if (d.getFullYear() === year && d.getMonth() === month) {
+          return d.getDate();
+        }
+        return null;
+      })
+      .filter(Boolean)
+  );
 
-      if (leaderClubs.length > 0) {
-        setTargetClubForCreate(String(leaderClubs[0].id));
-        setCreateDialogOpen(true);
-      } else if (clubs.length > 0) {
-        setTargetClubForCreate(String(clubs[0].id));
-        setCreateDialogOpen(true);
-      } else {
-        navigate('/clubs/create');
-      }
+  const filteredEvents = events.filter((ev) => {
+    const titleMatch =
+      (ev.title && ev.title.toLowerCase().includes(search.toLowerCase())) ||
+      (ev.name && ev.name.toLowerCase().includes(search.toLowerCase())) ||
+      (ev.description && ev.description.toLowerCase().includes(search.toLowerCase()));
+
+    if (!titleMatch) return false;
+
+    if (filterType === 'UPCOMING') {
+      return ev.start_time && new Date(ev.start_time) >= new Date();
     }
-  };
-
-  const handleConfirmCreateNavigation = () => {
-    if (targetClubForCreate) {
-      setCreateDialogOpen(false);
-      navigate(`/clubs/${targetClubForCreate}/events/create`);
+    if (filterType === 'PAST') {
+      return ev.start_time && new Date(ev.start_time) < new Date();
     }
-  };
-
-  const filteredEvents = (Array.isArray(events) ? events : []).filter((ev) => {
-    const matchesSearch =
-      (ev?.title || ev?.name || '').toLowerCase().includes(search.toLowerCase()) ||
-      (ev?.description || '').toLowerCase().includes(search.toLowerCase()) ||
-      (ev?.location || '').toLowerCase().includes(search.toLowerCase());
-
-    const matchesClub =
-      selectedClubId === 'all' ||
-      String(ev?.club_id || clubId) === String(selectedClubId);
-
-    return matchesSearch && matchesClub;
+    return true;
   });
 
   return (
-    <Box sx={{ maxWidth: 1200, mx: 'auto', py: 2 }}>
-      {clubId && (
-        <Box
-          component={RouterLink}
-          to={`/clubs/${clubId}`}
-          sx={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 0.8,
-            color: '#4F2BCB',
-            fontWeight: 600,
-            fontSize: '0.9rem',
-            textDecoration: 'none',
-            mb: 2,
-            '&:hover': { textDecoration: 'underline' },
-          }}
-        >
-          <ArrowBackIcon sx={{ fontSize: 18 }} /> Back to Club
-        </Box>
-      )}
-
-      {/* Header */}
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: { xs: 'column', sm: 'row' },
-          justifyContent: 'space-between',
-          alignItems: { xs: 'flex-start', sm: 'center' },
-          gap: 2,
-          mb: 3.5,
-        }}
-      >
+    <Box sx={{ maxWidth: 1150, mx: 'auto', pb: 6, width: '100%' }}>
+      {/* Header Bar */}
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3} flexWrap="wrap" gap={2}>
         <Box>
-          <Typography variant="h4" sx={{ fontWeight: 800, color: '#20202A', fontSize: '1.8rem' }}>
-            Upcoming Events
+          <Typography variant="h4" sx={{ fontWeight: 900, color: '#20202A', letterSpacing: '-0.02em' }}>
+            Club Events & Workshops
           </Typography>
           <Typography variant="body2" sx={{ color: '#777788', mt: 0.5 }}>
-            Discover and manage upcoming campus workshops, hackathons, and meetups.
+            Discover campus activities, guest seminars, competitions, and skill workshops.
           </Typography>
         </Box>
 
-        <Button
-          variant="primary"
-          onClick={handleOpenCreateModal}
-          startIcon={<AddIcon />}
-          sx={{
-            backgroundColor: '#4F2BCB',
-            color: '#FFFFFF',
-            px: 2.5,
-            py: 1,
-            borderRadius: '10px',
-            fontWeight: 700,
-            boxShadow: '0 4px 14px rgba(79, 43, 203, 0.2)',
-            '&:hover': { backgroundColor: '#39209A' },
-          }}
-        >
-          + Create Event
-        </Button>
+        <Stack direction="row" spacing={1.5} flexWrap="wrap" gap={1}>
+          <Button
+            variant="ghost"
+            onClick={() => setFilterType('ALL')}
+            sx={{ color: '#4F2BCB', borderColor: '#D4CCF7' }}
+          >
+            View All Events
+          </Button>
+          <Button
+            variant="ghost"
+            startIcon={<HistoryIcon />}
+            onClick={() => setFilterType('PAST')}
+            sx={{ color: '#777788', borderColor: '#E9E7F2' }}
+          >
+            Past Events Archive
+          </Button>
+        </Stack>
       </Box>
 
-      {/* Search & Filters Bar */}
-      <Box
+      {/* Filter and Search Bar */}
+      <Paper
+        elevation={0}
         sx={{
+          p: 2,
+          borderRadius: '16px',
+          border: '1px solid #E9E7F2',
+          backgroundColor: '#FFFFFF',
+          mb: 3.5,
           display: 'flex',
-          flexDirection: { xs: 'column', sm: 'row' },
           gap: 2,
-          mb: 4,
+          flexWrap: 'wrap',
+          alignItems: 'center',
         }}
       >
         <TextField
-          placeholder="Search events by title, description, location..."
+          placeholder="Search events by title or keyword..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
+          size="small"
           sx={{
-            flexGrow: 1,
-            backgroundColor: '#F3F6FC',
-            borderRadius: '12px',
-            '& .MuiOutlinedInput-notchedOutline': { borderColor: '#E9E7F2' },
-            '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#C7B8FF' },
-            '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#4F2BCB' },
+            flex: 1,
+            minWidth: 220,
+            '& .MuiOutlinedInput-root': { borderRadius: '12px', borderColor: '#E9E7F2' },
           }}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
-                <SearchIcon sx={{ color: '#777788' }} />
+                <SearchIcon sx={{ color: '#9DA0AE' }} />
               </InputAdornment>
             ),
           }}
         />
 
-        {!clubId && Array.isArray(clubs) && clubs.length > 0 && (
-          <TextField
-            select
-            value={selectedClubId}
-            onChange={(e) => setSelectedClubId(e.target.value)}
-            sx={{
-              minWidth: 200,
-              backgroundColor: '#F3F6FC',
-              borderRadius: '12px',
-              '& .MuiOutlinedInput-notchedOutline': { borderColor: '#E9E7F2' },
-            }}
-          >
-            <MenuItem value="all">All Clubs</MenuItem>
-            {clubs.map((c) => (
-              <MenuItem key={c.id} value={String(c.id)}>
-                {c.name}
-              </MenuItem>
-            ))}
-          </TextField>
-        )}
-      </Box>
-
-      {loading ? (
-        <Box display="flex" justifyContent="center" alignItems="center" minHeight="40vh">
-          <CircularProgress sx={{ color: '#4F2BCB' }} />
-        </Box>
-      ) : error ? (
-        <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>{error}</Alert>
-      ) : filteredEvents.length === 0 ? (
-        <Paper
-          elevation={0}
+        <TextField
+          select
+          size="small"
+          value={selectedClubId}
+          onChange={(e) => setSelectedClubId(e.target.value)}
           sx={{
-            textAlign: 'center',
-            py: 8,
-            px: 3,
-            backgroundColor: '#FFFFFF',
-            borderRadius: '20px',
-            border: '1px dashed #E9E7F2',
+            minWidth: 200,
+            '& .MuiOutlinedInput-root': { borderRadius: '12px', borderColor: '#E9E7F2' },
           }}
         >
-          <EventAvailableIcon sx={{ fontSize: 56, color: '#9DA0AE', mb: 2 }} />
-          <Typography variant="h6" sx={{ fontWeight: 700, color: '#20202A', mb: 1 }}>
-            No events found
-          </Typography>
-          <Typography variant="body2" sx={{ color: '#777788', maxWidth: 400, mx: 'auto', mb: 3 }}>
-            There are no upcoming events matching your criteria right now.
-          </Typography>
-          <Button
-            variant="primary"
-            onClick={handleOpenCreateModal}
-            startIcon={<AddIcon />}
-            sx={{ backgroundColor: '#4F2BCB' }}
-          >
-            Create New Event
-          </Button>
-        </Paper>
-      ) : (
-        <Grid container spacing={3}>
-          {filteredEvents.map((ev) => {
-            const targetClubId = ev.club_id || clubId;
-            const clubRole = userClubMemberships[targetClubId];
-            const canManage =
-              clubRole === 'president' ||
-              clubRole === 'vice_president' ||
-              clubRole === 'secretary';
+          <MenuItem value="all">All Clubs</MenuItem>
+          {clubs.map((c) => (
+            <MenuItem key={c.id} value={c.id}>
+              {c.name}
+            </MenuItem>
+          ))}
+        </TextField>
+      </Paper>
 
-            return (
-              <Grid item xs={12} sm={6} md={4} key={ev.id}>
-                <Paper
-                  elevation={0}
-                  sx={{
-                    p: 3,
-                    height: '100%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    borderRadius: '16px',
-                    border: '1px solid #E9E7F2',
-                    backgroundColor: '#FFFFFF',
-                    position: 'relative',
-                    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-                    '&:hover': {
-                      transform: 'translateY(-4px)',
-                      boxShadow: '0 12px 24px rgba(79, 43, 203, 0.08)',
-                      borderColor: '#C7B8FF',
-                    },
-                  }}
-                >
-                  {ev.image_url && (
-                    <Box
-                      component="img"
-                      src={ev.image_url}
-                      alt={ev.title}
-                      sx={{
-                        width: '100%',
-                        height: 140,
-                        objectFit: 'cover',
-                        borderRadius: '10px',
-                        mb: 1.5,
-                      }}
-                    />
-                  )}
+      {error && <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>{error}</Alert>}
 
-                  <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={1}>
-                    {ev.clubName && (
-                      <Typography
-                        variant="caption"
-                        sx={{
-                          fontWeight: 700,
-                          color: '#4F2BCB',
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.05em',
-                        }}
-                      >
-                        {ev.clubName}
-                      </Typography>
-                    )}
-
-                    {/* Edit & Delete Options for Club Leaders */}
-                    {canManage && (
-                      <Box display="flex" gap={0.5}>
-                        <Tooltip title="Edit Event">
-                          <IconButton
-                            size="small"
-                            onClick={() => navigate(`/clubs/${targetClubId}/events/${ev.id}/edit`)}
-                            sx={{ color: '#4F2BCB', '&:hover': { backgroundColor: '#F3F0FF' } }}
-                          >
-                            <EditOutlinedIcon sx={{ fontSize: 18 }} />
-                          </IconButton>
-                        </Tooltip>
-
-                        <Tooltip title="Delete Event">
-                          <IconButton
-                            size="small"
-                            onClick={() => setDeleteEventItem(ev)}
-                            sx={{ color: '#EF4444', '&:hover': { backgroundColor: '#FEF2F2' } }}
-                          >
-                            <DeleteOutlinedIcon sx={{ fontSize: 18 }} />
-                          </IconButton>
-                        </Tooltip>
-                      </Box>
-                    )}
-                  </Box>
-
-                  <Typography variant="h6" sx={{ fontWeight: 700, color: '#20202A', mb: 1.5, fontSize: '1.1rem' }}>
-                    {ev.title || ev.name}
-                  </Typography>
-
-                  {ev.date && (
-                    <Box display="flex" alignItems="center" gap={1} mb={0.8}>
-                      <CalendarMonthIcon sx={{ fontSize: 16, color: '#4F2BCB' }} />
-                      <Typography variant="body2" sx={{ color: '#6E6D7A' }}>
-                        {new Date(ev.date).toLocaleDateString(undefined, {
-                          weekday: 'short',
-                          year: 'numeric',
-                          month: 'short',
-                          day: 'numeric',
-                        })}
-                      </Typography>
-                    </Box>
-                  )}
-
-                  {ev.location && (
-                    <Box display="flex" alignItems="center" gap={1} mb={1.5}>
-                      <LocationOnIcon sx={{ fontSize: 16, color: '#777788' }} />
-                      <Typography variant="body2" sx={{ color: '#777788' }}>
-                        {ev.location}
-                      </Typography>
-                    </Box>
-                  )}
-
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      color: '#777788',
-                      flexGrow: 1,
-                      mb: 2.5,
-                      display: '-webkit-box',
-                      WebkitLineClamp: 3,
-                      WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden',
-                    }}
-                  >
-                    {ev.description || 'Join us for this exciting university event!'}
-                  </Typography>
-
-                  <Box pt={1.5} borderTop="1px solid #E9E7F2" display="flex" justifyContent="space-between" alignItems="center">
-                    {canManage && (
-                      <Typography variant="caption" sx={{ color: '#10B981', fontWeight: 700 }}>
-                        Manager Permissions
-                      </Typography>
-                    )}
-                    <Button
-                      variant="primary"
-                      size="small"
-                      onClick={() => navigate(`/clubs/${targetClubId}/events/${ev.id}`)}
-                      sx={{
-                        backgroundColor: '#4F2BCB',
-                        color: '#FFFFFF',
-                        borderRadius: '8px',
-                        fontWeight: 600,
-                        px: 2,
-                        ml: 'auto',
-                        '&:hover': { backgroundColor: '#39209A' },
-                      }}
-                    >
-                      View Details
-                    </Button>
-                  </Box>
-                </Paper>
-              </Grid>
-            );
-          })}
-        </Grid>
-      )}
-
-      {/* Choose Club for Event Creation Modal */}
-      <Dialog
-        open={createDialogOpen}
-        onClose={() => setCreateDialogOpen(false)}
-        PaperProps={{ sx: { borderRadius: '20px', p: 1, maxWidth: 440, width: '100%' } }}
-      >
-        <DialogTitle sx={{ fontWeight: 700, color: '#20202A' }}>
-          Select Club to Publish Event
-        </DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" sx={{ color: '#777788', mb: 2 }}>
-            Choose which student organization you want to schedule this event for:
-          </Typography>
-
-          <TextField
-            fullWidth
-            select
-            value={targetClubForCreate}
-            onChange={(e) => setTargetClubForCreate(e.target.value)}
+      {/* Main 2-Column Layout */}
+      <Grid container spacing={3.5}>
+        {/* Left Column: Calendar Widget */}
+        <Grid item xs={12} md={5} lg={4}>
+          <Paper
+            elevation={0}
             sx={{
-              '& .MuiOutlinedInput-root': {
-                backgroundColor: '#F3F6FC',
-                borderRadius: '10px',
-              },
+              p: 3,
+              borderRadius: '20px',
+              border: '1px solid #E9E7F2',
+              backgroundColor: '#FFFFFF',
+              boxShadow: '0 4px 20px rgba(79, 43, 203, 0.04)',
             }}
           >
-            {clubs.map((c) => {
-              const role = userClubMemberships[c.id];
-              const roleText = role ? ` (${role})` : '';
-              return (
-                <MenuItem key={c.id} value={String(c.id)}>
-                  {c.name}{roleText}
-                </MenuItem>
-              );
-            })}
-          </TextField>
-        </DialogContent>
-        <DialogActions sx={{ p: 2, gap: 1 }}>
-          <Button variant="ghost" onClick={() => setCreateDialogOpen(false)}>
-            Cancel
-          </Button>
-          <Button
-            variant="primary"
-            onClick={handleConfirmCreateNavigation}
-            sx={{ backgroundColor: '#4F2BCB' }}
-          >
-            Continue to Form
-          </Button>
-        </DialogActions>
-      </Dialog>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2.5}>
+              <IconButton size="small" onClick={handlePrevMonth}>
+                <ChevronLeftIcon />
+              </IconButton>
+              <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#20202A' }}>
+                {MONTH_NAMES[month]} {year}
+              </Typography>
+              <IconButton size="small" onClick={handleNextMonth}>
+                <ChevronRightIcon />
+              </IconButton>
+            </Box>
 
-      {/* Delete Confirmation Modal */}
-      <Dialog
-        open={Boolean(deleteEventItem)}
-        onClose={() => setDeleteEventItem(null)}
-        PaperProps={{ sx: { borderRadius: '20px', p: 1 } }}
-      >
-        <DialogTitle sx={{ fontWeight: 700, color: '#20202A' }}>
-          Delete "{deleteEventItem?.title || deleteEventItem?.name}"?
-        </DialogTitle>
-        <DialogContent>
-          <DialogContentText sx={{ color: '#777788' }}>
-            Are you sure you want to delete this event? This action cannot be undone.
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions sx={{ p: 2, gap: 1 }}>
-          <Button variant="ghost" onClick={() => setDeleteEventItem(null)} disabled={actionLoading}>
-            Cancel
-          </Button>
-          <Button
-            variant="ghost"
-            onClick={handleDeleteConfirmed}
-            disabled={actionLoading}
-            sx={{ backgroundColor: '#EF4444', color: '#FFFFFF', '&:hover': { backgroundColor: '#DC2626' } }}
-          >
-            {actionLoading ? 'Deleting...' : 'Delete Event'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+            <Grid container spacing={1} mb={1}>
+              {DAYS.map((day) => (
+                <Grid item xs={12 / 7} key={day} textAlign="center">
+                  <Typography variant="caption" sx={{ color: '#9DA0AE', fontWeight: 700, fontSize: '0.72rem' }}>
+                    {day}
+                  </Typography>
+                </Grid>
+              ))}
+            </Grid>
+
+            <Grid container spacing={1} mb={3}>
+              {Array.from({ length: firstDayOfMonth }).map((_, i) => (
+                <Grid item xs={12 / 7} key={`empty-${i}`} />
+              ))}
+
+              {Array.from({ length: daysInMonth }).map((_, i) => {
+                const dayNum = i + 1;
+                const hasEvent = eventDays.has(dayNum);
+                const isToday =
+                  new Date().getDate() === dayNum &&
+                  new Date().getMonth() === month &&
+                  new Date().getFullYear() === year;
+
+                return (
+                  <Grid item xs={12 / 7} key={dayNum} textAlign="center">
+                    <Box
+                      sx={{
+                        width: 32,
+                        height: 32,
+                        mx: 'auto',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '0.82rem',
+                        fontWeight: hasEvent || isToday ? 800 : 500,
+                        backgroundColor: isToday ? '#4F2BCB' : hasEvent ? '#F3F0FF' : 'transparent',
+                        color: isToday ? '#FFFFFF' : hasEvent ? '#4F2BCB' : '#20202A',
+                        border: hasEvent && !isToday ? '1px solid #C7B8FF' : 'none',
+                        cursor: hasEvent ? 'pointer' : 'default',
+                        transition: 'all 0.2s',
+                        '&:hover': hasEvent ? { backgroundColor: '#4F2BCB', color: '#FFFFFF' } : {},
+                      }}
+                    >
+                      {dayNum}
+                    </Box>
+                  </Grid>
+                );
+              })}
+            </Grid>
+
+            <Stack spacing={1.5}>
+              <Button
+                variant="primary"
+                fullWidth
+                onClick={() => setFilterType('UPCOMING')}
+                sx={{ backgroundColor: '#4F2BCB', py: 1.1, borderRadius: '12px', fontWeight: 700 }}
+              >
+                Upcoming Events ({events.filter(e => e.start_time && new Date(e.start_time) >= new Date()).length})
+              </Button>
+              <Button
+                variant="ghost"
+                fullWidth
+                onClick={() => setFilterType('ALL')}
+                sx={{ color: '#4F2BCB', borderColor: '#D4CCF7', py: 1.1, borderRadius: '12px', fontWeight: 700 }}
+              >
+                View All Events ({events.length})
+              </Button>
+            </Stack>
+          </Paper>
+        </Grid>
+
+        {/* Right Column: Featured Upcoming Events */}
+        <Grid item xs={12} md={7} lg={8}>
+          <Box mb={2}>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+              <Typography variant="h6" sx={{ fontWeight: 800, color: '#20202A' }}>
+                Featured Upcoming Events ({filteredEvents.length})
+              </Typography>
+              <Stack direction="row" spacing={1}>
+                <Chip
+                  label="All"
+                  size="small"
+                  clickable
+                  onClick={() => setFilterType('ALL')}
+                  sx={{
+                    backgroundColor: filterType === 'ALL' ? '#4F2BCB' : '#F1F5F9',
+                    color: filterType === 'ALL' ? '#FFFFFF' : '#475569',
+                    fontWeight: 700,
+                  }}
+                />
+                <Chip
+                  label="Upcoming"
+                  size="small"
+                  clickable
+                  onClick={() => setFilterType('UPCOMING')}
+                  sx={{
+                    backgroundColor: filterType === 'UPCOMING' ? '#4F2BCB' : '#F1F5F9',
+                    color: filterType === 'UPCOMING' ? '#FFFFFF' : '#475569',
+                    fontWeight: 700,
+                  }}
+                />
+              </Stack>
+            </Box>
+
+            {loading ? (
+              <Box display="flex" justifyContent="center" py={8}>
+                <CircularProgress sx={{ color: '#4F2BCB' }} />
+              </Box>
+            ) : filteredEvents.length === 0 ? (
+              <EmptyState
+                icon={<CalendarMonthIcon />}
+                title="No events found"
+                message="Try adjusting your search query or club filter."
+              />
+            ) : (
+              <Stack spacing={2}>
+                {filteredEvents.map((ev, index) => {
+                  const evDate = ev.start_time ? new Date(ev.start_time) : new Date();
+                  const day = evDate.getDate();
+                  const monthName = evDate.toLocaleDateString(undefined, { month: 'short' });
+                  const fallbackImg = DEFAULT_EVENT_IMAGES[index % DEFAULT_EVENT_IMAGES.length];
+                  const posterUrl = ev.image_url ? getImageUrl(ev.image_url) : fallbackImg;
+
+                  return (
+                    <Paper
+                      key={ev.id}
+                      elevation={0}
+                      sx={{
+                        p: 2,
+                        borderRadius: '20px',
+                        border: '1px solid #E9E7F2',
+                        backgroundColor: '#FFFFFF',
+                        display: 'flex',
+                        flexDirection: { xs: 'column', sm: 'row' },
+                        alignItems: { xs: 'flex-start', sm: 'center' },
+                        gap: 2.5,
+                        transition: 'all 0.2s ease',
+                        cursor: 'pointer',
+                        '&:hover': {
+                          borderColor: '#4F2BCB',
+                          boxShadow: '0 6px 22px rgba(79, 43, 203, 0.08)',
+                        },
+                      }}
+                      onClick={() => navigate(`/clubs/${ev.club_id || selectedClubId}/events/${ev.id}`)}
+                    >
+                      {/* Left: Poster Thumbnail Image */}
+                      <Box
+                        sx={{
+                          width: { xs: '100%', sm: 130 },
+                          height: { xs: 140, sm: 96 },
+                          borderRadius: '14px',
+                          overflow: 'hidden',
+                          position: 'relative',
+                          flexShrink: 0,
+                        }}
+                      >
+                        <Box
+                          component="img"
+                          src={posterUrl}
+                          alt={ev.title || 'Event poster'}
+                          sx={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover',
+                          }}
+                        />
+                      </Box>
+
+                      {/* Middle: Title & Details */}
+                      <Box sx={{ minWidth: 0, flex: 1 }}>
+                        <Typography
+                          variant="subtitle1"
+                          sx={{
+                            fontWeight: 800,
+                            color: '#20202A',
+                            fontSize: '1rem',
+                            mb: 0.8,
+                          }}
+                        >
+                          {ev.title || ev.name}
+                        </Typography>
+
+                        <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap" gap={0.5}>
+                          <Box
+                            sx={{
+                              px: 1,
+                              py: 0.3,
+                              borderRadius: '6px',
+                              backgroundColor: '#F3F0FF',
+                              color: '#4F2BCB',
+                              fontWeight: 800,
+                              fontSize: '0.75rem',
+                            }}
+                          >
+                            {day} {monthName}
+                          </Box>
+
+                          <Box display="flex" alignItems="center" gap={0.5}>
+                            <AccessTimeIcon sx={{ fontSize: 15, color: '#777788' }} />
+                            <Typography variant="caption" sx={{ color: '#777788', fontWeight: 600 }}>
+                              {evDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </Typography>
+                          </Box>
+
+                          <Typography variant="caption" sx={{ color: '#CCD0DC' }}>•</Typography>
+
+                          <Box display="flex" alignItems="center" gap={0.5}>
+                            <LocationOnIcon sx={{ fontSize: 15, color: '#777788' }} />
+                            <Typography variant="caption" sx={{ color: '#777788', fontWeight: 600 }}>
+                              {ev.location || 'Campus Auditorium'}
+                            </Typography>
+                          </Box>
+                        </Stack>
+                      </Box>
+
+                      {/* Right: Status Badge & Button */}
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          flexDirection: { xs: 'row', sm: 'column' },
+                          alignItems: { xs: 'center', sm: 'flex-end' },
+                          justifyContent: 'space-between',
+                          gap: 1.5,
+                          width: { xs: '100%', sm: 'auto' },
+                        }}
+                      >
+                        <Chip
+                          label="Registration Open"
+                          size="small"
+                          sx={{
+                            backgroundColor: '#D1FAE5',
+                            color: '#059669',
+                            fontWeight: 800,
+                            fontSize: '0.72rem',
+                            borderRadius: '8px',
+                          }}
+                        />
+
+                        <Button
+                          variant="ghost"
+                          size="small"
+                          sx={{ color: '#4F2BCB', borderColor: '#E9E7F2', fontWeight: 700, fontSize: '0.78rem' }}
+                        >
+                          View Details →
+                        </Button>
+                      </Box>
+                    </Paper>
+                  );
+                })}
+              </Stack>
+            )}
+          </Box>
+        </Grid>
+      </Grid>
     </Box>
   );
 };

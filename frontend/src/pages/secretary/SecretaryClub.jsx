@@ -21,7 +21,7 @@ import AccessTimeOutlinedIcon from '@mui/icons-material/AccessTimeOutlined';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 
 import { useAuth } from '../../context/AuthContext';
-import api, { getImageUrl } from '../../api/axiosInstance';
+import api, { getImageUrl, getClubLogoUrl } from '../../api/axiosInstance';
 import { fetchClubMembers, fetchClubStats } from '../../api/adminApi';
 import Button from '../../components/Button';
 import EditClubModal from '../../components/EditClubModal';
@@ -104,6 +104,7 @@ const SecretaryClub = () => {
 
   const rawCover = club?.cover_url || DEFAULT_COVERS[(club?.id || 0) % DEFAULT_COVERS.length];
   const coverUrl = getImageUrl(rawCover);
+  const logoUrl = getClubLogoUrl(club);
 
   let displayGallery = DEFAULT_GALLERY;
   if (club?.gallery) {
@@ -153,138 +154,136 @@ const SecretaryClub = () => {
 
       {error && <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>{error}</Alert>}
 
-      {/* 1. HERO COVER BANNER SECTION */}
+      {/* 1. HERO COVER BANNER */}
       <Paper
         elevation={0}
         sx={{
           borderRadius: '24px',
           overflow: 'hidden',
           border: '1px solid #E9E7F2',
-          backgroundColor: '#FFFFFF',
           mb: 4,
-          boxShadow: '0 8px 30px rgba(79, 43, 203, 0.05)',
+          boxShadow: '0 8px 30px rgba(79, 43, 203, 0.08)',
           position: 'relative',
+          height: { xs: 260, sm: 300, md: 340 },
+          backgroundImage: `linear-gradient(180deg, rgba(15, 10, 40, 0.2) 0%, rgba(15, 10, 40, 0.88) 100%), url(${coverUrl})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          p: { xs: 2.5, sm: 3.5 },
+          boxSizing: 'border-box',
         }}
       >
-        <Box
-          sx={{
-            height: { xs: 180, sm: 260, md: 300 },
-            width: '100%',
-            position: 'relative',
-            backgroundImage: `linear-gradient(to bottom, rgba(15, 10, 40, 0.15), rgba(15, 10, 40, 0.8)), url(${coverUrl})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-          }}
-        >
-          <Box sx={{ position: 'absolute', top: 20, right: 20, display: 'flex', gap: 1 }}>
-            {club?.category && (
-              <Chip
-                label={club.category}
-                sx={{
-                  backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                  color: '#4F2BCB',
-                  fontWeight: 800,
-                  fontSize: '0.82rem',
-                  backdropFilter: 'blur(8px)',
-                }}
-              />
-            )}
+        <Box display="flex" justifyContent="flex-end" gap={1}>
+          {club?.category && (
             <Chip
-              icon={<EditOutlinedIcon style={{ fontSize: 16, color: '#4F2BCB' }} />}
-              label="Edit Media"
-              clickable
-              onClick={() => setEditModalOpen(true)}
+              label={club.category}
               sx={{
                 backgroundColor: 'rgba(255, 255, 255, 0.95)',
                 color: '#4F2BCB',
                 fontWeight: 800,
                 fontSize: '0.82rem',
                 backdropFilter: 'blur(8px)',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
               }}
             />
-          </Box>
+          )}
+          <Chip
+            icon={<EditOutlinedIcon style={{ fontSize: 16, color: '#4F2BCB' }} />}
+            label="Edit Media"
+            clickable
+            onClick={() => setEditModalOpen(true)}
+            sx={{
+              backgroundColor: 'rgba(255, 255, 255, 0.95)',
+              color: '#4F2BCB',
+              fontWeight: 800,
+              fontSize: '0.82rem',
+              backdropFilter: 'blur(8px)',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+            }}
+          />
         </Box>
 
         <Box
           sx={{
-            px: { xs: 2.5, sm: 4 },
-            pb: 3,
-            pt: 0,
             display: 'flex',
-            flexDirection: { xs: 'column', md: 'row' },
-            alignItems: { xs: 'center', md: 'flex-end' },
+            flexDirection: { xs: 'column', sm: 'row' },
+            alignItems: { xs: 'flex-start', sm: 'flex-end' },
             justifyContent: 'space-between',
             gap: 2.5,
+            width: '100%',
           }}
         >
-          <Box
-            sx={{
-              display: 'flex',
-              flexDirection: { xs: 'column', sm: 'row' },
-              alignItems: { xs: 'center', sm: 'flex-end' },
-              gap: 2.5,
-              mt: { xs: -7, sm: -8 },
-              textAlign: { xs: 'center', sm: 'left' },
-            }}
-          >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5 }}>
             <Avatar
-              src={getImageUrl(club?.logo_url)}
+              src={logoUrl}
               variant="rounded"
               sx={{
-                width: { xs: 90, sm: 110 },
-                height: { xs: 90, sm: 110 },
-                borderRadius: '22px',
+                width: { xs: 72, sm: 96 },
+                height: { xs: 72, sm: 96 },
+                borderRadius: '20px',
                 backgroundColor: '#FFFFFF',
                 color: '#4F2BCB',
                 fontWeight: 900,
                 fontSize: '2.5rem',
-                border: '4px solid #FFFFFF',
-                boxShadow: '0 10px 25px rgba(0, 0, 0, 0.15)',
+                border: '3px solid #FFFFFF',
+                boxShadow: '0 10px 25px rgba(0, 0, 0, 0.3)',
                 flexShrink: 0,
               }}
             >
               {club?.name?.charAt(0).toUpperCase()}
             </Avatar>
 
-            <Box sx={{ pb: 0.5 }}>
+            <Box>
               <Typography
                 variant="h4"
                 sx={{
                   fontWeight: 900,
-                  color: '#20202A',
-                  fontSize: { xs: '1.6rem', sm: '1.9rem' },
+                  color: '#FFFFFF',
+                  fontSize: { xs: '1.5rem', sm: '2.1rem' },
+                  letterSpacing: '-0.02em',
+                  textShadow: '0 2px 8px rgba(0, 0, 0, 0.6)',
                   mb: 0.5,
                 }}
               >
                 {club?.name}
               </Typography>
-              <Stack direction="row" spacing={1.5} alignItems="center" justifyContent={{ xs: 'center', sm: 'flex-start' }} flexWrap="wrap">
+
+              <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap">
                 <Box display="flex" alignItems="center" gap={0.6}>
-                  <GroupsOutlinedIcon sx={{ fontSize: 18, color: '#777788' }} />
-                  <Typography variant="body2" sx={{ color: '#777788', fontWeight: 600 }}>
+                  <GroupsOutlinedIcon sx={{ fontSize: 18, color: '#E0DBFF' }} />
+                  <Typography variant="body2" sx={{ color: '#F3F0FF', fontWeight: 600 }}>
                     {members.length} Members
                   </Typography>
                 </Box>
-                <Typography variant="body2" sx={{ color: '#CCD0DC' }}>•</Typography>
+                <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)' }}>•</Typography>
                 <Box display="flex" alignItems="center" gap={0.6}>
-                  <EventIcon sx={{ fontSize: 18, color: '#777788' }} />
-                  <Typography variant="body2" sx={{ color: '#777788', fontWeight: 600 }}>
+                  <EventIcon sx={{ fontSize: 18, color: '#E0DBFF' }} />
+                  <Typography variant="body2" sx={{ color: '#F3F0FF', fontWeight: 600 }}>
                     {stats?.event_count || 0} Events
                   </Typography>
                 </Box>
+                {club?.meeting_location && (
+                  <>
+                    <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)' }}>•</Typography>
+                    <Typography variant="body2" sx={{ color: '#F3F0FF', fontWeight: 600 }}>
+                      📍 {club.meeting_location}
+                    </Typography>
+                  </>
+                )}
               </Stack>
             </Box>
           </Box>
 
-          <Box sx={{ alignSelf: { xs: 'center', md: 'flex-end' }, pb: 0.5 }}>
+          <Box sx={{ alignSelf: { xs: 'flex-start', sm: 'flex-end' } }}>
             <Chip
               label="Secretary Workspace Active"
               sx={{
-                backgroundColor: '#F3F0FF',
+                backgroundColor: 'rgba(243, 240, 255, 0.95)',
                 color: '#4F2BCB',
                 fontWeight: 800,
                 fontSize: '0.82rem',
+                backdropFilter: 'blur(8px)',
                 py: 2,
                 px: 1,
               }}

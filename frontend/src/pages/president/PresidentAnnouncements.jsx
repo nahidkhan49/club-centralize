@@ -1,19 +1,51 @@
 import React, { useEffect, useState } from 'react';
 import {
-  Box, Typography, Paper, Grid, CircularProgress, Alert, Dialog,
-  DialogTitle, DialogContent, DialogActions, TextField, Tooltip, IconButton
+  Box,
+  Typography,
+  Paper,
+  Grid,
+  CircularProgress,
+  Alert,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Tooltip,
+  IconButton,
+  Chip,
+  Stack,
+  InputAdornment,
 } from '@mui/material';
+import SearchIcon from '@mui/icons-material/Search';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CampaignIcon from '@mui/icons-material/Campaign';
+import PersonOutlineIcon from '@mui/icons-material/PersonOutlined';
+import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
+import NotificationsActiveOutlinedIcon from '@mui/icons-material/NotificationsActiveOutlined';
+import CheckCircleOutlinedIcon from '@mui/icons-material/CheckCircleOutlined';
+
 import { useAuth } from '../../context/AuthContext';
-import { fetchAllAnnouncements, createAnnouncement, updateAnnouncement, deleteAnnouncement } from '../../api/announcementsApi';
+import {
+  fetchAllAnnouncements,
+  createAnnouncement,
+  updateAnnouncement,
+  deleteAnnouncement,
+} from '../../api/announcementsApi';
 import Button from '../../components/Button';
 import EmptyState from '../../components/EmptyState';
 
+const TAG_CONFIG = {
+  Urgent: { bg: '#FEE2E2', color: '#DC2626' },
+  General: { bg: '#D1FAE5', color: '#059669' },
+  Achievement: { bg: '#E0F2FE', color: '#0284C7' },
+  Election: { bg: '#F3F0FF', color: '#7C3AED' },
+};
+
 const PresidentAnnouncements = () => {
-  const { presidentOfClubs } = useAuth();
+  const { presidentOfClubs, user } = useAuth();
   const myClubId = presidentOfClubs?.[0]?.club_id;
   const myClubName = presidentOfClubs?.[0]?.club_name || 'My Club';
 
@@ -21,6 +53,7 @@ const PresidentAnnouncements = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [search, setSearch] = useState('');
 
   // Modal State
   const [modalOpen, setModalOpen] = useState(false);
@@ -83,24 +116,24 @@ const PresidentAnnouncements = () => {
         await updateAnnouncement(editingItem.id, form);
         setSuccess('Announcement updated successfully!');
       } else {
-        await createAnnouncement({
-          ...form,
-          club_id: myClubId,
-          club_name: myClubName,
-          source_location: 'CSE Department', // Default source location for president
-        });
+        await createAnnouncement(myClubId, form);
         setSuccess('Announcement published successfully!');
       }
       setModalOpen(false);
       loadAnnouncements();
     } catch (err) {
-      setError(err?.response?.data?.detail || 'Failed to submit announcement.');
+      setError(err?.response?.data?.detail || 'Failed to save announcement.');
     } finally {
       setSubmitting(false);
     }
   };
 
-  if (loading && announcements.length === 0) {
+  const filteredAnnouncements = announcements.filter((a) =>
+    a.title.toLowerCase().includes(search.toLowerCase()) ||
+    a.content.toLowerCase().includes(search.toLowerCase())
+  );
+
+  if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
         <CircularProgress sx={{ color: '#4F2BCB' }} />
@@ -109,14 +142,15 @@ const PresidentAnnouncements = () => {
   }
 
   return (
-    <Box sx={{ maxWidth: 1000, mx: 'auto', py: 2 }}>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+    <Box sx={{ maxWidth: 1150, mx: 'auto', pb: 6, width: '100%' }}>
+      {/* Header Bar Matching Mockup */}
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3} flexWrap="wrap" gap={2}>
         <Box>
           <Typography variant="h5" sx={{ fontWeight: 800, color: '#20202A' }}>
             Club Announcements
           </Typography>
           <Typography variant="body2" sx={{ color: '#777788' }}>
-            Club: <strong>{myClubName}</strong> — Broadcast updates and newsletters to your members.
+            Club: <strong>{myClubName}</strong> — Broadcast important notices and updates to all members.
           </Typography>
         </Box>
         <Button
@@ -125,154 +159,246 @@ const PresidentAnnouncements = () => {
           onClick={openCreateModal}
           sx={{ backgroundColor: '#4F2BCB' }}
         >
-          New Announcement
+          + Create New Announcement
         </Button>
       </Box>
 
       {error && <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }} onClose={() => setError('')}>{error}</Alert>}
       {success && <Alert severity="success" sx={{ mb: 2, borderRadius: 2 }} onClose={() => setSuccess('')}>{success}</Alert>}
 
-      {announcements.length === 0 ? (
-        <EmptyState
-          icon={<CampaignIcon />}
-          title="No announcements yet"
-          message="Publish news, schedules, or club updates for your members."
-          action={
-            <Button
-              variant="primary"
-              startIcon={<AddIcon />}
-              onClick={openCreateModal}
-              sx={{ backgroundColor: '#4F2BCB' }}
-            >
-              Write First Announcement
-            </Button>
-          }
-        />
-      ) : (
-        <Grid container spacing={3}>
-          {announcements.map((ann) => (
-            <Grid item xs={12} md={6} key={ann.id}>
-              <Paper
-                elevation={0}
-                sx={{
-                  p: 3,
-                  borderRadius: '16px',
-                  border: '1px solid #E9E7F2',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  height: '100%',
-                  '&:hover': { boxShadow: '0 4px 20px rgba(79,43,203,0.08)' },
-                }}
-              >
-                <Box display="flex" justifyContent="space-between" mb={1}>
-                  <Typography variant="h6" sx={{ fontWeight: 700, color: '#20202A', fontSize: '1.05rem' }}>
-                    {ann.title}
-                  </Typography>
-                  <Box sx={{ flexShrink: 0 }}>
-                    <Tooltip title="Edit">
-                      <IconButton size="small" onClick={() => openEditModal(ann)} sx={{ color: '#4F2BCB' }}>
-                        <EditIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Delete">
-                      <IconButton size="small" onClick={() => handleDelete(ann.id)} sx={{ color: '#EF4444' }}>
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                  </Box>
-                </Box>
+      <Grid container spacing={3.5}>
+        {/* Left / Main Column: Announcements List */}
+        <Grid item xs={12} md={8}>
+          {/* Search Box */}
+          <Box mb={2.5}>
+            <TextField
+              placeholder="Search announcements..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              size="small"
+              fullWidth
+              sx={{
+                backgroundColor: '#FFFFFF',
+                borderRadius: '12px',
+                '& .MuiOutlinedInput-root': { borderRadius: '12px', borderColor: '#E9E7F2' },
+              }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon sx={{ color: '#9DA0AE' }} />
+                  </InputAdornment>
+                ),
+              }}
+            />
+          </Box>
 
-                <Typography variant="body2" sx={{ color: '#6E6D7A', mb: 2, whiteSpace: 'pre-line' }}>
-                  {ann.content}
-                </Typography>
+          {filteredAnnouncements.length === 0 ? (
+            <EmptyState
+              icon={<CampaignIcon />}
+              title="No announcements found"
+              message="Publish your first announcement to notify club members."
+              action={
+                <Button variant="primary" startIcon={<AddIcon />} onClick={openCreateModal} sx={{ backgroundColor: '#4F2BCB' }}>
+                  Create Announcement
+                </Button>
+              }
+            />
+          ) : (
+            <Stack spacing={2.5}>
+              {filteredAnnouncements.map((item, index) => {
+                const tags = ['Urgent', 'General', 'Achievement', 'Election'];
+                const assignedTag = tags[index % tags.length];
+                const tagConfig = TAG_CONFIG[assignedTag];
 
-                <Box mt="auto" display="flex" justifyContent="space-between" alignItems="center" pt={1.5}>
-                  <Typography variant="caption" sx={{ color: '#9DA0AE', fontWeight: 600 }}>
-                    Published: {new Date(ann.created_at).toLocaleDateString()}
-                  </Typography>
-                  {ann.source_location && (
-                    <Typography variant="caption" sx={{ color: '#4F2BCB', fontWeight: 700 }}>
-                      Source: {ann.source_location}
+                return (
+                  <Paper
+                    key={item.id}
+                    elevation={0}
+                    sx={{
+                      p: 3,
+                      borderRadius: '20px',
+                      border: '1px solid #E9E7F2',
+                      backgroundColor: '#FFFFFF',
+                      transition: 'all 0.2s ease',
+                      '&:hover': {
+                        borderColor: '#4F2BCB',
+                        boxShadow: '0 6px 20px rgba(79, 43, 203, 0.06)',
+                      },
+                    }}
+                  >
+                    {/* Header Row */}
+                    <Box display="flex" justifyContent="space-between" alignItems="flex-start" gap={1.5} mb={1}>
+                      <Typography variant="h6" sx={{ fontWeight: 800, color: '#20202A', fontSize: '1.05rem' }}>
+                        {item.title}
+                      </Typography>
+
+                      <Stack direction="row" spacing={0.5}>
+                        <Tooltip title="Edit">
+                          <IconButton size="small" onClick={() => openEditModal(item)} sx={{ color: '#0284C7' }}>
+                            <EditIcon sx={{ fontSize: 18 }} />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Delete">
+                          <IconButton size="small" onClick={() => handleDelete(item.id)} sx={{ color: '#DC2626' }}>
+                            <DeleteIcon sx={{ fontSize: 18 }} />
+                          </IconButton>
+                        </Tooltip>
+                      </Stack>
+                    </Box>
+
+                    {/* Author & Date Subtitle */}
+                    <Box display="flex" alignItems="center" gap={1} mb={1.5}>
+                      <PersonOutlineIcon sx={{ fontSize: 16, color: '#777788' }} />
+                      <Typography variant="caption" sx={{ color: '#777788', fontWeight: 600 }}>
+                        {user?.username || 'President'} • {item.created_at ? new Date(item.created_at).toLocaleString() : 'Recent'}
+                      </Typography>
+                    </Box>
+
+                    {/* Content Description */}
+                    <Typography variant="body2" sx={{ color: '#444455', lineHeight: 1.7, mb: 2.5 }}>
+                      {item.content}
                     </Typography>
-                  )}
-                </Box>
-              </Paper>
-            </Grid>
-          ))}
-        </Grid>
-      )}
 
-      {/* Write/Edit Announcement Dialog */}
+                    {/* Bottom Row with Priority Pill & 3 Action Buttons Matching Mockup */}
+                    <Box display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={1.5}>
+                      <Chip
+                        label={assignedTag}
+                        size="small"
+                        sx={{
+                          backgroundColor: tagConfig.bg,
+                          color: tagConfig.color,
+                          fontWeight: 800,
+                          fontSize: '0.72rem',
+                          borderRadius: '8px',
+                          height: 24,
+                        }}
+                      />
+
+                      <Stack direction="row" spacing={1}>
+                        <Button
+                          variant="primary"
+                          size="small"
+                          onClick={() => alert('Marked as read!')}
+                          sx={{ backgroundColor: '#4F2BCB', fontSize: '0.76rem', py: 0.4 }}
+                        >
+                          Mark as Read
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="small"
+                          onClick={() => alert('Announcement archived.')}
+                          sx={{ color: '#4F2BCB', borderColor: '#D4CCF7', fontSize: '0.76rem', py: 0.4 }}
+                        >
+                          Archive
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="small"
+                          onClick={() => openEditModal(item)}
+                          sx={{ color: '#4F2BCB', borderColor: '#D4CCF7', fontSize: '0.76rem', py: 0.4 }}
+                        >
+                          View Full Post
+                        </Button>
+                      </Stack>
+                    </Box>
+                  </Paper>
+                );
+              })}
+            </Stack>
+          )}
+        </Grid>
+
+        {/* Right Column: Recent Activity Sidebar Matching Mockup */}
+        <Grid item xs={12} md={4}>
+          <Paper
+            elevation={0}
+            sx={{
+              p: 3,
+              borderRadius: '20px',
+              border: '1px solid #E9E7F2',
+              backgroundColor: '#FFFFFF',
+              position: 'sticky',
+              top: 80,
+            }}
+          >
+            <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#20202A', mb: 2 }}>
+              Recent Activity
+            </Typography>
+
+            <Stack spacing={2}>
+              <Box display="flex" alignItems="flex-start" gap={1.5}>
+                <VisibilityOutlinedIcon sx={{ fontSize: 18, color: '#4F2BCB', mt: 0.2 }} />
+                <Box>
+                  <Typography variant="caption" sx={{ fontWeight: 700, color: '#20202A', display: 'block' }}>
+                    3 members viewed "New Meeting Location"
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: '#9DA0AE' }}>4 minutes ago</Typography>
+                </Box>
+              </Box>
+
+              <Box display="flex" alignItems="flex-start" gap={1.5}>
+                <NotificationsActiveOutlinedIcon sx={{ fontSize: 18, color: '#0284C7', mt: 0.2 }} />
+                <Box>
+                  <Typography variant="caption" sx={{ fontWeight: 700, color: '#20202A', display: 'block' }}>
+                    4 mentions raised in debate forum
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: '#9DA0AE' }}>1 hour ago</Typography>
+                </Box>
+              </Box>
+
+              <Box display="flex" alignItems="flex-start" gap={1.5}>
+                <CheckCircleOutlinedIcon sx={{ fontSize: 18, color: '#059669', mt: 0.2 }} />
+                <Box>
+                  <Typography variant="caption" sx={{ fontWeight: 700, color: '#20202A', display: 'block' }}>
+                    Executive board nominations opened
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: '#9DA0AE' }}>Yesterday at 5:45 PM</Typography>
+                </Box>
+              </Box>
+            </Stack>
+          </Paper>
+        </Grid>
+      </Grid>
+
+      {/* Modal for Create/Edit Announcement */}
       <Dialog
         open={modalOpen}
         onClose={() => setModalOpen(false)}
-        fullWidth
         maxWidth="sm"
-        PaperProps={{ sx: { borderRadius: '20px', p: 1.5 } }}
+        fullWidth
+        PaperProps={{ sx: { borderRadius: '20px' } }}
       >
         <DialogTitle sx={{ fontWeight: 800, color: '#20202A' }}>
-          {editingItem ? 'Edit Announcement' : 'Write Announcement'}
+          {editingItem ? 'Edit Announcement' : 'Publish New Announcement'}
         </DialogTitle>
-        <Box component="form" onSubmit={handleSubmit}>
-          <DialogContent>
-            {error && <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>{error}</Alert>}
-
-            <Box sx={{ mb: 2.5 }}>
-              <Typography variant="body2" sx={{ fontWeight: 600, color: '#20202A', mb: 0.8 }}>
-                Title *
-              </Typography>
-              <TextField
-                fullWidth
-                name="title"
-                placeholder="e.g. Weekly General Meeting"
-                value={form.title}
-                onChange={(e) => setForm({ ...form, title: e.target.value })}
-                required
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    backgroundColor: '#F3F6FC',
-                    borderRadius: '10px',
-                  },
-                }}
-              />
-            </Box>
-
-            <Box>
-              <Typography variant="body2" sx={{ fontWeight: 600, color: '#20202A', mb: 0.8 }}>
-                Announcement Content *
-              </Typography>
-              <TextField
-                fullWidth
-                name="content"
-                multiline
-                rows={5}
-                placeholder="Write the body of your notice/announcement here..."
-                value={form.content}
-                onChange={(e) => setForm({ ...form, content: e.target.value })}
-                required
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    backgroundColor: '#F3F6FC',
-                    borderRadius: '10px',
-                  },
-                }}
-              />
-            </Box>
-          </DialogContent>
-          <DialogActions sx={{ p: 2, gap: 1 }}>
-            <Button variant="ghost" onClick={() => setModalOpen(false)} disabled={submitting}>
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              variant="primary"
-              disabled={submitting}
-              sx={{ backgroundColor: '#4F2BCB' }}
-            >
-              {submitting ? 'Submitting...' : editingItem ? 'Save Changes' : 'Publish Announcement'}
-            </Button>
-          </DialogActions>
-        </Box>
+        <DialogContent dividers>
+          <Box display="flex" flexDirection="column" gap={2.5} pt={1}>
+            <TextField
+              label="Announcement Title"
+              fullWidth
+              value={form.title}
+              onChange={(e) => setForm({ ...form, title: e.target.value })}
+              required
+            />
+            <TextField
+              label="Announcement Details"
+              fullWidth
+              multiline
+              rows={5}
+              value={form.content}
+              onChange={(e) => setForm({ ...form, content: e.target.value })}
+              required
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ p: 2.5 }}>
+          <Button variant="ghost" onClick={() => setModalOpen(false)} disabled={submitting}>
+            Cancel
+          </Button>
+          <Button variant="primary" onClick={handleSubmit} disabled={submitting} sx={{ backgroundColor: '#4F2BCB' }}>
+            {submitting ? 'Saving...' : editingItem ? 'Save Changes' : 'Publish Announcement'}
+          </Button>
+        </DialogActions>
       </Dialog>
     </Box>
   );

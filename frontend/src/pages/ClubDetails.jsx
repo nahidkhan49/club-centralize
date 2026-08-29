@@ -11,7 +11,6 @@ import {
   Paper,
   Tabs,
   Tab,
-  Divider,
   Stack,
   Tooltip,
 } from '@mui/material';
@@ -30,7 +29,7 @@ import AccessTimeOutlinedIcon from '@mui/icons-material/AccessTimeOutlined';
 import MeetingRoomOutlinedIcon from '@mui/icons-material/MeetingRoomOutlined';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 
-import api, { getImageUrl } from '../api/axiosInstance';
+import api, { getImageUrl, getClubLogoUrl } from '../api/axiosInstance';
 import { fetchEventsByClub } from '../api/eventApi';
 import { fetchMyClubRequest, requestJoinClub, leaveClub } from '../api/adminApi';
 import { useAuth } from '../context/AuthContext';
@@ -50,7 +49,6 @@ const DEFAULT_COVERS = [
   'https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1600&q=80',
   'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1600&q=80',
   'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=1600&q=80',
-  'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&w=1600&q=80',
 ];
 
 const DEFAULT_GALLERY = [
@@ -164,17 +162,15 @@ const ClubDetails = () => {
   const isMember = Boolean(myMembership);
   const myRole = myMembership?.role;
 
-  // Permission Check: President or Secretary of this club can manage events & requests
   const isClubManager =
     isAdmin || myRole === 'president' || myRole === 'secretary' || myRole === 'vice_president';
 
-  // Extract Leadership team
   const leadershipRoles = ['president', 'vice_president', 'secretary', 'treasurer'];
   const leadershipMembers = members.filter((m) => leadershipRoles.includes(m.role));
 
-  // Determine cover photo & gallery
-  const coverUrl =
-    club?.cover_url || DEFAULT_COVERS[(club?.id || 0) % DEFAULT_COVERS.length];
+  const rawCover = club?.cover_url || DEFAULT_COVERS[(club?.id || 0) % DEFAULT_COVERS.length];
+  const coverUrl = getImageUrl(rawCover);
+  const logoUrl = getClubLogoUrl(club);
 
   let displayGallery = DEFAULT_GALLERY;
   if (club?.gallery) {
@@ -265,150 +261,141 @@ const ClubDetails = () => {
         </Alert>
       )}
 
-      {/* ========================================================================= */}
-      {/* 1. HERO COVER BANNER SECTION                                             */}
-      {/* ========================================================================= */}
+      {/* 1. HERO COVER BANNER (Integrated Crisp Header & Actions) */}
       <Paper
         elevation={0}
         sx={{
           borderRadius: '24px',
           overflow: 'hidden',
           border: '1px solid #E9E7F2',
-          backgroundColor: '#FFFFFF',
           mb: 4,
-          boxShadow: '0 8px 30px rgba(79, 43, 203, 0.05)',
+          boxShadow: '0 8px 30px rgba(79, 43, 203, 0.08)',
+          position: 'relative',
+          height: { xs: 270, sm: 320, md: 350 },
+          backgroundImage: `linear-gradient(180deg, rgba(15, 10, 40, 0.15) 0%, rgba(15, 10, 40, 0.88) 100%), url(${coverUrl})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          p: { xs: 2.5, sm: 3.5 },
+          boxSizing: 'border-box',
         }}
       >
-        {/* Cover Image */}
-        <Box
-          sx={{
-            height: { xs: 180, sm: 260, md: 320 },
-            width: '100%',
-            position: 'relative',
-            backgroundImage: `linear-gradient(to bottom, rgba(15, 10, 40, 0.15), rgba(15, 10, 40, 0.75)), url(${coverUrl})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-          }}
-        >
-          <Box sx={{ position: 'absolute', top: 20, right: 20, display: 'flex', gap: 1 }}>
-            {club?.category && (
-              <Chip
-                label={club.category}
-                sx={{
-                  backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                  color: '#4F2BCB',
-                  fontWeight: 800,
-                  fontSize: '0.82rem',
-                  backdropFilter: 'blur(8px)',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                }}
-              />
-            )}
-            {isClubManager && (
-              <Chip
-                icon={<EditOutlinedIcon style={{ fontSize: 16, color: '#4F2BCB' }} />}
-                label="Edit Cover"
-                clickable
-                onClick={() => setEditModalOpen(true)}
-                sx={{
-                  backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                  color: '#4F2BCB',
-                  fontWeight: 800,
-                  fontSize: '0.82rem',
-                  backdropFilter: 'blur(8px)',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                }}
-              />
-            )}
-          </Box>
+        <Box display="flex" justifyContent="flex-end" gap={1}>
+          {club?.category && (
+            <Chip
+              label={club.category}
+              sx={{
+                backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                color: '#4F2BCB',
+                fontWeight: 800,
+                fontSize: '0.82rem',
+                backdropFilter: 'blur(8px)',
+              }}
+            />
+          )}
+          {isClubManager && (
+            <Chip
+              icon={<EditOutlinedIcon style={{ fontSize: 16, color: '#4F2BCB' }} />}
+              label="Edit Media"
+              clickable
+              onClick={() => setEditModalOpen(true)}
+              sx={{
+                backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                color: '#4F2BCB',
+                fontWeight: 800,
+                fontSize: '0.82rem',
+                backdropFilter: 'blur(8px)',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+              }}
+            />
+          )}
         </Box>
 
-        {/* Club Profile Bar Overlaying Bottom of Banner */}
         <Box
           sx={{
-            px: { xs: 2.5, sm: 4 },
-            pb: 3,
-            pt: 0,
             display: 'flex',
             flexDirection: { xs: 'column', md: 'row' },
-            alignItems: { xs: 'center', md: 'flex-end' },
+            alignItems: { xs: 'flex-start', md: 'flex-end' },
             justifyContent: 'space-between',
             gap: 2.5,
+            width: '100%',
           }}
         >
-          {/* Logo + Club Titles */}
-          <Box
-            sx={{
-              display: 'flex',
-              flexDirection: { xs: 'column', sm: 'row' },
-              alignItems: { xs: 'center', sm: 'flex-end' },
-              gap: 2.5,
-              mt: { xs: -7, sm: -8 },
-              textAlign: { xs: 'center', sm: 'left' },
-            }}
-          >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5 }}>
             <Avatar
-              src={getImageUrl(club?.logo_url)}
+              src={logoUrl}
               variant="rounded"
               sx={{
-                width: { xs: 90, sm: 120 },
-                height: { xs: 90, sm: 120 },
-                borderRadius: '24px',
+                width: { xs: 72, sm: 96 },
+                height: { xs: 72, sm: 96 },
+                borderRadius: '20px',
                 backgroundColor: '#FFFFFF',
                 color: '#4F2BCB',
                 fontWeight: 900,
                 fontSize: '2.5rem',
-                border: '4px solid #FFFFFF',
-                boxShadow: '0 10px 25px rgba(0, 0, 0, 0.15)',
+                border: '3px solid #FFFFFF',
+                boxShadow: '0 10px 25px rgba(0, 0, 0, 0.3)',
                 flexShrink: 0,
               }}
             >
               {club?.name?.charAt(0).toUpperCase()}
             </Avatar>
 
-            <Box sx={{ pb: 0.5 }}>
+            <Box>
               <Typography
                 variant="h4"
                 sx={{
                   fontWeight: 900,
-                  color: '#20202A',
-                  fontSize: { xs: '1.6rem', sm: '2rem' },
+                  color: '#FFFFFF',
+                  fontSize: { xs: '1.5rem', sm: '2.1rem' },
                   letterSpacing: '-0.02em',
+                  textShadow: '0 2px 8px rgba(0, 0, 0, 0.6)',
                   mb: 0.5,
                 }}
               >
                 {club?.name}
               </Typography>
-              <Stack direction="row" spacing={1.5} alignItems="center" justifyContent={{ xs: 'center', sm: 'flex-start' }} flexWrap="wrap">
+
+              <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap">
                 <Box display="flex" alignItems="center" gap={0.6}>
-                  <GroupsOutlinedIcon sx={{ fontSize: 18, color: '#777788' }} />
-                  <Typography variant="body2" sx={{ color: '#777788', fontWeight: 600 }}>
+                  <GroupsOutlinedIcon sx={{ fontSize: 18, color: '#E0DBFF' }} />
+                  <Typography variant="body2" sx={{ color: '#F3F0FF', fontWeight: 600 }}>
                     {members.length} Members
                   </Typography>
                 </Box>
-                <Typography variant="body2" sx={{ color: '#CCD0DC' }}>•</Typography>
+                <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)' }}>•</Typography>
                 <Box display="flex" alignItems="center" gap={0.6}>
-                  <EventIcon sx={{ fontSize: 18, color: '#777788' }} />
-                  <Typography variant="body2" sx={{ color: '#777788', fontWeight: 600 }}>
+                  <EventIcon sx={{ fontSize: 18, color: '#E0DBFF' }} />
+                  <Typography variant="body2" sx={{ color: '#F3F0FF', fontWeight: 600 }}>
                     {events.length} Events
                   </Typography>
                 </Box>
+                {club?.meeting_location && (
+                  <>
+                    <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)' }}>•</Typography>
+                    <Typography variant="body2" sx={{ color: '#F3F0FF', fontWeight: 600 }}>
+                      📍 {club.meeting_location}
+                    </Typography>
+                  </>
+                )}
               </Stack>
             </Box>
           </Box>
 
-          {/* Action Buttons (Join / Leave / Pending) */}
-          <Box sx={{ alignSelf: { xs: 'center', md: 'flex-end' }, pb: 0.5 }}>
+          <Box sx={{ alignSelf: { xs: 'flex-start', md: 'flex-end' } }}>
             {isMember ? (
-              <Box display="flex" alignItems="center" gap={1.5} flexWrap="wrap" justifyContent="center">
+              <Box display="flex" alignItems="center" gap={1.5} flexWrap="wrap">
                 <Chip
                   icon={<CheckCircleOutlineIcon style={{ color: '#4F2BCB' }} />}
-                  label={`Your Role: ${(myRole || 'member').replace('_', ' ').toUpperCase()}`}
+                  label={`Role: ${(myRole || 'member').replace('_', ' ').toUpperCase()}`}
                   sx={{
-                    backgroundColor: '#F3F0FF',
+                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
                     color: '#4F2BCB',
-                    fontWeight: 700,
-                    fontSize: '0.85rem',
+                    fontWeight: 800,
+                    fontSize: '0.82rem',
+                    backdropFilter: 'blur(8px)',
                     py: 2,
                     px: 1,
                   }}
@@ -418,46 +405,43 @@ const ClubDetails = () => {
                   onClick={handleLeave}
                   disabled={actionLoading}
                   sx={{
+                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
                     color: '#EF4444',
                     borderColor: '#FECACA',
                     borderRadius: '10px',
                     px: 2.5,
                     py: 0.8,
-                    '&:hover': { backgroundColor: '#FEF2F2', borderColor: '#EF4444' },
+                    fontWeight: 700,
+                    '&:hover': { backgroundColor: '#FFFFFF', borderColor: '#EF4444' },
                   }}
                 >
                   {actionLoading ? 'Leaving...' : 'Leave Club'}
                 </Button>
               </Box>
             ) : myRequest?.status === 'PENDING' ? (
-              <Box display="flex" flexDirection="column" gap={0.5} alignItems={{ xs: 'center', md: 'flex-end' }}>
-                <Chip
-                  icon={<HourglassEmptyIcon style={{ color: '#B45309' }} />}
-                  label="Request Pending Review"
-                  sx={{
-                    backgroundColor: '#FEF3C7',
-                    color: '#B45309',
-                    fontWeight: 700,
-                    fontSize: '0.85rem',
-                    py: 2,
-                    px: 1.5,
-                    borderRadius: '12px',
-                  }}
-                />
-                <Typography variant="caption" sx={{ color: '#777788', fontStyle: 'italic' }}>
-                  Awaiting review by President/Secretary
-                </Typography>
-              </Box>
+              <Chip
+                icon={<HourglassEmptyIcon style={{ color: '#B45309' }} />}
+                label="Request Pending Review"
+                sx={{
+                  backgroundColor: 'rgba(254, 243, 199, 0.95)',
+                  color: '#B45309',
+                  fontWeight: 800,
+                  fontSize: '0.85rem',
+                  py: 2,
+                  px: 1.5,
+                  borderRadius: '12px',
+                  backdropFilter: 'blur(8px)',
+                }}
+              />
             ) : myRequest?.status === 'REJECTED' ? (
               <Box display="flex" alignItems="center" gap={1.5}>
                 <Chip
                   icon={<CancelOutlinedIcon style={{ color: '#DC2626' }} />}
-                  label="Request Declined"
+                  label="Declined"
                   sx={{
-                    backgroundColor: '#FEE2E2',
+                    backgroundColor: 'rgba(254, 226, 226, 0.95)',
                     color: '#DC2626',
-                    fontWeight: 700,
-                    fontSize: '0.85rem',
+                    fontWeight: 800,
                   }}
                 />
                 <Button
@@ -470,12 +454,10 @@ const ClubDetails = () => {
                     borderRadius: '10px',
                     px: 3,
                     py: 0.8,
-                    fontWeight: 600,
-                    fontSize: '0.85rem',
-                    '&:hover': { backgroundColor: '#39209A' },
+                    fontWeight: 700,
                   }}
                 >
-                  {actionLoading ? 'Submitting...' : 'Reapply to Join'}
+                  {actionLoading ? 'Submitting...' : 'Reapply'}
                 </Button>
               </Box>
             ) : (
@@ -489,9 +471,9 @@ const ClubDetails = () => {
                   borderRadius: '12px',
                   px: 4,
                   py: 1.2,
-                  fontWeight: 700,
+                  fontWeight: 800,
                   fontSize: '0.95rem',
-                  boxShadow: '0 4px 15px rgba(79, 43, 203, 0.3)',
+                  boxShadow: '0 4px 15px rgba(79, 43, 203, 0.4)',
                   '&:hover': { backgroundColor: '#39209A' },
                 }}
               >
@@ -502,13 +484,9 @@ const ClubDetails = () => {
         </Box>
       </Paper>
 
-      {/* ========================================================================= */}
-      {/* 2. MAIN GRID (ABOUT US, LEADERSHIP TEAM, GALLERY, CONTACT)                */}
-      {/* ========================================================================= */}
+      {/* 2. MAIN GRID (ABOUT US, LEADERSHIP TEAM, GALLERY, CONTACT) */}
       <Grid container spacing={3.5} mb={5}>
-        {/* Left Column: About Us & Leadership Team */}
         <Grid item xs={12} md={7} lg={8}>
-          {/* About Us */}
           <Paper
             elevation={0}
             sx={{
@@ -541,7 +519,6 @@ const ClubDetails = () => {
             </Typography>
           </Paper>
 
-          {/* Leadership Team */}
           <Paper
             elevation={0}
             sx={{
@@ -643,9 +620,7 @@ const ClubDetails = () => {
           </Paper>
         </Grid>
 
-        {/* Right Column: Gallery & Contact Info */}
         <Grid item xs={12} md={5} lg={4}>
-          {/* Gallery */}
           <Paper
             elevation={0}
             sx={{
@@ -708,7 +683,6 @@ const ClubDetails = () => {
             </Grid>
           </Paper>
 
-          {/* Contact Details */}
           <Paper
             elevation={0}
             sx={{
@@ -776,9 +750,7 @@ const ClubDetails = () => {
         </Grid>
       </Grid>
 
-      {/* ========================================================================= */}
-      {/* 3. TABS: EVENTS & MEMBER ROSTER                                           */}
-      {/* ========================================================================= */}
+      {/* 3. TABS: EVENTS & MEMBER ROSTER */}
       <Box sx={{ borderBottom: 1, borderColor: '#E9E7F2', mb: 3 }}>
         <Tabs
           value={activeTab}

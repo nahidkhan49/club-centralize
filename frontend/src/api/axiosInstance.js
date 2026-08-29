@@ -53,5 +53,34 @@ export const getImageUrl = (path) => {
   return `${base}${cleanPath}`;
 };
 
+export const getClubLogoUrl = (club) => {
+  if (club?.logo_url) {
+    return getImageUrl(club.logo_url);
+  }
+  const name = (club?.name || '').toLowerCase();
+  if (name.includes('computer') || name.includes('cse') || name.includes('tech') || name.includes('code') || name.includes('it')) {
+    return 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=240&q=80';
+  }
+  if (name.includes('english') || name.includes('language') || name.includes('literature')) {
+    return 'https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=240&q=80';
+  }
+  if (name.includes('debate') || name.includes('speaking')) {
+    return 'https://images.unsplash.com/photo-1475721027785-f74eccf877e2?auto=format&fit=crop&w=240&q=80';
+  }
+  if (name.includes('photo') || name.includes('film') || name.includes('media')) {
+    return 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=240&q=80';
+  }
+  if (name.includes('robot') || name.includes('ieee') || name.includes('engineer')) {
+    return 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&w=240&q=80';
+  }
+  if (name.includes('cultural') || name.includes('music') || name.includes('drama') || name.includes('art')) {
+    return 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=240&q=80';
+  }
+  if (name.includes('business') || name.includes('entrepreneur') || name.includes('career')) {
+    return 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=240&q=80';
+  }
+  return 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=240&q=80';
+};
+
 export { getBaseURL };
 export default api;

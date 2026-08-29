@@ -8,6 +8,7 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import DeveloperIllustration from '../components/DeveloperIllustration';
+import WelcomeBanner from '../components/WelcomeBanner';
 import { useAuth } from '../context/AuthContext';
 import { useSiteSettings } from '../context/SiteSettingsContext';
 
@@ -48,8 +49,8 @@ const actionCards = [
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const { systemRole, loading } = useAuth();
-  const { siteName, siteLogo, tagline } = useSiteSettings();
+  const { user, systemRole, loading } = useAuth();
+  const { siteName, siteLogo, tagline, welcomeBannerEnabled } = useSiteSettings();
 
   React.useEffect(() => {
     if (!loading) {
@@ -65,8 +66,11 @@ export default function Dashboard() {
 
   return (
     <Box sx={{ maxWidth: 1200, mx: 'auto', py: 2 }}>
-      {/* Top Banner Card */}
-      <Card
+      {welcomeBannerEnabled ? (
+        <WelcomeBanner username={user?.username} roleLabel="Campus Member" />
+      ) : (
+        /* Top Banner Card */
+        <Card
         elevation={0}
         sx={{
           p: { xs: 3, md: 5 },
@@ -184,6 +188,7 @@ export default function Dashboard() {
           </Grid>
         </Grid>
       </Card>
+      )}
 
       {/* Action Cards Grid */}
       <Grid container spacing={3}>

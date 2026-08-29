@@ -23,6 +23,7 @@ import { useSiteSettings } from '../../context/SiteSettingsContext';
 import { fetchClubStats } from '../../api/adminApi';
 import api, { getImageUrl, getClubLogoUrl } from '../../api/axiosInstance';
 import Button from '../../components/Button';
+import WelcomeBanner from '../../components/WelcomeBanner';
 
 const SecretaryDashboard = () => {
   const { user, secretaryOfClubs } = useAuth();
@@ -77,28 +78,31 @@ const SecretaryDashboard = () => {
     );
   }
 
-  const { siteName, siteLogo } = useSiteSettings();
+  const { siteName, siteLogo, welcomeBannerEnabled } = useSiteSettings();
 
   return (
     <Box sx={{ maxWidth: 1150, mx: 'auto', pb: 5 }}>
-      {/* 1. Purple Welcome Banner with Site and Club Logo */}
-      <Box
-        sx={{
-          background: 'linear-gradient(135deg, #7C3AED 0%, #4F2BCB 100%)',
-          borderRadius: '24px',
-          p: { xs: 3, sm: 4, md: 4.5 },
-          mb: 4,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: 2.5,
-          color: '#FFFFFF',
-          boxShadow: '0 10px 30px rgba(124, 58, 237, 0.25)',
-          position: 'relative',
-          overflow: 'hidden',
-        }}
-      >
+      {welcomeBannerEnabled ? (
+        <WelcomeBanner username={user?.username} roleLabel="Club Secretary" />
+      ) : (
+        /* 1. Purple Welcome Banner with Site and Club Logo */
+        <Box
+          sx={{
+            background: 'linear-gradient(135deg, #7C3AED 0%, #4F2BCB 100%)',
+            borderRadius: '24px',
+            p: { xs: 3, sm: 4, md: 4.5 },
+            mb: 4,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: 2.5,
+            color: '#FFFFFF',
+            boxShadow: '0 10px 30px rgba(124, 58, 237, 0.25)',
+            position: 'relative',
+            overflow: 'hidden',
+          }}
+        >
         <Box sx={{ zIndex: 1, flex: 1, minWidth: 260 }}>
           <Box display="flex" alignItems="center" gap={1.2} mb={1}>
             <Avatar
@@ -162,6 +166,7 @@ const SecretaryDashboard = () => {
           {club?.name?.charAt(0).toUpperCase() || <GroupsOutlinedIcon sx={{ fontSize: 38 }} />}
         </Avatar>
       </Box>
+      )}
 
       {error && <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>{error}</Alert>}
 

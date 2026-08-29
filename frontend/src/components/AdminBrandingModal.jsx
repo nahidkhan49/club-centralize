@@ -14,11 +14,14 @@ import {
   Paper,
   Stack,
   Divider,
+  FormControlLabel,
+  Switch,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import CloudUploadOutlinedIcon from '@mui/icons-material/CloudUploadOutlined';
 import BrandingWatermarkOutlinedIcon from '@mui/icons-material/BrandingWatermarkOutlined';
 import AndroidIcon from '@mui/icons-material/Android';
+import PhotoSizeSelectActualIcon from '@mui/icons-material/PhotoSizeSelectActual';
 
 import { useSiteSettings } from '../context/SiteSettingsContext';
 import { uploadImage } from '../api/adminApi';
@@ -27,7 +30,19 @@ import { getImageUrl } from '../api/axiosInstance';
 import Button from './Button';
 
 const AdminBrandingModal = ({ open, onClose }) => {
-  const { siteName, rawSiteLogo, tagline, rawApkUrl, appVersion, updateBranding } = useSiteSettings();
+  const {
+    siteName,
+    rawSiteLogo,
+    tagline,
+    rawApkUrl,
+    appVersion,
+    welcomeBannerImage,
+    rawWelcomeBannerImage,
+    welcomeBannerTitle,
+    welcomeBannerSubtitle,
+    welcomeBannerEnabled,
+    updateBranding,
+  } = useSiteSettings();
 
   const [name, setName] = useState(siteName);
   const [logo, setLogo] = useState(rawSiteLogo);
@@ -35,7 +50,14 @@ const AdminBrandingModal = ({ open, onClose }) => {
   const [apk, setApk] = useState(rawApkUrl);
   const [version, setVersion] = useState(appVersion || '1.0.0');
 
+  // Custom Welcome Banner states
+  const [bannerEnabled, setBannerEnabled] = useState(welcomeBannerEnabled);
+  const [bannerImage, setBannerImage] = useState(rawWelcomeBannerImage);
+  const [bannerTitle, setBannerTitle] = useState(welcomeBannerTitle);
+  const [bannerSubtitle, setBannerSubtitle] = useState(welcomeBannerSubtitle);
+
   const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
   const [uploadingApkFile, setUploadingApkFile] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -48,10 +70,14 @@ const AdminBrandingModal = ({ open, onClose }) => {
       setSiteTagline(tagline);
       setApk(rawApkUrl);
       setVersion(appVersion || '1.0.0');
+      setBannerEnabled(welcomeBannerEnabled);
+      setBannerImage(rawWelcomeBannerImage);
+      setBannerTitle(welcomeBannerTitle);
+      setBannerSubtitle(welcomeBannerSubtitle);
       setError('');
       setSuccess('');
     }
-  }, [open, siteName, rawSiteLogo, tagline, rawApkUrl, appVersion]);
+  }, [open, siteName, rawSiteLogo, tagline, rawApkUrl, appVersion, welcomeBannerEnabled, rawWelcomeBannerImage, welcomeBannerTitle, welcomeBannerSubtitle]);
 
   const handleLogoUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -66,6 +92,22 @@ const AdminBrandingModal = ({ open, onClose }) => {
       setError(err?.response?.data?.detail || 'Failed to upload logo.');
     } finally {
       setUploadingLogo(false);
+    }
+  };
+
+  const handleBannerUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingBanner(true);
+    setError('');
+    try {
+      const res = await uploadImage(file);
+      setBannerImage(res.url);
+      setSuccess('Banner image uploaded successfully!');
+    } catch (err) {
+      setError(err?.response?.data?.detail || 'Failed to upload banner image.');
+    } finally {
+      setUploadingBanner(false);
     }
   };
 
@@ -100,8 +142,12 @@ const AdminBrandingModal = ({ open, onClose }) => {
         tagline: siteTagline.trim(),
         apk_url: apk.trim(),
         app_version: version.trim(),
+        welcome_banner_image: bannerImage.trim(),
+        welcome_banner_title: bannerTitle.trim(),
+        welcome_banner_subtitle: bannerSubtitle.trim(),
+        welcome_banner_enabled: bannerEnabled,
       });
-      setSuccess('Website branding & mobile settings updated successfully!');
+      setSuccess('Website settings updated successfully!');
       setTimeout(() => {
         onClose();
       }, 700);
@@ -130,7 +176,7 @@ const AdminBrandingModal = ({ open, onClose }) => {
         <Box display="flex" alignItems="center" gap={1.2}>
           <BrandingWatermarkOutlinedIcon sx={{ color: '#4F2BCB' }} />
           <Typography variant="h6" sx={{ fontWeight: 800, color: '#20202A' }}>
-            Website Branding & Mobile App (.APK)
+            Website Control Panel
           </Typography>
         </Box>
         <IconButton size="small" onClick={onClose}>
@@ -208,18 +254,17 @@ const AdminBrandingModal = ({ open, onClose }) => {
             sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
           />
 
-          {/* 2. Website Name Input */}
+          {/* 2. Website Name & Tagline */}
           <TextField
             label="Website Name (Brand Title)"
             value={name}
             onChange={(e) => setName(e.target.value)}
             fullWidth
             required
-            helperText="Replaces 'Club Centralize' throughout the navbar, sidebar, and dashboard."
+            helperText="Replaces 'Club Centralize' throughout the website."
             sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
           />
 
-          {/* 3. Website Tagline */}
           <TextField
             label="Website Tagline / University Subtitle"
             value={siteTagline}
@@ -228,6 +273,106 @@ const AdminBrandingModal = ({ open, onClose }) => {
             helperText="Optional subtitle displayed below the site brand."
             sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
           />
+
+          <Divider sx={{ my: 0.5 }} />
+
+          {/* 3. Welcome Banner Settings (Admin customization requested by user) */}
+          <Paper
+            elevation={0}
+            sx={{
+              p: 2.5,
+              borderRadius: '16px',
+              border: '1px solid #E9E7F2',
+              backgroundColor: '#FBFBFE',
+            }}
+          >
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+              <Box display="flex" alignItems="center" gap={1.2}>
+                <PhotoSizeSelectActualIcon sx={{ color: '#4F2BCB' }} />
+                <Box>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#20202A' }}>
+                    Dashboard Welcome Banner
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: '#777788' }}>
+                    Custom banner displayed at the top of all dashboards.
+                  </Typography>
+                </Box>
+              </Box>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={bannerEnabled}
+                    onChange={(e) => setBannerEnabled(e.target.checked)}
+                    color="primary"
+                  />
+                }
+                label={bannerEnabled ? "Enabled" : "Disabled"}
+                sx={{ mr: 0 }}
+              />
+            </Box>
+
+            {bannerEnabled && (
+              <Stack spacing={2} mt={1}>
+                <Box display="flex" alignItems="center" gap={2}>
+                  <Box
+                    component="img"
+                    src={getImageUrl(bannerImage)}
+                    alt="Banner Preview"
+                    sx={{
+                      width: 100,
+                      height: 56,
+                      objectFit: 'cover',
+                      borderRadius: '8px',
+                      border: '1px solid #E9E7F2',
+                      backgroundColor: '#FFFFFF',
+                    }}
+                  />
+                  <Button
+                    variant="ghost"
+                    size="small"
+                    component="label"
+                    startIcon={uploadingBanner ? <CircularProgress size={16} /> : <CloudUploadOutlinedIcon />}
+                    disabled={uploadingBanner}
+                    sx={{ color: '#4F2BCB', borderColor: '#D4CCF7', fontSize: '0.78rem' }}
+                  >
+                    {uploadingBanner ? 'Uploading...' : 'Upload Banner'}
+                    <input type="file" hidden accept="image/*" onChange={handleBannerUpload} />
+                  </Button>
+                </Box>
+
+                <TextField
+                  label="Banner Background Image URL"
+                  value={bannerImage}
+                  onChange={(e) => setBannerImage(e.target.value)}
+                  fullWidth
+                  size="small"
+                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
+                />
+
+                <TextField
+                  label="Welcome Banner Title"
+                  value={bannerTitle}
+                  onChange={(e) => setBannerTitle(e.target.value)}
+                  fullWidth
+                  size="small"
+                  placeholder="e.g. Welcome to Club Centralize"
+                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
+                />
+
+                <TextField
+                  label="Welcome Banner Subtitle"
+                  value={bannerSubtitle}
+                  onChange={(e) => setBannerSubtitle(e.target.value)}
+                  fullWidth
+                  size="small"
+                  multiline
+                  rows={2}
+                  placeholder="Enter custom banner subtitle description..."
+                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
+                />
+              </Stack>
+            )}
+          </Paper>
 
           <Divider sx={{ my: 0.5 }} />
 
@@ -299,10 +444,10 @@ const AdminBrandingModal = ({ open, onClose }) => {
         <Button
           variant="primary"
           onClick={handleSave}
-          disabled={saving || uploadingLogo || uploadingApkFile}
+          disabled={saving || uploadingLogo || uploadingBanner || uploadingApkFile}
           sx={{ backgroundColor: '#4F2BCB', px: 3 }}
         >
-          {saving ? 'Saving...' : 'Save Branding & Mobile Settings'}
+          {saving ? 'Saving...' : 'Save Site Settings'}
         </Button>
       </DialogActions>
     </Dialog>

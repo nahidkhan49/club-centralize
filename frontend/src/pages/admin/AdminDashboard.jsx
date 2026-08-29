@@ -27,10 +27,11 @@ import { getClubLogoUrl } from '../../api/axiosInstance';
 import StatCard from '../../components/StatCard';
 import Button from '../../components/Button';
 import AdminBrandingModal from '../../components/AdminBrandingModal';
+import WelcomeBanner from '../../components/WelcomeBanner';
 
 const AdminDashboard = () => {
   const { user } = useAuth();
-  const { siteName, siteLogo } = useSiteSettings();
+  const { siteName, siteLogo, welcomeBannerEnabled } = useSiteSettings();
   const navigate = useNavigate();
   const [stats, setStats] = useState(null);
   const [clubs, setClubs] = useState([]);
@@ -65,75 +66,91 @@ const AdminDashboard = () => {
 
   return (
     <Box sx={{ maxWidth: 1200, mx: 'auto', pb: 6 }}>
-      {/* Welcome Banner with Website Logo & Branding Controls */}
-      <Box
-        sx={{
-          background: 'linear-gradient(135deg, #4F2BCB 0%, #6838EE 100%)',
-          borderRadius: '24px',
-          p: { xs: 3, sm: 4, md: 4.5 },
-          mb: 4,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: 2.5,
-          color: '#FFFFFF',
-          boxShadow: '0 10px 30px rgba(79, 43, 203, 0.25)',
-        }}
-      >
-        <Box sx={{ flex: 1, minWidth: 260 }}>
-          <Box display="flex" alignItems="center" gap={1} mb={0.8}>
-            <AdminPanelSettingsOutlinedIcon sx={{ fontSize: 20, opacity: 0.9 }} />
-            <Typography sx={{ fontWeight: 700, fontSize: '0.85rem', opacity: 0.9, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Website Administrator
+      {/* Admin Quick Settings Bar */}
+      <Box display="flex" justifyContent="flex-end" mb={2}>
+        <Button
+          variant="ghost"
+          startIcon={<BrandingWatermarkOutlinedIcon />}
+          onClick={() => setBrandingModalOpen(true)}
+          sx={{ color: '#4F2BCB', borderColor: '#D4CCF7', fontSize: '0.85rem' }}
+        >
+          Customize Site & Banner
+        </Button>
+      </Box>
+
+      {welcomeBannerEnabled ? (
+        <WelcomeBanner username={user?.username} roleLabel="Platform Admin" />
+      ) : (
+        /* Welcome Banner with Website Logo & Branding Controls */
+        <Box
+          sx={{
+            background: 'linear-gradient(135deg, #4F2BCB 0%, #6838EE 100%)',
+            borderRadius: '24px',
+            p: { xs: 3, sm: 4, md: 4.5 },
+            mb: 4,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: 2.5,
+            color: '#FFFFFF',
+            boxShadow: '0 10px 30px rgba(79, 43, 203, 0.25)',
+          }}
+        >
+          <Box sx={{ flex: 1, minWidth: 260 }}>
+            <Box display="flex" alignItems="center" gap={1} mb={0.8}>
+              <AdminPanelSettingsOutlinedIcon sx={{ fontSize: 20, opacity: 0.9 }} />
+              <Typography sx={{ fontWeight: 700, fontSize: '0.85rem', opacity: 0.9, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Website Administrator
+              </Typography>
+            </Box>
+            <Typography variant="h4" sx={{ fontWeight: 900, fontSize: { xs: '1.6rem', sm: '2.1rem' }, mb: 0.8 }}>
+              Welcome to {siteName}, {user?.username}! 👋
+            </Typography>
+            <Typography sx={{ opacity: 0.9, fontSize: '0.95rem', fontWeight: 500 }}>
+              Platform overview — manage clubs, users, branding, events, and announcements.
             </Typography>
           </Box>
-          <Typography variant="h4" sx={{ fontWeight: 900, fontSize: { xs: '1.6rem', sm: '2.1rem' }, mb: 0.8 }}>
-            Welcome to {siteName}, {user?.username}! 👋
-          </Typography>
-          <Typography sx={{ opacity: 0.9, fontSize: '0.95rem', fontWeight: 500 }}>
-            Platform overview — manage clubs, users, branding, events, and announcements.
-          </Typography>
+
+          <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
+            <Button
+              variant="ghost"
+              startIcon={<BrandingWatermarkOutlinedIcon />}
+              onClick={() => setBrandingModalOpen(true)}
+              sx={{
+                backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                color: '#FFFFFF',
+                borderColor: 'rgba(255, 255, 255, 0.4)',
+                fontWeight: 700,
+                fontSize: '0.85rem',
+                backdropFilter: 'blur(8px)',
+                '&:hover': { backgroundColor: '#FFFFFF', color: '#4F2BCB' },
+              }}
+            >
+              Edit Website Name & Logo
+            </Button>
+
+            <Avatar
+              src={siteLogo}
+              variant="rounded"
+              sx={{
+                width: { xs: 64, sm: 80 },
+                height: { xs: 64, sm: 80 },
+                borderRadius: '20px',
+                backgroundColor: '#FFFFFF',
+                color: '#4F2BCB',
+                fontWeight: 900,
+                fontSize: '2rem',
+                border: '3px solid rgba(255,255,255,0.6)',
+                boxShadow: '0 8px 25px rgba(0,0,0,0.2)',
+                flexShrink: 0,
+              }}
+            >
+              {siteName?.charAt(0).toUpperCase()}
+            </Avatar>
+          </Stack>
         </Box>
-
-        <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
-          <Button
-            variant="ghost"
-            startIcon={<BrandingWatermarkOutlinedIcon />}
-            onClick={() => setBrandingModalOpen(true)}
-            sx={{
-              backgroundColor: 'rgba(255, 255, 255, 0.15)',
-              color: '#FFFFFF',
-              borderColor: 'rgba(255, 255, 255, 0.4)',
-              fontWeight: 700,
-              fontSize: '0.85rem',
-              backdropFilter: 'blur(8px)',
-              '&:hover': { backgroundColor: '#FFFFFF', color: '#4F2BCB' },
-            }}
-          >
-            Edit Website Name & Logo
-          </Button>
-
-          <Avatar
-            src={siteLogo}
-            variant="rounded"
-            sx={{
-              width: { xs: 64, sm: 80 },
-              height: { xs: 64, sm: 80 },
-              borderRadius: '20px',
-              backgroundColor: '#FFFFFF',
-              color: '#4F2BCB',
-              fontWeight: 900,
-              fontSize: '2rem',
-              border: '3px solid rgba(255,255,255,0.6)',
-              boxShadow: '0 8px 25px rgba(0,0,0,0.2)',
-              flexShrink: 0,
-            }}
-          >
-            {siteName?.charAt(0).toUpperCase()}
-          </Avatar>
-        </Stack>
-      </Box>
+      )}
 
       {/* Stats Grid */}
       <Typography variant="h6" sx={{ fontWeight: 800, color: '#20202A', mb: 2.5 }}>

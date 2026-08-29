@@ -17,7 +17,11 @@ DEFAULT_BRANDING = {
     "site_logo": "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=200&q=80",
     "tagline": "Empowering Campus Student Organizations",
     "apk_url": "/static/uploads/club-centralize.apk",
-    "app_version": "1.0.0"
+    "app_version": "1.0.0",
+    "welcome_banner_image": "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=1200&q=80",
+    "welcome_banner_title": "Welcome to Club Centralize",
+    "welcome_banner_subtitle": "Your centralized hub for campus life, events, and student organizations.",
+    "welcome_banner_enabled": True
 }
 
 
@@ -27,6 +31,10 @@ class BrandingSettings(BaseModel):
     tagline: str | None = None
     apk_url: str | None = None
     app_version: str | None = None
+    welcome_banner_image: str | None = None
+    welcome_banner_title: str | None = None
+    welcome_banner_subtitle: str | None = None
+    welcome_banner_enabled: bool = True
 
 
 @router.get("/branding", response_model=BrandingSettings)

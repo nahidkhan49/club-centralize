@@ -181,3 +181,39 @@ def get_chat_participants(
     from datetime import datetime
     participants.sort(key=lambda x: x.last_message_time or datetime.min, reverse=True)
     return participants
+
+
+@router.delete("/{club_id}/messages")
+def delete_club_messages(
+    club_id: int,
+    user_id: int | None = None,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Delete all messages in a chat conversation channel."""
+    club = db.query(Club).filter(Club.id == club_id).first()
+    if not club:
+        raise HTTPException(status_code=404, detail="Club not found")
+
+    is_officer = _is_club_officer(club_id, current_user, db)
+
+    # Determine whose conversation is being deleted
+    if is_officer:
+        if user_id is None:
+            raise HTTPException(status_code=400, detail="Officer must specify user_id of the member to delete chat")
+        target_user_id = user_id
+    else:
+        # Member can only delete their own chat
+        if not _is_club_member(club_id, current_user, db):
+            raise HTTPException(status_code=403, detail="You are not a member of this club")
+        target_user_id = current_user.id
+
+    # Delete all messages in the channel
+    deleted_count = (
+        db.query(ClubMessage)
+        .filter(ClubMessage.club_id == club_id, ClubMessage.user_id == target_user_id)
+        .delete(synchronize_session=False)
+    )
+    db.commit()
+
+    return {"message": f"Successfully deleted {deleted_count} messages."}

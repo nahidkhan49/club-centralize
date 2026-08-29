@@ -163,4 +163,11 @@ export const fetchChatParticipants = async (clubId) => {
   return res.data;
 };
 
+/** Clear/Delete all messages in a chat conversation channel. */
+export const clearClubMessages = async (clubId, userId = null) => {
+  const url = userId ? `/clubs/${clubId}/messages?user_id=${userId}` : `/clubs/${clubId}/messages`;
+  const res = await api.delete(url);
+  return res.data;
+};
+
 

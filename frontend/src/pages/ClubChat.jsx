@@ -26,9 +26,10 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ForumIcon from '@mui/icons-material/Forum';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import MarkChatUnreadIcon from '@mui/icons-material/MarkChatUnread';
+import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
 
 import { useAuth } from '../context/AuthContext';
-import { fetchClubMessages, sendClubMessage, fetchChatParticipants } from '../api/adminApi';
+import { fetchClubMessages, sendClubMessage, fetchChatParticipants, clearClubMessages } from '../api/adminApi';
 import api, { getImageUrl } from '../api/axiosInstance';
 
 const ClubChat = () => {
@@ -161,6 +162,30 @@ const ClubChat = () => {
       setError('Failed to send message.');
     } finally {
       setSending(false);
+    }
+  };
+
+  const handleDeleteChat = async () => {
+    if (!window.confirm("Are you sure you want to delete this entire chat conversation? This action is permanent and cannot be undone.")) {
+      return;
+    }
+    try {
+      const targetUserId = isOfficer ? selectedUser?.user_id : null;
+      await clearClubMessages(clubId, targetUserId);
+      setMessages([]);
+      
+      // Update last message preview in roster list if officer
+      if (isOfficer && selectedUser) {
+        setParticipants((prev) =>
+          prev.map((p) =>
+            p.user_id === selectedUser.user_id
+              ? { ...p, last_message: null, last_message_time: null }
+              : p
+          )
+        );
+      }
+    } catch (err) {
+      setError('Failed to clear conversation.');
     }
   };
 
@@ -337,28 +362,46 @@ const ClubChat = () => {
               }}
             >
               {/* Conversation Header */}
-              <Box p={2} sx={{ backgroundColor: '#FBFBFE', borderBottom: '1px solid #F0EFF8', display: 'flex', alignItems: 'center', gap: 1.5, flexShrink: 0 }}>
-                {isMobile && isOfficer && (
-                  <IconButton onClick={() => setMobileView('list')} sx={{ color: '#4F2BCB', p: 0.5, mr: 0.5 }}>
-                    <ArrowBackIcon />
+              <Box p={2} sx={{ backgroundColor: '#FBFBFE', borderBottom: '1px solid #F0EFF8', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+                <Box display="flex" alignItems="center" gap={1.5}>
+                  {isMobile && isOfficer && (
+                    <IconButton onClick={() => setMobileView('list')} sx={{ color: '#4F2BCB', p: 0.5, mr: 0.5 }}>
+                      <ArrowBackIcon />
+                    </IconButton>
+                  )}
+                  <Avatar
+                    src={isOfficer ? getImageUrl(selectedUser?.avatar_url) : getImageUrl(club?.logo_url)}
+                    sx={{ width: 34, height: 34, backgroundColor: '#EAEAFF', color: '#4F2BCB', fontWeight: 800 }}
+                  >
+                    {isOfficer ? selectedUser?.username?.charAt(0).toUpperCase() : club?.name?.charAt(0).toUpperCase()}
+                  </Avatar>
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#20202A' }}>
+                      {isOfficer ? selectedUser?.username : `Club Officers (${club?.name})`}
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: '#059669', display: 'flex', alignItems: 'center', gap: 0.5, fontWeight: 700 }}>
+                      <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: '#10B981', display: 'inline-block' }}></span>
+                      Active Persistent Session
+                    </Typography>
+                  </Box>
+                </Box>
+
+                {/* Delete Conversation Button */}
+                <Tooltip title="Delete Conversation History">
+                  <IconButton
+                    onClick={handleDeleteChat}
+                    disabled={messages.length === 0}
+                    sx={{
+                      color: '#EF4444',
+                      backgroundColor: '#FEF2F2',
+                      '&:hover': { backgroundColor: '#FEE2E2' },
+                      '&.Mui-disabled': { backgroundColor: 'transparent', color: '#C4C4D4' }
+                    }}
+                  >
+                    <DeleteOutlinedIcon />
                   </IconButton>
-                )}
-                <Avatar
-                  src={isOfficer ? getImageUrl(selectedUser?.avatar_url) : getImageUrl(club?.logo_url)}
-                  sx={{ width: 34, height: 34, backgroundColor: '#EAEAFF', color: '#4F2BCB', fontWeight: 800 }}
-                >
-                  {isOfficer ? selectedUser?.username?.charAt(0).toUpperCase() : club?.name?.charAt(0).toUpperCase()}
-                </Avatar>
-              <Box>
-                <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#20202A' }}>
-                  {isOfficer ? selectedUser?.username : `Club Officers (${club?.name})`}
-                </Typography>
-                <Typography variant="caption" sx={{ color: '#059669', display: 'flex', alignItems: 'center', gap: 0.5, fontWeight: 700 }}>
-                  <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: '#10B981', display: 'inline-block' }}></span>
-                  Active Persistent Session
-                </Typography>
+                </Tooltip>
               </Box>
-            </Box>
 
             {/* Messages Viewport */}
             <Box sx={{ flex: 1, p: 3, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 2, backgroundColor: '#FAFAFD' }}>

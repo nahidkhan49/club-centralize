@@ -12,15 +12,24 @@ import {
   Tabs,
   Tab,
   Divider,
+  Stack,
+  Tooltip,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import AddIcon from '@mui/icons-material/Add';
 import EventIcon from '@mui/icons-material/Event';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
+import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined';
+import GroupsOutlinedIcon from '@mui/icons-material/GroupsOutlined';
+import CollectionsOutlinedIcon from '@mui/icons-material/CollectionsOutlined';
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutlined';
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
+import AdminPanelSettingsOutlinedIcon from '@mui/icons-material/AdminPanelSettingsOutlined';
+import AccessTimeOutlinedIcon from '@mui/icons-material/AccessTimeOutlined';
+import MeetingRoomOutlinedIcon from '@mui/icons-material/MeetingRoomOutlined';
+
 import api from '../api/axiosInstance';
 import { fetchEventsByClub } from '../api/eventApi';
 import { fetchMyClubRequest, requestJoinClub, leaveClub } from '../api/adminApi';
@@ -35,6 +44,34 @@ const ROLE_CONFIGS = {
   treasurer: { label: 'Treasurer', bg: '#E6F4EA', color: '#15803D' },
   member: { label: 'Member', bg: '#F1F5F9', color: '#475569' },
 };
+
+// Fallback high-quality cover photos based on club category
+const DEFAULT_COVERS = [
+  'https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1600&q=80',
+  'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1600&q=80',
+  'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=1600&q=80',
+  'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&w=1600&q=80',
+];
+
+// Fallback gallery photos showcasing vibrant university club activities
+const GALLERY_ITEMS = [
+  {
+    url: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=600&q=80',
+    title: 'Annual General Meeting',
+  },
+  {
+    url: 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?auto=format&fit=crop&w=600&q=80',
+    title: 'Interactive Workshop',
+  },
+  {
+    url: 'https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&w=600&q=80',
+    title: 'Hackathon & Presentations',
+  },
+  {
+    url: 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=600&q=80',
+    title: 'Club Social & Networking',
+  },
+];
 
 const ClubDetails = () => {
   const { clubId } = useParams();
@@ -111,7 +148,7 @@ const ClubDetails = () => {
       setActionLoading(true);
       setError(null);
       await requestJoinClub(clubId);
-      setSuccessMsg('Membership request submitted successfully! Pending approval from club officers.');
+      setSuccessMsg('Membership request submitted successfully! Pending approval from club leadership.');
       await Promise.all([fetchMembers(), fetchUserRequest()]);
     } catch (err) {
       setError(err?.response?.data?.detail || 'Failed to submit join request');
@@ -143,6 +180,15 @@ const ClubDetails = () => {
   const isClubManager =
     isAdmin || myRole === 'president' || myRole === 'secretary' || myRole === 'vice_president';
 
+  // Extract Leadership team
+  const leadershipRoles = ['president', 'vice_president', 'secretary', 'treasurer'];
+  const leadershipMembers = members.filter((m) => leadershipRoles.includes(m.role));
+
+  // Determine cover photo
+  const coverUrl =
+    club?.cover_url ||
+    DEFAULT_COVERS[(club?.id || 0) % DEFAULT_COVERS.length];
+
   if (loadingClub) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
@@ -163,9 +209,9 @@ const ClubDetails = () => {
   }
 
   return (
-    <Box sx={{ maxWidth: 1100, mx: 'auto', py: 2 }}>
-      {/* Top Back Link & Admin Shortcuts */}
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+    <Box sx={{ maxWidth: 1200, mx: 'auto', pb: 6 }}>
+      {/* Top Back Link & Shortcuts */}
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2.5}>
         <Box
           component={RouterLink}
           to="/clubs"
@@ -180,7 +226,7 @@ const ClubDetails = () => {
             '&:hover': { textDecoration: 'underline' },
           }}
         >
-          <ArrowBackIcon sx={{ fontSize: 18 }} /> Back to Clubs
+          <ArrowBackIcon sx={{ fontSize: 18 }} /> Back to All Clubs
         </Box>
 
         {isAdmin && (
@@ -207,115 +253,204 @@ const ClubDetails = () => {
         </Alert>
       )}
 
-      {/* Main Club Details Header */}
-      <Box
+      {/* ========================================================================= */}
+      {/* 1. HERO COVER BANNER SECTION                                             */}
+      {/* ========================================================================= */}
+      <Paper
+        elevation={0}
         sx={{
-          display: 'flex',
-          flexDirection: { xs: 'column', sm: 'row' },
-          alignItems: { xs: 'center', sm: 'flex-start' },
-          gap: 3,
+          borderRadius: '24px',
+          overflow: 'hidden',
+          border: '1px solid #E9E7F2',
+          backgroundColor: '#FFFFFF',
           mb: 4,
+          boxShadow: '0 8px 30px rgba(79, 43, 203, 0.05)',
         }}
       >
-        <Avatar
-          src={club?.logo_url || ''}
-          variant="rounded"
+        {/* Cover Image */}
+        <Box
           sx={{
-            width: 100,
-            height: 100,
-            borderRadius: '20px',
-            backgroundColor: '#F3F0FF',
-            color: '#4F2BCB',
-            fontWeight: 800,
-            fontSize: '2rem',
-            border: '2px solid #E2D9FF',
-            flexShrink: 0,
-            boxShadow: '0 4px 20px rgba(79, 43, 203, 0.08)',
+            height: { xs: 180, sm: 260, md: 320 },
+            width: '100%',
+            position: 'relative',
+            backgroundImage: `linear-gradient(to bottom, rgba(15, 10, 40, 0.15), rgba(15, 10, 40, 0.75)), url(${coverUrl})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
           }}
         >
-          {club?.name?.charAt(0).toUpperCase()}
-        </Avatar>
-
-        <Box sx={{ flex: 1, textAlign: { xs: 'center', sm: 'left' } }}>
-          <Box display="flex" alignItems="center" gap={1.5} flexWrap="wrap" justifyContent={{ xs: 'center', sm: 'flex-start' }} mb={0.5}>
-            <Typography
-              variant="h4"
-              sx={{ fontWeight: 800, color: '#20202A', fontSize: { xs: '1.5rem', sm: '1.9rem' } }}
-            >
-              {club?.name}
-            </Typography>
-            {club?.category && (
+          {club?.category && (
+            <Box sx={{ position: 'absolute', top: 20, right: 20 }}>
               <Chip
                 label={club.category}
-                size="small"
                 sx={{
-                  backgroundColor: '#F3F0FF',
+                  backgroundColor: 'rgba(255, 255, 255, 0.95)',
                   color: '#4F2BCB',
-                  fontWeight: 700,
-                  fontSize: '0.75rem',
+                  fontWeight: 800,
+                  fontSize: '0.82rem',
+                  backdropFilter: 'blur(8px)',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
                 }}
               />
-            )}
-          </Box>
+            </Box>
+          )}
+        </Box>
 
-          <Typography variant="body2" sx={{ color: '#777788', mb: 2 }}>
-            {club?.description || 'University student organization.'}
-          </Typography>
+        {/* Club Profile Bar Overlaying Bottom of Banner */}
+        <Box
+          sx={{
+            px: { xs: 2.5, sm: 4 },
+            pb: 3,
+            pt: 0,
+            display: 'flex',
+            flexDirection: { xs: 'column', md: 'row' },
+            alignItems: { xs: 'center', md: 'flex-end' },
+            justifyContent: 'space-between',
+            gap: 2.5,
+          }}
+        >
+          {/* Logo + Club Titles */}
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: { xs: 'column', sm: 'row' },
+              alignItems: { xs: 'center', sm: 'flex-end' },
+              gap: 2.5,
+              mt: { xs: -7, sm: -8 },
+              textAlign: { xs: 'center', sm: 'left' },
+            }}
+          >
+            <Avatar
+              src={club?.logo_url || ''}
+              variant="rounded"
+              sx={{
+                width: { xs: 90, sm: 120 },
+                height: { xs: 90, sm: 120 },
+                borderRadius: '24px',
+                backgroundColor: '#FFFFFF',
+                color: '#4F2BCB',
+                fontWeight: 900,
+                fontSize: '2.5rem',
+                border: '4px solid #FFFFFF',
+                boxShadow: '0 10px 25px rgba(0, 0, 0, 0.15)',
+                flexShrink: 0,
+              }}
+            >
+              {club?.name?.charAt(0).toUpperCase()}
+            </Avatar>
 
-          {isMember ? (
-            <Box display="flex" alignItems="center" gap={2} justifyContent={{ xs: 'center', sm: 'flex-start' }}>
-              <Chip
-                icon={<CheckCircleOutlineIcon style={{ color: '#4F2BCB' }} />}
-                label={`Your Role: ${(myRole || 'member').replace('_', ' ').toUpperCase()}`}
-                sx={{ backgroundColor: '#F3F0FF', color: '#4F2BCB', fontWeight: 700 }}
-              />
-              <Button
-                variant="ghost"
-                onClick={handleLeave}
-                disabled={actionLoading}
+            <Box sx={{ pb: 0.5 }}>
+              <Typography
+                variant="h4"
                 sx={{
-                  color: '#EF4444',
-                  borderColor: '#E9E7F2',
-                  borderRadius: '8px',
-                  px: 2.5,
-                  py: 0.8,
-                  '&:hover': { backgroundColor: '#FEF2F2', borderColor: '#EF4444' },
+                  fontWeight: 900,
+                  color: '#20202A',
+                  fontSize: { xs: '1.6rem', sm: '2rem' },
+                  letterSpacing: '-0.02em',
+                  mb: 0.5,
                 }}
               >
-                {actionLoading ? 'Leaving...' : 'Leave Club'}
-              </Button>
-            </Box>
-          ) : myRequest?.status === 'PENDING' ? (
-            <Box display="flex" flexDirection="column" gap={1} alignItems={{ xs: 'center', sm: 'flex-start' }}>
-              <Chip
-                icon={<HourglassEmptyIcon style={{ color: '#B45309' }} />}
-                label="Request Pending Review"
-                sx={{
-                  backgroundColor: '#FEF3C7',
-                  color: '#B45309',
-                  fontWeight: 700,
-                  fontSize: '0.85rem',
-                  py: 2,
-                  px: 1,
-                  borderRadius: '10px',
-                }}
-              />
-              <Typography variant="caption" sx={{ color: '#777788', fontStyle: 'italic' }}>
-                Your join request is awaiting review by club leadership (President/Secretary).
+                {club?.name}
               </Typography>
+              <Stack direction="row" spacing={1.5} alignItems="center" justifyContent={{ xs: 'center', sm: 'flex-start' }} flexWrap="wrap">
+                <Box display="flex" alignItems="center" gap={0.6}>
+                  <GroupsOutlinedIcon sx={{ fontSize: 18, color: '#777788' }} />
+                  <Typography variant="body2" sx={{ color: '#777788', fontWeight: 600 }}>
+                    {members.length} Members
+                  </Typography>
+                </Box>
+                <Typography variant="body2" sx={{ color: '#CCD0DC' }}>•</Typography>
+                <Box display="flex" alignItems="center" gap={0.6}>
+                  <EventIcon sx={{ fontSize: 18, color: '#777788' }} />
+                  <Typography variant="body2" sx={{ color: '#777788', fontWeight: 600 }}>
+                    {events.length} Events
+                  </Typography>
+                </Box>
+              </Stack>
             </Box>
-          ) : myRequest?.status === 'REJECTED' ? (
-            <Box display="flex" alignItems="center" gap={2} flexWrap="wrap" justifyContent={{ xs: 'center', sm: 'flex-start' }}>
-              <Chip
-                icon={<CancelOutlinedIcon style={{ color: '#DC2626' }} />}
-                label="Request Declined"
-                sx={{
-                  backgroundColor: '#FEE2E2',
-                  color: '#DC2626',
-                  fontWeight: 700,
-                  fontSize: '0.85rem',
-                }}
-              />
+          </Box>
+
+          {/* Action Buttons (Join / Leave / Pending) */}
+          <Box sx={{ alignSelf: { xs: 'center', md: 'flex-end' }, pb: 0.5 }}>
+            {isMember ? (
+              <Box display="flex" alignItems="center" gap={1.5} flexWrap="wrap" justifyContent="center">
+                <Chip
+                  icon={<CheckCircleOutlineIcon style={{ color: '#4F2BCB' }} />}
+                  label={`Your Role: ${(myRole || 'member').replace('_', ' ').toUpperCase()}`}
+                  sx={{
+                    backgroundColor: '#F3F0FF',
+                    color: '#4F2BCB',
+                    fontWeight: 700,
+                    fontSize: '0.85rem',
+                    py: 2,
+                    px: 1,
+                  }}
+                />
+                <Button
+                  variant="ghost"
+                  onClick={handleLeave}
+                  disabled={actionLoading}
+                  sx={{
+                    color: '#EF4444',
+                    borderColor: '#FECACA',
+                    borderRadius: '10px',
+                    px: 2.5,
+                    py: 0.8,
+                    '&:hover': { backgroundColor: '#FEF2F2', borderColor: '#EF4444' },
+                  }}
+                >
+                  {actionLoading ? 'Leaving...' : 'Leave Club'}
+                </Button>
+              </Box>
+            ) : myRequest?.status === 'PENDING' ? (
+              <Box display="flex" flexDirection="column" gap={0.5} alignItems={{ xs: 'center', md: 'flex-end' }}>
+                <Chip
+                  icon={<HourglassEmptyIcon style={{ color: '#B45309' }} />}
+                  label="Request Pending Review"
+                  sx={{
+                    backgroundColor: '#FEF3C7',
+                    color: '#B45309',
+                    fontWeight: 700,
+                    fontSize: '0.85rem',
+                    py: 2,
+                    px: 1.5,
+                    borderRadius: '12px',
+                  }}
+                />
+                <Typography variant="caption" sx={{ color: '#777788', fontStyle: 'italic' }}>
+                  Awaiting review by President/Secretary
+                </Typography>
+              </Box>
+            ) : myRequest?.status === 'REJECTED' ? (
+              <Box display="flex" alignItems="center" gap={1.5}>
+                <Chip
+                  icon={<CancelOutlinedIcon style={{ color: '#DC2626' }} />}
+                  label="Request Declined"
+                  sx={{
+                    backgroundColor: '#FEE2E2',
+                    color: '#DC2626',
+                    fontWeight: 700,
+                    fontSize: '0.85rem',
+                  }}
+                />
+                <Button
+                  variant="primary"
+                  onClick={handleJoin}
+                  disabled={actionLoading}
+                  sx={{
+                    backgroundColor: '#4F2BCB',
+                    color: '#FFFFFF',
+                    borderRadius: '10px',
+                    px: 3,
+                    py: 0.8,
+                    fontWeight: 600,
+                    fontSize: '0.85rem',
+                    '&:hover': { backgroundColor: '#39209A' },
+                  }}
+                >
+                  {actionLoading ? 'Submitting...' : 'Reapply to Join'}
+                </Button>
+              </Box>
+            ) : (
               <Button
                 variant="primary"
                 onClick={handleJoin}
@@ -323,115 +458,259 @@ const ClubDetails = () => {
                 sx={{
                   backgroundColor: '#4F2BCB',
                   color: '#FFFFFF',
-                  borderRadius: '8px',
-                  px: 3,
-                  py: 0.8,
-                  fontWeight: 600,
-                  fontSize: '0.85rem',
+                  borderRadius: '12px',
+                  px: 4,
+                  py: 1.2,
+                  fontWeight: 700,
+                  fontSize: '0.95rem',
+                  boxShadow: '0 4px 15px rgba(79, 43, 203, 0.3)',
                   '&:hover': { backgroundColor: '#39209A' },
                 }}
               >
-                {actionLoading ? 'Submitting...' : 'Reapply to Join'}
+                {actionLoading ? 'Submitting Request...' : 'Join Club'}
               </Button>
-            </Box>
-          ) : (
-            <Button
-              variant="primary"
-              onClick={handleJoin}
-              disabled={actionLoading}
-              sx={{
-                backgroundColor: '#4F2BCB',
-                color: '#FFFFFF',
-                borderRadius: '8px',
-                px: 3.5,
-                py: 0.9,
-                fontWeight: 600,
-                fontSize: '0.9rem',
-                '&:hover': { backgroundColor: '#39209A' },
-              }}
-            >
-              {actionLoading ? 'Submitting Request...' : 'Join Club'}
-            </Button>
-          )}
+            )}
+          </Box>
         </Box>
-      </Box>
+      </Paper>
 
-      <Divider sx={{ borderColor: '#E9E7F2', mb: 4 }} />
+      {/* ========================================================================= */}
+      {/* 2. MAIN GRID (ABOUT US, LEADERSHIP TEAM, GALLERY, CONTACT)                */}
+      {/* ========================================================================= */}
+      <Grid container spacing={3.5} mb={5}>
+        {/* Left Column: About Us & Leadership Team */}
+        <Grid item xs={12} md={7} lg={8}>
+          {/* About Us */}
+          <Paper
+            elevation={0}
+            sx={{
+              p: { xs: 3, sm: 3.5 },
+              borderRadius: '20px',
+              border: '1px solid #E9E7F2',
+              backgroundColor: '#FFFFFF',
+              mb: 3.5,
+            }}
+          >
+            <Typography variant="h6" sx={{ fontWeight: 800, color: '#20202A', mb: 1.5 }}>
+              About Us
+            </Typography>
+            <Typography variant="body1" sx={{ color: '#555565', lineHeight: 1.8, fontSize: '0.96rem' }}>
+              {club?.description ||
+                'Welcome to our club! We are dedicated to bringing students together through engaging workshops, competitions, skill-building events, and community initiatives.'}
+            </Typography>
+          </Paper>
 
-      {/* Members Section */}
-      <Box sx={{ mb: 5 }}>
-        <Typography variant="h6" sx={{ fontWeight: 700, color: '#20202A', fontSize: '1.1rem', mb: 2.5 }}>
-          Club Members ({members.length})
-        </Typography>
+          {/* Leadership Team */}
+          <Paper
+            elevation={0}
+            sx={{
+              p: { xs: 3, sm: 3.5 },
+              borderRadius: '20px',
+              border: '1px solid #E9E7F2',
+              backgroundColor: '#FFFFFF',
+            }}
+          >
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2.5}>
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 800, color: '#20202A' }}>
+                  Leadership Team
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#777788' }}>
+                  Elected and appointed officers leading club operations.
+                </Typography>
+              </Box>
+              <Chip
+                label={`${leadershipMembers.length} Officers`}
+                size="small"
+                sx={{ backgroundColor: '#F3F0FF', color: '#4F2BCB', fontWeight: 700 }}
+              />
+            </Box>
 
-        {loadingMembers ? (
-          <CircularProgress sx={{ color: '#4F2BCB' }} />
-        ) : members.length === 0 ? (
-          <Typography variant="body2" sx={{ color: '#9DA0AE' }}>No members in this club yet.</Typography>
-        ) : (
-          <Grid container spacing={2.5}>
-            {members.map((member) => {
-              const roleInfo = ROLE_CONFIGS[member.role] || ROLE_CONFIGS.member;
+            {leadershipMembers.length === 0 ? (
+              <Typography variant="body2" sx={{ color: '#9DA0AE', py: 2 }}>
+                No leadership roles assigned yet.
+              </Typography>
+            ) : (
+              <Grid container spacing={2}>
+                {leadershipMembers.map((officer) => {
+                  const roleConfig = ROLE_CONFIGS[officer.role] || ROLE_CONFIGS.member;
+                  return (
+                    <Grid item xs={12} sm={6} key={officer.user_id}>
+                      <Box
+                        sx={{
+                          p: 2,
+                          borderRadius: '16px',
+                          border: '1px solid #F0EFF8',
+                          backgroundColor: '#FBFBFE',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 1.5,
+                          transition: 'all 0.2s ease',
+                          '&:hover': {
+                            backgroundColor: '#FFFFFF',
+                            boxShadow: '0 4px 15px rgba(79, 43, 203, 0.06)',
+                            borderColor: '#4F2BCB',
+                          },
+                        }}
+                      >
+                        <Avatar
+                          sx={{
+                            width: 48,
+                            height: 48,
+                            backgroundColor: '#EAEAFF',
+                            color: '#4F2BCB',
+                            fontWeight: 800,
+                            fontSize: '1.1rem',
+                          }}
+                        >
+                          {officer.username?.charAt(0).toUpperCase()}
+                        </Avatar>
+                        <Box sx={{ minWidth: 0, flex: 1 }}>
+                          <Typography
+                            variant="subtitle2"
+                            sx={{
+                              fontWeight: 700,
+                              color: '#20202A',
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                            }}
+                          >
+                            {officer.username}
+                          </Typography>
+                          <Chip
+                            label={roleConfig.label}
+                            size="small"
+                            sx={{
+                              fontSize: '0.68rem',
+                              fontWeight: 700,
+                              backgroundColor: roleConfig.bg,
+                              color: roleConfig.color,
+                              height: 20,
+                              px: 0.5,
+                              mt: 0.3,
+                            }}
+                          />
+                        </Box>
+                      </Box>
+                    </Grid>
+                  );
+                })}
+              </Grid>
+            )}
+          </Paper>
+        </Grid>
 
-              return (
-                <Grid item xs={12} sm={6} md={3} key={member.user_id}>
-                  <Paper
-                    elevation={0}
-                    sx={{
-                      p: 3,
-                      height: '100%',
-                      borderRadius: '16px',
-                      border: '1px solid #E9E7F2',
-                      backgroundColor: '#FFFFFF',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      textAlign: 'center',
-                    }}
-                  >
-                    <Avatar
+        {/* Right Column: Gallery & Contact Info */}
+        <Grid item xs={12} md={5} lg={4}>
+          {/* Gallery */}
+          <Paper
+            elevation={0}
+            sx={{
+              p: 3,
+              borderRadius: '20px',
+              border: '1px solid #E9E7F2',
+              backgroundColor: '#FFFFFF',
+              mb: 3.5,
+            }}
+          >
+            <Box display="flex" alignItems="center" gap={1} mb={2}>
+              <CollectionsOutlinedIcon sx={{ color: '#4F2BCB', fontSize: 20 }} />
+              <Typography variant="h6" sx={{ fontWeight: 800, color: '#20202A' }}>
+                Gallery
+              </Typography>
+            </Box>
+
+            <Grid container spacing={1.5}>
+              {GALLERY_ITEMS.map((item, index) => (
+                <Grid item xs={6} key={index}>
+                  <Tooltip title={item.title}>
+                    <Box
                       sx={{
-                        width: 52,
-                        height: 52,
-                        backgroundColor: '#E0DBFF',
-                        color: '#4F2BCB',
-                        fontWeight: 700,
-                        fontSize: '1.2rem',
-                        mb: 1.5,
-                      }}
-                    >
-                      {member.username?.charAt(0).toUpperCase()}
-                    </Avatar>
-
-                    <Typography
-                      variant="subtitle1"
-                      sx={{ fontWeight: 700, color: '#20202A', fontSize: '0.95rem', mb: 0.8 }}
-                    >
-                      {member.username}
-                    </Typography>
-
-                    <Chip
-                      label={roleInfo.label}
-                      size="small"
-                      sx={{
-                        fontSize: '0.72rem',
-                        fontWeight: 700,
-                        backgroundColor: roleInfo.bg,
-                        color: roleInfo.color,
+                        height: 100,
                         borderRadius: '12px',
-                        height: 24,
-                        px: 1,
+                        overflow: 'hidden',
+                        position: 'relative',
+                        cursor: 'pointer',
+                        '&:hover img': { transform: 'scale(1.08)' },
                       }}
-                    />
-                  </Paper>
+                    >
+                      <Box
+                        component="img"
+                        src={item.url}
+                        alt={item.title}
+                        sx={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                          transition: 'transform 0.3s ease',
+                        }}
+                      />
+                    </Box>
+                  </Tooltip>
                 </Grid>
-              );
-            })}
-          </Grid>
-        )}
-      </Box>
+              ))}
+            </Grid>
+          </Paper>
 
-      {/* Events Section Tabs */}
+          {/* Contact Details */}
+          <Paper
+            elevation={0}
+            sx={{
+              p: 3,
+              borderRadius: '20px',
+              border: '1px solid #E9E7F2',
+              backgroundColor: '#FFFFFF',
+            }}
+          >
+            <Typography variant="h6" sx={{ fontWeight: 800, color: '#20202A', mb: 2.5 }}>
+              Contact & Details
+            </Typography>
+
+            <Stack spacing={2}>
+              <Box display="flex" alignItems="flex-start" gap={1.5}>
+                <EmailOutlinedIcon sx={{ color: '#4F2BCB', fontSize: 20, mt: 0.2 }} />
+                <Box>
+                  <Typography variant="caption" sx={{ color: '#777788', fontWeight: 700, textTransform: 'uppercase' }}>
+                    Email Address
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600, color: '#20202A' }}>
+                    {club?.contact_email || 'contact@clubcentralize.edu'}
+                  </Typography>
+                </Box>
+              </Box>
+
+              <Box display="flex" alignItems="flex-start" gap={1.5}>
+                <MeetingRoomOutlinedIcon sx={{ color: '#4F2BCB', fontSize: 20, mt: 0.2 }} />
+                <Box>
+                  <Typography variant="caption" sx={{ color: '#777788', fontWeight: 700, textTransform: 'uppercase' }}>
+                    Meeting Location
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600, color: '#20202A' }}>
+                    Student Center, Room 304
+                  </Typography>
+                </Box>
+              </Box>
+
+              <Box display="flex" alignItems="flex-start" gap={1.5}>
+                <AccessTimeOutlinedIcon sx={{ color: '#4F2BCB', fontSize: 20, mt: 0.2 }} />
+                <Box>
+                  <Typography variant="caption" sx={{ color: '#777788', fontWeight: 700, textTransform: 'uppercase' }}>
+                    Regular Meetings
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600, color: '#20202A' }}>
+                    Every Thursday at 4:30 PM
+                  </Typography>
+                </Box>
+              </Box>
+            </Stack>
+          </Paper>
+        </Grid>
+      </Grid>
+
+      {/* ========================================================================= */}
+      {/* 3. TABS: EVENTS & MEMBER ROSTER                                           */}
+      {/* ========================================================================= */}
       <Box sx={{ borderBottom: 1, borderColor: '#E9E7F2', mb: 3 }}>
         <Tabs
           value={activeTab}
@@ -439,23 +718,25 @@ const ClubDetails = () => {
           sx={{
             '& .MuiTab-root': {
               textTransform: 'none',
-              fontWeight: 600,
-              fontSize: '0.95rem',
+              fontWeight: 700,
+              fontSize: '1rem',
               color: '#777788',
               '&.Mui-selected': { color: '#4F2BCB' },
             },
             '& .MuiTabs-indicator': { backgroundColor: '#4F2BCB', height: 3 },
           }}
         >
-          <Tab icon={<EventIcon fontSize="small" />} iconPosition="start" label={`Events (${events.length})`} />
+          <Tab icon={<EventIcon fontSize="small" />} iconPosition="start" label={`Club Events (${events.length})`} />
+          <Tab icon={<GroupsOutlinedIcon fontSize="small" />} iconPosition="start" label={`All Members (${members.length})`} />
         </Tabs>
       </Box>
 
+      {/* Tab 0: Events */}
       {activeTab === 0 && (
         <Box>
           <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-            <Typography variant="h6" sx={{ fontWeight: 700, color: '#20202A' }}>
-              Club Events
+            <Typography variant="h6" sx={{ fontWeight: 800, color: '#20202A' }}>
+              Upcoming & Recent Events
             </Typography>
             {isClubManager && (
               <Button
@@ -475,15 +756,18 @@ const ClubDetails = () => {
             <Box
               sx={{
                 textAlign: 'center',
-                py: 5,
+                py: 6,
                 backgroundColor: '#FFFFFF',
-                borderRadius: '16px',
+                borderRadius: '20px',
                 border: '1px dashed #E9E7F2',
               }}
             >
-              <EventIcon sx={{ fontSize: 42, color: '#9DA0AE', mb: 1 }} />
-              <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#20202A' }}>
+              <EventIcon sx={{ fontSize: 48, color: '#9DA0AE', mb: 1.5 }} />
+              <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#20202A' }}>
                 No events scheduled yet
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#777788' }}>
+                Check back soon for workshops, seminars, and competitions.
               </Typography>
             </Box>
           ) : (
@@ -507,10 +791,10 @@ const ClubDetails = () => {
                         alt={ev.title}
                         sx={{
                           width: '100%',
-                          height: 140,
+                          height: 150,
                           objectFit: 'cover',
-                          borderRadius: '10px',
-                          mb: 1.5,
+                          borderRadius: '12px',
+                          mb: 2,
                         }}
                       />
                     )}
@@ -534,7 +818,7 @@ const ClubDetails = () => {
                     )}
 
                     {ev.location && (
-                      <Box display="flex" alignItems="center" gap={1} mb={1.5}>
+                      <Box display="flex" alignItems="center" gap={1} mb={2}>
                         <LocationOnIcon sx={{ fontSize: 16, color: '#777788' }} />
                         <Typography variant="body2" sx={{ color: '#777788' }}>
                           {ev.location}
@@ -547,14 +831,89 @@ const ClubDetails = () => {
                         variant="ghost"
                         size="small"
                         onClick={() => navigate(`/clubs/${clubId}/events/${ev.id}`)}
-                        sx={{ fontWeight: 600, color: '#4F2BCB' }}
+                        sx={{ fontWeight: 700, color: '#4F2BCB' }}
                       >
-                        View Details
+                        View Event Details →
                       </Button>
                     </Box>
                   </Card>
                 </Grid>
               ))}
+            </Grid>
+          )}
+        </Box>
+      )}
+
+      {/* Tab 1: Member Roster */}
+      {activeTab === 1 && (
+        <Box>
+          <Typography variant="h6" sx={{ fontWeight: 800, color: '#20202A', mb: 2.5 }}>
+            Club Members Roster ({members.length})
+          </Typography>
+
+          {loadingMembers ? (
+            <CircularProgress sx={{ color: '#4F2BCB' }} />
+          ) : members.length === 0 ? (
+            <Typography variant="body2" sx={{ color: '#9DA0AE' }}>No members in this club yet.</Typography>
+          ) : (
+            <Grid container spacing={2.5}>
+              {members.map((member) => {
+                const roleInfo = ROLE_CONFIGS[member.role] || ROLE_CONFIGS.member;
+
+                return (
+                  <Grid item xs={12} sm={6} md={3} key={member.user_id}>
+                    <Paper
+                      elevation={0}
+                      sx={{
+                        p: 3,
+                        height: '100%',
+                        borderRadius: '16px',
+                        border: '1px solid #E9E7F2',
+                        backgroundColor: '#FFFFFF',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        textAlign: 'center',
+                      }}
+                    >
+                      <Avatar
+                        sx={{
+                          width: 52,
+                          height: 52,
+                          backgroundColor: '#E0DBFF',
+                          color: '#4F2BCB',
+                          fontWeight: 800,
+                          fontSize: '1.2rem',
+                          mb: 1.5,
+                        }}
+                      >
+                        {member.username?.charAt(0).toUpperCase()}
+                      </Avatar>
+
+                      <Typography
+                        variant="subtitle1"
+                        sx={{ fontWeight: 700, color: '#20202A', fontSize: '0.95rem', mb: 0.8 }}
+                      >
+                        {member.username}
+                      </Typography>
+
+                      <Chip
+                        label={roleInfo.label}
+                        size="small"
+                        sx={{
+                          fontSize: '0.72rem',
+                          fontWeight: 700,
+                          backgroundColor: roleInfo.bg,
+                          color: roleInfo.color,
+                          borderRadius: '12px',
+                          height: 24,
+                          px: 1,
+                        }}
+                      />
+                    </Paper>
+                  </Grid>
+                );
+              })}
             </Grid>
           )}
         </Box>

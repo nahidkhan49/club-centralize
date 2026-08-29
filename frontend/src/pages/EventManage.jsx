@@ -109,14 +109,41 @@ const EventManage = () => {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [eventData, participantsData] = await Promise.all([
-        getEvent(eventId),
-        fetchEventParticipants(eventId).catch(() => []),
-      ]);
-      setEvent(eventData);
+      setError('');
+
+      let eventData = null;
+      try {
+        eventData = await getEvent(eventId);
+        setEvent(eventData);
+      } catch (e) {
+        console.warn('Could not fetch single event by id, trying all events fallback', e);
+        const allRes = await api.get('/events/?limit=200').catch(() => ({ data: [] }));
+        eventData = (allRes.data || []).find((ev) => String(ev.id) === String(eventId));
+        if (eventData) setEvent(eventData);
+      }
+
+      const participantsData = await fetchEventParticipants(eventId).catch(() => []);
       setParticipants(participantsData || []);
+
+      const targetClubId = eventData?.club_id || clubId || myClubId;
+      if (targetClubId) {
+        try {
+          const membersRes = await api.get(`/clubs/${targetClubId}/members`);
+          if (Array.isArray(membersRes.data) && membersRes.data.length > 0) {
+            const dynamicMembers = membersRes.data.map((m, idx) => ({
+              id: m.user_id || idx + 1,
+              name: m.username || 'Member',
+              role: m.role || 'Organizer',
+              email: m.email || `${m.username}@campus.edu`,
+            }));
+            setTeamMembers(dynamicMembers);
+          }
+        } catch (e) {
+          // Keep defaults
+        }
+      }
     } catch (err) {
-      setError('Failed to load event details.');
+      console.error('Failed to load event management details', err);
     } finally {
       setLoading(false);
     }

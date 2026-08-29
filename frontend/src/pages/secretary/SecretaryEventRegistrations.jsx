@@ -61,19 +61,29 @@ const SecretaryEventRegistrations = () => {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [participantsData, eventData] = await Promise.all([
-        fetchEventParticipants(eventId),
-        getEvent(eventId),
-      ]);
-      setParticipants(participantsData || []);
-      setEvent(eventData);
+      setError('');
 
-      if (eventData?.club_id) {
-        const membersData = await fetchClubMembers(eventData.club_id);
+      let eventData = null;
+      try {
+        eventData = await getEvent(eventId);
+        setEvent(eventData);
+      } catch (e) {
+        console.warn('Could not fetch single event by id, trying all events fallback', e);
+        const allRes = await api.get('/events/?limit=200').catch(() => ({ data: [] }));
+        eventData = (allRes.data || []).find((ev) => String(ev.id) === String(eventId));
+        if (eventData) setEvent(eventData);
+      }
+
+      const participantsData = await fetchEventParticipants(eventId).catch(() => []);
+      setParticipants(participantsData || []);
+
+      const targetClubId = eventData?.club_id || myClubId;
+      if (targetClubId) {
+        const membersData = await fetchClubMembers(targetClubId).catch(() => []);
         setClubMembers(membersData || []);
       }
     } catch (err) {
-      setError('Failed to load event registration details.');
+      console.error('Failed to load event registration details', err);
     } finally {
       setLoading(false);
     }

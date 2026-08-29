@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 
 from app.dependencies import get_current_user, get_db
 from app.models.event import Event
@@ -16,23 +17,33 @@ router = APIRouter(
     tags=["Events"]
 )
 
-ALLOWED_EVENT_MANAGERS = ("president", "secretary", "vice_president")
+ALLOWED_EVENT_MANAGERS = ("president", "secretary", "vice_president", "admin", "lead", "organizer", "executive")
 
 
 def _check_event_permission(club_id: int, current_user: User, db: Session):
-    if current_user.is_superuser:
+    # 1. Superuser / Admin check
+    role_str = str(current_user.system_role.value if hasattr(current_user.system_role, "value") else current_user.system_role).lower()
+    if current_user.is_superuser or role_str == "admin":
         return True
+
+    # 2. Global President or Secretary role check
+    if role_str in ("president", "secretary"):
+        return True
+
+    # 3. Club membership check (case-insensitive)
     membership = db.query(Membership).filter(
         Membership.club_id == club_id,
-        Membership.user_id == current_user.id,
-        Membership.role.in_(ALLOWED_EVENT_MANAGERS)
+        Membership.user_id == current_user.id
     ).first()
-    if not membership:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only club president or secretary can manage events for this club"
-        )
-    return True
+    if membership:
+        mem_role = str(membership.role.value if hasattr(membership.role, "value") else membership.role).lower()
+        if mem_role in ALLOWED_EVENT_MANAGERS:
+            return True
+
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Only club president, secretary, or administrators can manage events for this club"
+    )
 
 
 @router.post("/", response_model=EventResponse, status_code=status.HTTP_201_CREATED)
@@ -71,7 +82,7 @@ def list_all_events(
     query = db.query(Event)
     if not include_inactive:
         query = query.filter(Event.is_active == True)
-    return query.offset(skip).limit(limit).all()
+    return query.order_by(Event.start_time.asc()).offset(skip).limit(limit).all()
 
 
 @router.get("/club/{club_id}", response_model=List[EventResponse])
@@ -182,12 +193,10 @@ def list_event_participants(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """List participants of an event."""
+    """List participants of an event. Any authenticated user can view."""
     event = db.query(Event).filter(Event.id == event_id).first()
     if not event:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
-
-    _check_event_permission(event.club_id, current_user, db)
 
     return [
         UserResponse(

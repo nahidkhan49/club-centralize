@@ -490,6 +490,7 @@ const Events = () => {
                         <Button
                           variant="ghost"
                           size="small"
+                          onClick={() => navigate(`/clubs/${ev.club_id || 1}/events/${ev.id}`)}
                           sx={{ color: '#4F2BCB', borderColor: '#E9E7F2', fontWeight: 700, fontSize: '0.78rem' }}
                         >
                           View Details →

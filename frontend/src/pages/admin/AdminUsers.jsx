@@ -7,7 +7,8 @@ import {
 import SearchIcon from '@mui/icons-material/Search';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined';
-import { fetchAllUsers, promoteUser, fetchAllClubs } from '../../api/adminApi';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import { fetchAllUsers, promoteUser, fetchAllClubs, deleteUser } from '../../api/adminApi';
 import api from '../../api/axiosInstance';
 import RoleChip from '../../components/RoleChip';
 import EmptyState from '../../components/EmptyState';
@@ -72,6 +73,21 @@ const AdminUsers = () => {
       setError(e?.response?.data?.detail || 'Failed to change admin status');
     }
   };
+
+  const handleDeleteUser = async (userId, username) => {
+    if (!window.confirm(`Are you sure you want to delete user "${username}"? This action is permanent and will remove their profile and all active memberships.`)) {
+      return;
+    }
+    try {
+      await deleteUser(userId);
+      setSuccess(`User "${username}" was successfully deleted.`);
+      load();
+    } catch (e) {
+      setError(e?.response?.data?.detail || 'Failed to delete user');
+    }
+  };
+
+  const currentUserId = Number(localStorage.getItem('user_id'));
 
   const filtered = (Array.isArray(users) ? users : []).filter((u) =>
     (u?.username || '').toLowerCase().includes(search.toLowerCase()) ||
@@ -155,6 +171,17 @@ const AdminUsers = () => {
                           <AdminPanelSettingsIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
+                      {u.id !== currentUserId && (
+                        <Tooltip title="Delete User">
+                          <IconButton
+                            size="small"
+                            onClick={() => handleDeleteUser(u.id, u.username)}
+                            sx={{ color: '#EF4444', ml: 1 }}
+                          >
+                            <DeleteOutlineIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      )}
                     </TableCell>
                   </TableRow>
                 );

@@ -123,3 +123,194 @@ def test_notifications_crud(db_session, client):
     # 10. Check count (should be 0)
     res = client.get("/notifications/unread-count", headers=headers)
     assert res.json()["unread_count"] == 0
+
+
+def test_delete_user_admin(db_session, client):
+    from app.models.club import Club
+    from app.models.membership import Membership
+    from app.models.event import Event
+    from app.models.event_participant import event_participants
+
+    # 1. Create admin and a test user
+    admin = User(username="adminuser", email="admin@test.com", password=hash_password("pass123"), is_superuser=True)
+    user = User(username="memberuser", email="member@test.com", password=hash_password("pass123"), is_superuser=False)
+    db_session.add_all([admin, user])
+    db_session.commit()
+    db_session.refresh(admin)
+    db_session.refresh(user)
+
+    # 2. Create a club and membership for user
+    club = Club(name="Test Club", description="Testing")
+    db_session.add(club)
+    db_session.commit()
+    db_session.refresh(club)
+
+    membership = Membership(user_id=user.id, club_id=club.id, role="member")
+    db_session.add(membership)
+    db_session.commit()
+    db_session.refresh(membership)
+
+    # 3. Create an event and register user
+    event = Event(
+        club_id=club.id,
+        title="Test Event",
+        description="Testing",
+        start_time=datetime.now(timezone.utc),
+        end_time=datetime.now(timezone.utc)
+    )
+    db_session.add(event)
+    db_session.commit()
+    db_session.refresh(event)
+
+    # Add participant
+    db_session.execute(event_participants.insert().values(event_id=event.id, user_id=user.id))
+    db_session.commit()
+
+    # Verify initial state
+    assert db_session.query(Membership).filter(Membership.user_id == user.id).count() == 1
+    assert db_session.execute(
+        event_participants.select().where(event_participants.c.user_id == user.id)
+    ).first() is not None
+
+    # 4. Delete user using admin client
+    headers = auth_header_for_user(admin)
+    res = client.delete(f"/users/{user.id}", headers=headers)
+    assert res.status_code == 204
+
+    # 5. Verify user and cascades are gone
+    assert db_session.query(User).filter(User.id == user.id).first() is None
+    assert db_session.query(Membership).filter(Membership.user_id == user.id).count() == 0
+    assert db_session.execute(
+        event_participants.select().where(event_participants.c.user_id == user.id)
+    ).first() is None
+
+    # 6. Verify admin cannot delete themselves
+    res = client.delete(f"/users/{admin.id}", headers=headers)
+    assert res.status_code == 400
+    assert "Cannot delete your own account" in res.json()["detail"]
+
+
+def test_remove_member_unassigns_tasks(db_session, client):
+    from app.models.club import Club
+    from app.models.membership import Membership
+    from app.models.event import Event
+    from app.models.event_task import EventTask
+
+    # 1. Create president (officer) and member
+    president = User(username="president1", email="pres@test.com", password=hash_password("pass123"))
+    member = User(username="member1", email="member@test.com", password=hash_password("pass123"))
+    db_session.add_all([president, member])
+    db_session.commit()
+    db_session.refresh(president)
+    db_session.refresh(member)
+
+    # 2. Create club and memberships
+    club = Club(name="Robotics Club", description="Robotics")
+    db_session.add(club)
+    db_session.commit()
+    db_session.refresh(club)
+
+    m_pres = Membership(user_id=president.id, club_id=club.id, role="president")
+    m_mem = Membership(user_id=member.id, club_id=club.id, role="member")
+    db_session.add_all([m_pres, m_mem])
+    db_session.commit()
+
+    # 3. Create event and task assigned to member
+    event = Event(
+        club_id=club.id,
+        title="Hackathon",
+        description="Coding",
+        start_time=datetime.now(timezone.utc),
+        end_time=datetime.now(timezone.utc)
+    )
+    db_session.add(event)
+    db_session.commit()
+    db_session.refresh(event)
+
+    task = EventTask(
+        event_id=event.id,
+        assigned_to=member.id,
+        assigned_by=president.id,
+        title="Fix UI bugs",
+        status="pending",
+        priority="medium"
+    )
+    db_session.add(task)
+    db_session.commit()
+    db_session.refresh(task)
+
+    # Verify task is initially assigned to member
+    assert task.assigned_to == member.id
+
+    # 4. President removes member
+    headers = auth_header_for_user(president)
+    res = client.delete(f"/clubs/{club.id}/members/{member.id}", headers=headers)
+    assert res.status_code == 204
+
+    # 5. Verify membership is gone and task is unassigned (assigned_to = None)
+    assert db_session.query(Membership).filter(Membership.club_id == club.id, Membership.user_id == member.id).first() is None
+    db_session.refresh(task)
+    assert task.assigned_to is None
+
+
+def test_leave_club_unassigns_tasks(db_session, client):
+    from app.models.club import Club
+    from app.models.membership import Membership
+    from app.models.event import Event
+    from app.models.event_task import EventTask
+
+    # 1. Create president and member
+    president = User(username="president2", email="pres2@test.com", password=hash_password("pass123"))
+    member = User(username="member2", email="member2@test.com", password=hash_password("pass123"))
+    db_session.add_all([president, member])
+    db_session.commit()
+    db_session.refresh(president)
+    db_session.refresh(member)
+
+    # 2. Create club and memberships
+    club = Club(name="Art Club", description="Art")
+    db_session.add(club)
+    db_session.commit()
+    db_session.refresh(club)
+
+    m_pres = Membership(user_id=president.id, club_id=club.id, role="president")
+    m_mem = Membership(user_id=member.id, club_id=club.id, role="member")
+    db_session.add_all([m_pres, m_mem])
+    db_session.commit()
+
+    # 3. Create event and task assigned to member
+    event = Event(
+        club_id=club.id,
+        title="Art Exhibition",
+        description="Paintings",
+        start_time=datetime.now(timezone.utc),
+        end_time=datetime.now(timezone.utc)
+    )
+    db_session.add(event)
+    db_session.commit()
+    db_session.refresh(event)
+
+    task = EventTask(
+        event_id=event.id,
+        assigned_to=member.id,
+        assigned_by=president.id,
+        title="Setup Gallery",
+        status="pending",
+        priority="medium"
+    )
+    db_session.add(task)
+    db_session.commit()
+    db_session.refresh(task)
+
+    # Verify task is initially assigned to member
+    assert task.assigned_to == member.id
+
+    # 4. Member leaves club
+    headers = auth_header_for_user(member)
+    res = client.delete(f"/clubs/{club.id}/leave", headers=headers)
+    assert res.status_code == 200
+
+    # 5. Verify membership is gone and task is unassigned
+    assert db_session.query(Membership).filter(Membership.club_id == club.id, Membership.user_id == member.id).first() is None
+    db_session.refresh(task)
+    assert task.assigned_to is None

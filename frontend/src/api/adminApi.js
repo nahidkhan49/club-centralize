@@ -171,3 +171,10 @@ export const clearClubMessages = async (clubId, userId = null) => {
 };
 
 
+/** Delete a user (admin only) */
+export const deleteUser = async (userId) => {
+  const res = await api.delete(`/users/${userId}`);
+  return res.data;
+};
+
+

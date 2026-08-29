@@ -161,3 +161,32 @@ def get_user(
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     return user
+
+
+@router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_user(
+    user_id: int,
+    db: Session = Depends(get_db),
+    admin_user: User = Depends(get_current_admin_user)
+):
+    """Admin-only: Delete a user and cleanly cascade their memberships and event registrations."""
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    if user.id == admin_user.id:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot delete your own account")
+
+    from app.models.membership import Membership
+    from app.models.event_participant import event_participants
+
+    # 1. Clean up memberships
+    db.query(Membership).filter(Membership.user_id == user_id).delete()
+
+    # 2. Clean up event registrations
+    db.execute(event_participants.delete().where(event_participants.c.user_id == user_id))
+
+    # 3. Delete user
+    db.delete(user)
+    db.commit()
+    return None

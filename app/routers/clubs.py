@@ -591,6 +591,16 @@ def leave_club(
         MembershipRequest.club_id == club_id
     ).delete()
 
+    # Unassign user from all event tasks in this club
+    from app.models.event import Event
+    from app.models.event_task import EventTask
+    event_ids = [e.id for e in db.query(Event).filter(Event.club_id == club_id).all()]
+    if event_ids:
+        db.query(EventTask).filter(
+            EventTask.event_id.in_(event_ids),
+            EventTask.assigned_to == current_user.id
+        ).update({"assigned_to": None}, synchronize_session=False)
+
     db.commit()
 
     return {"message": "You have successfully left the club"}
@@ -707,6 +717,16 @@ def remove_club_member(
         MembershipRequest.user_id == user_id,
         MembershipRequest.club_id == club_id
     ).delete()
+
+    # Unassign user from all event tasks in this club
+    from app.models.event import Event
+    from app.models.event_task import EventTask
+    event_ids = [e.id for e in db.query(Event).filter(Event.club_id == club_id).all()]
+    if event_ids:
+        db.query(EventTask).filter(
+            EventTask.event_id.in_(event_ids),
+            EventTask.assigned_to == user_id
+        ).update({"assigned_to": None}, synchronize_session=False)
 
     db.commit()
     return None

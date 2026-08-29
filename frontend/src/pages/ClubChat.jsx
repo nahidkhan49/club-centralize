@@ -18,6 +18,8 @@ import {
   Badge,
   Stack,
   Tooltip,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -48,7 +50,16 @@ const ClubChat = () => {
   const [participants, setParticipants] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null); // The member the officer is chatting with
 
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const [mobileView, setMobileView] = useState('list'); // 'list' | 'chat'
+
   const messagesEndRef = useRef(null);
+
+  const selectParticipant = (part) => {
+    setSelectedUser(part);
+    setMobileView('chat');
+  };
 
   // Determine role and load club details
   const checkRoleAndLoadClub = async () => {
@@ -162,7 +173,7 @@ const ClubChat = () => {
   }
 
   return (
-    <Box sx={{ maxWidth: 1200, mx: 'auto', pb: 4, width: '100%', height: 'calc(100vh - 120px)', display: 'flex', flexDirection: 'column' }}>
+    <Box sx={{ maxWidth: 1200, mx: 'auto', width: '100%', height: { xs: 'calc(100vh - 120px)', md: 'calc(100vh - 165px)' }, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       
       {/* Header Bar */}
       <Paper
@@ -176,6 +187,7 @@ const ClubChat = () => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
+          flexShrink: 0,
         }}
       >
         <Box display="flex" alignItems="center" gap={2}>
@@ -207,13 +219,13 @@ const ClubChat = () => {
         </IconButton>
       </Paper>
 
-      {error && <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>{error}</Alert>}
+      {error && <Alert severity="error" sx={{ mb: 2, borderRadius: 2, flexShrink: 0 }}>{error}</Alert>}
 
       {/* Main Panel */}
-      <Grid container spacing={2} sx={{ flex: 1, minHeight: 0 }}>
+      <Grid container spacing={2} sx={{ flex: 1, minHeight: 0, height: '100%', overflow: 'hidden' }}>
         
         {/* LEFT: Sidebar of members (Only visible to Club Officers) */}
-        {isOfficer && (
+        {isOfficer && (!isMobile || mobileView === 'list') && (
           <Grid item xs={12} md={4} sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
             <Paper
               elevation={0}
@@ -259,7 +271,7 @@ const ClubChat = () => {
                         button
                         key={part.user_id}
                         selected={isSelected}
-                        onClick={() => setSelectedUser(part)}
+                        onClick={() => selectParticipant(part)}
                         sx={{
                           borderRadius: '12px',
                           mb: 0.8,
@@ -309,28 +321,34 @@ const ClubChat = () => {
           </Grid>
         )}
 
-        {/* RIGHT: Chat bubbles viewport */}
-        <Grid item xs={12} md={isOfficer ? 8 : 12} sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-          <Paper
-            elevation={0}
-            sx={{
-              flex: 1,
-              borderRadius: '18px',
-              border: '1px solid #E9E7F2',
-              backgroundColor: '#FFFFFF',
-              display: 'flex',
-              flexDirection: 'column',
-              overflow: 'hidden',
-            }}
-          >
-            {/* Conversation Header */}
-            <Box p={2} sx={{ backgroundColor: '#FBFBFE', borderBottom: '1px solid #F0EFF8', display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <Avatar
-                src={isOfficer ? getImageUrl(selectedUser?.avatar_url) : getImageUrl(club?.logo_url)}
-                sx={{ width: 34, height: 34, backgroundColor: '#EAEAFF', color: '#4F2BCB', fontWeight: 800 }}
-              >
-                {isOfficer ? selectedUser?.username?.charAt(0).toUpperCase() : club?.name?.charAt(0).toUpperCase()}
-              </Avatar>
+        {(!isOfficer || !isMobile || mobileView === 'chat') && (
+          /* RIGHT: Chat bubbles viewport */
+          <Grid item xs={12} md={isOfficer ? 8 : 12} sx={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
+            <Paper
+              elevation={0}
+              sx={{
+                flex: 1,
+                borderRadius: '18px',
+                border: '1px solid #E9E7F2',
+                backgroundColor: '#FFFFFF',
+                display: 'flex',
+                flexDirection: 'column',
+                overflow: 'hidden',
+              }}
+            >
+              {/* Conversation Header */}
+              <Box p={2} sx={{ backgroundColor: '#FBFBFE', borderBottom: '1px solid #F0EFF8', display: 'flex', alignItems: 'center', gap: 1.5, flexShrink: 0 }}>
+                {isMobile && isOfficer && (
+                  <IconButton onClick={() => setMobileView('list')} sx={{ color: '#4F2BCB', p: 0.5, mr: 0.5 }}>
+                    <ArrowBackIcon />
+                  </IconButton>
+                )}
+                <Avatar
+                  src={isOfficer ? getImageUrl(selectedUser?.avatar_url) : getImageUrl(club?.logo_url)}
+                  sx={{ width: 34, height: 34, backgroundColor: '#EAEAFF', color: '#4F2BCB', fontWeight: 800 }}
+                >
+                  {isOfficer ? selectedUser?.username?.charAt(0).toUpperCase() : club?.name?.charAt(0).toUpperCase()}
+                </Avatar>
               <Box>
                 <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#20202A' }}>
                   {isOfficer ? selectedUser?.username : `Club Officers (${club?.name})`}
@@ -424,8 +442,9 @@ const ClubChat = () => {
               </IconButton>
             </Box>
 
-          </Paper>
-        </Grid>
+            </Paper>
+          </Grid>
+        )}
 
       </Grid>
     </Box>

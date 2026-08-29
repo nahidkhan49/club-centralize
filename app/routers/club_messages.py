@@ -138,23 +138,20 @@ def get_chat_participants(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """List all members who have exchanged messages with this club (officers/admins only)."""
+    """List all club members who can be messaged (officers/admins only)."""
     if not _is_club_officer(club_id, current_user, db):
         raise HTTPException(status_code=403, detail="Only club officers can list chat participants")
 
-    # Get distinct users who have sent/received messages in this club
-    user_ids_query = (
-        db.query(ClubMessage.user_id)
-        .filter(ClubMessage.club_id == club_id)
-        .distinct()
+    # Get all memberships for the club (excluding officers themselves to avoid self-chatting)
+    members = (
+        db.query(Membership)
+        .filter(
+            Membership.club_id == club_id,
+            Membership.role.not_in(["president", "secretary"])
+        )
         .all()
     )
-    user_ids = [r[0] for r in user_ids_query]
-
-    # Fallback to general club members list if no chats exist yet, so officers can initiate a chat
-    if not user_ids:
-        members = db.query(Membership).filter(Membership.club_id == club_id).all()
-        user_ids = [m.user_id for m in members]
+    user_ids = [m.user_id for m in members]
 
     participants = []
     for uid in user_ids:
@@ -180,6 +177,7 @@ def get_chat_participants(
             )
         )
 
-    # Sort participants by last message time (most recent first)
+    # Sort participants so those with messages appear first, ordered by latest message time
+    from datetime import datetime
     participants.sort(key=lambda x: x.last_message_time or datetime.min, reverse=True)
     return participants

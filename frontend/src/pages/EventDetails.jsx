@@ -25,9 +25,11 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import { getEvent, joinEvent, leaveEvent, deleteEvent } from '../api/eventApi';
-import api from '../api/axiosInstance';
+import api, { getImageUrl } from '../api/axiosInstance';
 import { useAuth } from '../context/AuthContext';
 import Button from '../components/Button';
+
+const DEFAULT_EVENT_BANNER = 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=1200&q=80';
 
 const EventDetails = () => {
   const { clubId, eventId } = useParams();
@@ -199,19 +201,21 @@ const EventDetails = () => {
           overflow: 'hidden',
         }}
       >
-        {event?.image_url && (
-          <Box
-            component="img"
-            src={event.image_url}
-            alt={event.title}
-            sx={{
-              width: '100%',
-              maxHeight: 280,
-              objectFit: 'cover',
-              borderBottom: '1px solid #E9E7F2',
-            }}
-          />
-        )}
+        <Box
+          component="img"
+          src={getImageUrl(event?.image_url) || DEFAULT_EVENT_BANNER}
+          alt={event?.title || 'Event poster'}
+          onError={(e) => {
+            e.target.src = DEFAULT_EVENT_BANNER;
+          }}
+          sx={{
+            width: '100%',
+            height: { xs: 200, sm: 300, md: 360 },
+            objectFit: 'cover',
+            borderBottom: '1px solid #E9E7F2',
+            display: 'block',
+          }}
+        />
 
         <Box sx={{ p: { xs: 3, sm: 4 } }}>
           <Grid container spacing={3} alignItems="center">

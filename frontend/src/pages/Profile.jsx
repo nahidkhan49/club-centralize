@@ -1,4 +1,5 @@
 import React, { useContext, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -14,6 +15,7 @@ import {
   Button as MuiButton,
   Chip,
   IconButton,
+  Stack,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined';
@@ -23,11 +25,19 @@ import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined';
 import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined';
 import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
 import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
+import LogoutOutlinedIcon from '@mui/icons-material/LogoutOutlined';
 import { AuthContext } from '../context/AuthContext';
+import { getImageUrl } from '../api/axiosInstance';
 import Button from '../components/Button';
 
 export default function Profile() {
-  const { user, updateUserAvatar } = useContext(AuthContext);
+  const { user, updateUserAvatar, logout } = useContext(AuthContext);
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
   const [profileData, setProfileData] = useState({
     fullName: user?.full_name || user?.username || 'Nahid Khan',
@@ -124,25 +134,45 @@ export default function Profile() {
           </Typography>
         </Box>
 
-        <Button
-          variant="ghost"
-          onClick={() => {
-            setTempData({ ...profileData });
-            setEditOpen(true);
-          }}
-          startIcon={<EditIcon />}
-          sx={{
-            borderColor: '#E9E7F2',
-            color: '#4F2BCB',
-            borderRadius: '10px',
-            fontWeight: 700,
-            px: 2.5,
-            py: 1,
-            '&:hover': { backgroundColor: '#F3F0FF', borderColor: '#4F2BCB' },
-          }}
-        >
-          Edit Profile
-        </Button>
+        <Stack direction="row" spacing={1.5}>
+          <Button
+            variant="ghost"
+            onClick={() => {
+              setTempData({ ...profileData });
+              setEditOpen(true);
+            }}
+            startIcon={<EditIcon />}
+            sx={{
+              borderColor: '#E9E7F2',
+              color: '#4F2BCB',
+              borderRadius: '10px',
+              fontWeight: 700,
+              px: 2.5,
+              py: 1,
+              '&:hover': { backgroundColor: '#F3F0FF', borderColor: '#4F2BCB' },
+            }}
+          >
+            Edit Profile
+          </Button>
+
+          <Button
+            variant="ghost"
+            onClick={handleLogout}
+            startIcon={<LogoutOutlinedIcon />}
+            sx={{
+              borderColor: '#FEE2E2',
+              color: '#DC2626',
+              backgroundColor: '#FEF2F2',
+              borderRadius: '10px',
+              fontWeight: 700,
+              px: 2.5,
+              py: 1,
+              '&:hover': { backgroundColor: '#FEE2E2', borderColor: '#DC2626' },
+            }}
+          >
+            Logout
+          </Button>
+        </Stack>
       </Box>
 
       {/* Main Profile Header Card */}
@@ -160,7 +190,7 @@ export default function Profile() {
           {/* Avatar with Camera Icon Overlay */}
           <Box sx={{ position: 'relative' }}>
             <Avatar
-              src={user?.avatarUrl || ''}
+              src={getImageUrl(user?.avatarUrl || user?.avatar_url)}
               sx={{
                 width: 96,
                 height: 96,
@@ -172,7 +202,7 @@ export default function Profile() {
                 boxShadow: '0 4px 12px rgba(79, 43, 203, 0.15)',
               }}
             >
-              {user?.avatarUrl ? null : initial}
+              {user?.avatarUrl || user?.avatar_url ? null : initial}
             </Avatar>
             <IconButton
               onClick={() => {

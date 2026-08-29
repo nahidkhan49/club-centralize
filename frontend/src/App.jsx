@@ -13,6 +13,7 @@ import Events from './pages/Events';
 import EventDetails from './pages/EventDetails';
 import EventCreate from './pages/EventCreate';
 import EventEdit from './pages/EventEdit';
+import EventManage from './pages/EventManage';
 import Announcements from './pages/Announcements';
 
 // Admin Pages
@@ -59,6 +60,8 @@ function App() {
           <Route path="/announcements" element={<Announcements />} />
           <Route path="/events" element={<Events />} />
           <Route path="/clubs/:clubId/events/:eventId" element={<EventDetails />} />
+          <Route path="/clubs/:clubId/events/:eventId/manage" element={<EventManage />} />
+          <Route path="/clubs/:clubId/events/:eventId/registrations" element={<PresidentEventRegistrations />} />
 
           {/* Admin Routes */}
           <Route element={<AdminRoute />}>
@@ -67,7 +70,6 @@ function App() {
             <Route path="/admin/users" element={<AdminUsers />} />
             <Route path="/admin/events" element={<AdminEvents />} />
             <Route path="/admin/announcements" element={<AdminAnnouncements />} />
-            {/* Admin can also create/edit clubs */}
             <Route path="/clubs/create" element={<ClubCreate />} />
             <Route path="/clubs/:clubId/edit" element={<ClubEdit />} />
           </Route>
@@ -78,6 +80,7 @@ function App() {
             <Route path="/president/club" element={<PresidentClub />} />
             <Route path="/president/members" element={<PresidentMembers />} />
             <Route path="/president/events" element={<PresidentEvents />} />
+            <Route path="/president/events/:eventId/manage" element={<EventManage />} />
             <Route path="/president/events/:eventId/registrations" element={<PresidentEventRegistrations />} />
             <Route path="/president/announcements" element={<PresidentAnnouncements />} />
             <Route path="/clubs/:clubId/events/create" element={<EventCreate />} />
@@ -90,6 +93,7 @@ function App() {
             <Route path="/secretary/club" element={<SecretaryClub />} />
             <Route path="/secretary/members" element={<SecretaryMembers />} />
             <Route path="/secretary/events" element={<SecretaryEvents />} />
+            <Route path="/secretary/events/:eventId/manage" element={<EventManage />} />
             <Route path="/secretary/events/:eventId/registrations" element={<SecretaryEventRegistrations />} />
             <Route path="/secretary/announcements" element={<SecretaryAnnouncements />} />
             <Route path="/clubs/:clubId/events/create" element={<EventCreate />} />

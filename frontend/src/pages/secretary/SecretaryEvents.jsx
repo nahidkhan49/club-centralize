@@ -22,6 +22,7 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined';
 import HowToRegOutlinedIcon from '@mui/icons-material/HowToRegOutlined';
+import DashboardCustomizeOutlinedIcon from '@mui/icons-material/DashboardCustomizeOutlined';
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 
 import { useAuth } from '../../context/AuthContext';
@@ -444,6 +445,16 @@ const SecretaryEvents = () => {
                         />
 
                         <Stack direction="row" spacing={0.8}>
+                          <Tooltip title="Event Management Workspace">
+                            <IconButton
+                              size="small"
+                              onClick={() => navigate(`/secretary/events/${ev.id}/manage`)}
+                              sx={{ color: '#FFFFFF', backgroundColor: '#4F2BCB', '&:hover': { backgroundColor: '#39209A' } }}
+                            >
+                              <DashboardCustomizeOutlinedIcon sx={{ fontSize: 17 }} />
+                            </IconButton>
+                          </Tooltip>
+
                           <Tooltip title="Manage Registrations">
                             <IconButton
                               size="small"

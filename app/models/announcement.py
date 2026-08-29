@@ -11,6 +11,7 @@ class Announcement(Base):
     author_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     title: Mapped[str] = mapped_column(String(200), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
+    announcement_type: Mapped[str | None] = mapped_column(String(50), default="General", nullable=True)
     is_published: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     club_name: Mapped[str | None] = mapped_column(String(100), nullable=True)  # denormalized for display
     source_location: Mapped[str | None] = mapped_column(String(200), nullable=True)

@@ -5,6 +5,7 @@ from pydantic import BaseModel, ConfigDict
 class AnnouncementCreate(BaseModel):
     title: str
     content: str
+    announcement_type: str | None = "General"
     club_id: int | None = None
     club_name: str | None = None
     source_location: str | None = None
@@ -14,6 +15,7 @@ class AnnouncementCreate(BaseModel):
 class AnnouncementUpdate(BaseModel):
     title: str | None = None
     content: str | None = None
+    announcement_type: str | None = None
     club_name: str | None = None
     source_location: str | None = None
     is_published: bool | None = None
@@ -25,6 +27,7 @@ class AnnouncementResponse(BaseModel):
     author_id: int
     title: str
     content: str
+    announcement_type: str | None = "General"
     is_published: bool
     club_name: str | None = None
     source_location: str | None = None

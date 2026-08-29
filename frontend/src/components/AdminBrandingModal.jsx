@@ -13,24 +13,30 @@ import {
   CircularProgress,
   Paper,
   Stack,
+  Divider,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import CloudUploadOutlinedIcon from '@mui/icons-material/CloudUploadOutlined';
 import BrandingWatermarkOutlinedIcon from '@mui/icons-material/BrandingWatermarkOutlined';
+import AndroidIcon from '@mui/icons-material/Android';
 
 import { useSiteSettings } from '../context/SiteSettingsContext';
 import { uploadImage } from '../api/adminApi';
+import { uploadApk } from '../api/eventApi';
 import { getImageUrl } from '../api/axiosInstance';
 import Button from './Button';
 
 const AdminBrandingModal = ({ open, onClose }) => {
-  const { siteName, rawSiteLogo, tagline, updateBranding } = useSiteSettings();
+  const { siteName, rawSiteLogo, tagline, rawApkUrl, appVersion, updateBranding } = useSiteSettings();
 
   const [name, setName] = useState(siteName);
   const [logo, setLogo] = useState(rawSiteLogo);
   const [siteTagline, setSiteTagline] = useState(tagline);
+  const [apk, setApk] = useState(rawApkUrl);
+  const [version, setVersion] = useState(appVersion || '1.0.0');
 
   const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingApkFile, setUploadingApkFile] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -40,10 +46,12 @@ const AdminBrandingModal = ({ open, onClose }) => {
       setName(siteName);
       setLogo(rawSiteLogo);
       setSiteTagline(tagline);
+      setApk(rawApkUrl);
+      setVersion(appVersion || '1.0.0');
       setError('');
       setSuccess('');
     }
-  }, [open, siteName, rawSiteLogo, tagline]);
+  }, [open, siteName, rawSiteLogo, tagline, rawApkUrl, appVersion]);
 
   const handleLogoUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -61,6 +69,22 @@ const AdminBrandingModal = ({ open, onClose }) => {
     }
   };
 
+  const handleApkUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingApkFile(true);
+    setError('');
+    try {
+      const res = await uploadApk(file);
+      setApk(res.url);
+      setSuccess(`APK package uploaded successfully: ${res.filename}`);
+    } catch (err) {
+      setError(err?.response?.data?.detail || 'Failed to upload APK file.');
+    } finally {
+      setUploadingApkFile(false);
+    }
+  };
+
   const handleSave = async (e) => {
     e.preventDefault();
     if (!name.trim()) {
@@ -74,13 +98,15 @@ const AdminBrandingModal = ({ open, onClose }) => {
         site_name: name.trim(),
         site_logo: logo.trim(),
         tagline: siteTagline.trim(),
+        apk_url: apk.trim(),
+        app_version: version.trim(),
       });
-      setSuccess('Website branding updated successfully!');
+      setSuccess('Website branding & mobile settings updated successfully!');
       setTimeout(() => {
         onClose();
       }, 700);
     } catch (err) {
-      setError(err?.response?.data?.detail || 'Failed to update website branding.');
+      setError(err?.response?.data?.detail || 'Failed to update settings.');
     } finally {
       setSaving(false);
     }
@@ -104,7 +130,7 @@ const AdminBrandingModal = ({ open, onClose }) => {
         <Box display="flex" alignItems="center" gap={1.2}>
           <BrandingWatermarkOutlinedIcon sx={{ color: '#4F2BCB' }} />
           <Typography variant="h6" sx={{ fontWeight: 800, color: '#20202A' }}>
-            Customize Website Branding
+            Website Branding & Mobile App (.APK)
           </Typography>
         </Box>
         <IconButton size="small" onClick={onClose}>
@@ -157,30 +183,28 @@ const AdminBrandingModal = ({ open, onClose }) => {
                 Shown on top navigation bar, sidebar, and welcome headers.
               </Typography>
 
-              <Stack direction="row" spacing={1.5} alignItems="center">
-                <Button
-                  variant="ghost"
-                  size="small"
-                  component="label"
-                  startIcon={uploadingLogo ? <CircularProgress size={16} /> : <CloudUploadOutlinedIcon />}
-                  disabled={uploadingLogo}
-                  sx={{ color: '#4F2BCB', borderColor: '#D4CCF7', fontSize: '0.8rem' }}
-                >
-                  {uploadingLogo ? 'Uploading...' : 'Upload Image'}
-                  <input type="file" hidden accept="image/*" onChange={handleLogoUpload} />
-                </Button>
-              </Stack>
+              <Button
+                variant="ghost"
+                size="small"
+                component="label"
+                startIcon={uploadingLogo ? <CircularProgress size={16} /> : <CloudUploadOutlinedIcon />}
+                disabled={uploadingLogo}
+                sx={{ color: '#4F2BCB', borderColor: '#D4CCF7', fontSize: '0.8rem' }}
+              >
+                {uploadingLogo ? 'Uploading...' : 'Upload Image'}
+                <input type="file" hidden accept="image/*" onChange={handleLogoUpload} />
+              </Button>
             </Box>
           </Paper>
 
-          {/* Logo URL Input (Alternative) */}
+          {/* Logo URL Input */}
           <TextField
             label="Logo Image URL (Direct link or Upload above)"
             value={logo}
             onChange={(e) => setLogo(e.target.value)}
             fullWidth
             size="small"
-            helperText="Enter a direct HTTPS image URL or upload a file from your computer."
+            helperText="Enter a direct HTTPS image URL or upload a file above."
             sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
           />
 
@@ -204,6 +228,67 @@ const AdminBrandingModal = ({ open, onClose }) => {
             helperText="Optional subtitle displayed below the site brand."
             sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
           />
+
+          <Divider sx={{ my: 0.5 }} />
+
+          {/* 4. Android Mobile App (.APK) Section */}
+          <Paper
+            elevation={0}
+            sx={{
+              p: 2.5,
+              borderRadius: '16px',
+              border: '1px solid #E9E7F2',
+              backgroundColor: '#FBFBFE',
+            }}
+          >
+            <Box display="flex" alignItems="center" gap={1.5} mb={1.5}>
+              <Box
+                sx={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: '10px',
+                  backgroundColor: '#D1FAE5',
+                  color: '#059669',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <AndroidIcon sx={{ fontSize: 22 }} />
+              </Box>
+              <Box>
+                <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#20202A' }}>
+                  Mobile Application (.APK Package)
+                </Typography>
+                <Typography variant="caption" sx={{ color: '#777788' }}>
+                  Upload the Android build package so users can download it from the top navbar.
+                </Typography>
+              </Box>
+            </Box>
+
+            <Stack direction="row" spacing={2} alignItems="center" mb={2}>
+              <Button
+                variant="primary"
+                size="small"
+                component="label"
+                startIcon={uploadingApkFile ? <CircularProgress size={16} color="inherit" /> : <CloudUploadOutlinedIcon />}
+                disabled={uploadingApkFile}
+                sx={{ backgroundColor: '#059669', fontSize: '0.82rem', py: 0.8 }}
+              >
+                {uploadingApkFile ? 'Uploading APK...' : 'Upload New .APK File'}
+                <input type="file" hidden accept=".apk,.zip" onChange={handleApkUpload} />
+              </Button>
+            </Stack>
+
+            <TextField
+              label="APK File Path / Direct Download Link"
+              value={apk}
+              onChange={(e) => setApk(e.target.value)}
+              fullWidth
+              size="small"
+              sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
+            />
+          </Paper>
         </Box>
       </DialogContent>
 
@@ -214,10 +299,10 @@ const AdminBrandingModal = ({ open, onClose }) => {
         <Button
           variant="primary"
           onClick={handleSave}
-          disabled={saving || uploadingLogo}
+          disabled={saving || uploadingLogo || uploadingApkFile}
           sx={{ backgroundColor: '#4F2BCB', px: 3 }}
         >
-          {saving ? 'Saving...' : 'Save Branding Changes'}
+          {saving ? 'Saving...' : 'Save Branding & Mobile Settings'}
         </Button>
       </DialogActions>
     </Dialog>

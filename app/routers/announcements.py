@@ -60,6 +60,7 @@ def create_announcement(
     announcement = Announcement(
         title=data.title,
         content=data.content,
+        announcement_type=data.announcement_type or "General",
         club_id=data.club_id,
         club_name=data.club_name,
         source_location=data.source_location,

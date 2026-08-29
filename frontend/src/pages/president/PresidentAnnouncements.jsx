@@ -16,6 +16,7 @@ import {
   Chip,
   Stack,
   InputAdornment,
+  MenuItem,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import AddIcon from '@mui/icons-material/Add';
@@ -37,9 +38,12 @@ import {
 import Button from '../../components/Button';
 import EmptyState from '../../components/EmptyState';
 
+const ANNOUNCEMENT_TYPES = ['General', 'Urgent', 'Event Notice', 'Achievement', 'Election'];
+
 const TAG_CONFIG = {
   Urgent: { bg: '#FEE2E2', color: '#DC2626' },
   General: { bg: '#D1FAE5', color: '#059669' },
+  'Event Notice': { bg: '#FEF3C7', color: '#D97706' },
   Achievement: { bg: '#E0F2FE', color: '#0284C7' },
   Election: { bg: '#F3F0FF', color: '#7C3AED' },
 };
@@ -54,11 +58,12 @@ const PresidentAnnouncements = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [search, setSearch] = useState('');
+  const [selectedTypeFilter, setSelectedTypeFilter] = useState('ALL');
 
   // Modal State
   const [modalOpen, setModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
-  const [form, setForm] = useState({ title: '', content: '' });
+  const [form, setForm] = useState({ title: '', content: '', announcement_type: 'General' });
   const [submitting, setSubmitting] = useState(false);
 
   const loadAnnouncements = async () => {
@@ -80,14 +85,18 @@ const PresidentAnnouncements = () => {
 
   const openCreateModal = () => {
     setEditingItem(null);
-    setForm({ title: '', content: '' });
+    setForm({ title: '', content: '', announcement_type: 'General' });
     setError('');
     setModalOpen(true);
   };
 
   const openEditModal = (item) => {
     setEditingItem(item);
-    setForm({ title: item.title, content: item.content });
+    setForm({
+      title: item.title,
+      content: item.content,
+      announcement_type: item.announcement_type || 'General',
+    });
     setError('');
     setModalOpen(true);
   };
@@ -128,10 +137,14 @@ const PresidentAnnouncements = () => {
     }
   };
 
-  const filteredAnnouncements = announcements.filter((a) =>
-    a.title.toLowerCase().includes(search.toLowerCase()) ||
-    a.content.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredAnnouncements = announcements.filter((a) => {
+    const matchesSearch =
+      a.title.toLowerCase().includes(search.toLowerCase()) ||
+      a.content.toLowerCase().includes(search.toLowerCase());
+    const type = a.announcement_type || 'General';
+    const matchesType = selectedTypeFilter === 'ALL' || type === selectedTypeFilter;
+    return matchesSearch && matchesType;
+  });
 
   if (loading) {
     return (
@@ -143,14 +156,14 @@ const PresidentAnnouncements = () => {
 
   return (
     <Box sx={{ maxWidth: 1150, mx: 'auto', pb: 6, width: '100%' }}>
-      {/* Header Bar Matching Mockup */}
+      {/* Header Bar */}
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3} flexWrap="wrap" gap={2}>
         <Box>
           <Typography variant="h5" sx={{ fontWeight: 800, color: '#20202A' }}>
             Club Announcements
           </Typography>
           <Typography variant="body2" sx={{ color: '#777788' }}>
-            Club: <strong>{myClubName}</strong> — Broadcast important notices and updates to all members.
+            Club: <strong>{myClubName}</strong> — Broadcast categorized notices, alerts, and updates to all members.
           </Typography>
         </Box>
         <Button
@@ -167,12 +180,12 @@ const PresidentAnnouncements = () => {
       {success && <Alert severity="success" sx={{ mb: 2, borderRadius: 2 }} onClose={() => setSuccess('')}>{success}</Alert>}
 
       <Grid container spacing={3.5}>
-        {/* Left / Main Column: Announcements List */}
+        {/* Left Column: Announcements List */}
         <Grid item xs={12} md={8}>
-          {/* Search Box */}
+          {/* Search Box & Category Filters */}
           <Box mb={2.5}>
             <TextField
-              placeholder="Search announcements..."
+              placeholder="Search announcements by keyword..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               size="small"
@@ -180,6 +193,7 @@ const PresidentAnnouncements = () => {
               sx={{
                 backgroundColor: '#FFFFFF',
                 borderRadius: '12px',
+                mb: 1.5,
                 '& .MuiOutlinedInput-root': { borderRadius: '12px', borderColor: '#E9E7F2' },
               }}
               InputProps={{
@@ -190,6 +204,36 @@ const PresidentAnnouncements = () => {
                 ),
               }}
             />
+
+            <Stack direction="row" spacing={1} overflow="auto" pb={0.5}>
+              <Chip
+                label="All Categories"
+                size="small"
+                clickable
+                onClick={() => setSelectedTypeFilter('ALL')}
+                sx={{
+                  backgroundColor: selectedTypeFilter === 'ALL' ? '#4F2BCB' : '#FFFFFF',
+                  color: selectedTypeFilter === 'ALL' ? '#FFFFFF' : '#6E6D7A',
+                  fontWeight: 700,
+                  border: '1px solid #E9E7F2',
+                }}
+              />
+              {ANNOUNCEMENT_TYPES.map((type) => (
+                <Chip
+                  key={type}
+                  label={type}
+                  size="small"
+                  clickable
+                  onClick={() => setSelectedTypeFilter(type)}
+                  sx={{
+                    backgroundColor: selectedTypeFilter === type ? '#4F2BCB' : '#FFFFFF',
+                    color: selectedTypeFilter === type ? '#FFFFFF' : '#6E6D7A',
+                    fontWeight: 700,
+                    border: '1px solid #E9E7F2',
+                  }}
+                />
+              ))}
+            </Stack>
           </Box>
 
           {filteredAnnouncements.length === 0 ? (
@@ -205,10 +249,9 @@ const PresidentAnnouncements = () => {
             />
           ) : (
             <Stack spacing={2.5}>
-              {filteredAnnouncements.map((item, index) => {
-                const tags = ['Urgent', 'General', 'Achievement', 'Election'];
-                const assignedTag = tags[index % tags.length];
-                const tagConfig = TAG_CONFIG[assignedTag];
+              {filteredAnnouncements.map((item) => {
+                const assignedTag = item.announcement_type || 'General';
+                const tagConfig = TAG_CONFIG[assignedTag] || TAG_CONFIG.General;
 
                 return (
                   <Paper
@@ -259,7 +302,7 @@ const PresidentAnnouncements = () => {
                       {item.content}
                     </Typography>
 
-                    {/* Bottom Row with Priority Pill & 3 Action Buttons Matching Mockup */}
+                    {/* Bottom Row with Selected Category Pill & Action Buttons */}
                     <Box display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={1.5}>
                       <Chip
                         label={assignedTag}
@@ -278,7 +321,7 @@ const PresidentAnnouncements = () => {
                         <Button
                           variant="primary"
                           size="small"
-                          onClick={() => alert('Marked as read!')}
+                          onClick={() => alert('Announcement marked as read.')}
                           sx={{ backgroundColor: '#4F2BCB', fontSize: '0.76rem', py: 0.4 }}
                         >
                           Mark as Read
@@ -308,7 +351,7 @@ const PresidentAnnouncements = () => {
           )}
         </Grid>
 
-        {/* Right Column: Recent Activity Sidebar Matching Mockup */}
+        {/* Right Column: Recent Activity Sidebar */}
         <Grid item xs={12} md={4}>
           <Paper
             elevation={0}
@@ -330,7 +373,7 @@ const PresidentAnnouncements = () => {
                 <VisibilityOutlinedIcon sx={{ fontSize: 18, color: '#4F2BCB', mt: 0.2 }} />
                 <Box>
                   <Typography variant="caption" sx={{ fontWeight: 700, color: '#20202A', display: 'block' }}>
-                    3 members viewed "New Meeting Location"
+                    3 members viewed latest notices
                   </Typography>
                   <Typography variant="caption" sx={{ color: '#9DA0AE' }}>4 minutes ago</Typography>
                 </Box>
@@ -340,7 +383,7 @@ const PresidentAnnouncements = () => {
                 <NotificationsActiveOutlinedIcon sx={{ fontSize: 18, color: '#0284C7', mt: 0.2 }} />
                 <Box>
                   <Typography variant="caption" sx={{ fontWeight: 700, color: '#20202A', display: 'block' }}>
-                    4 mentions raised in debate forum
+                    4 mentions raised in student bulletin
                   </Typography>
                   <Typography variant="caption" sx={{ color: '#9DA0AE' }}>1 hour ago</Typography>
                 </Box>
@@ -350,9 +393,9 @@ const PresidentAnnouncements = () => {
                 <CheckCircleOutlinedIcon sx={{ fontSize: 18, color: '#059669', mt: 0.2 }} />
                 <Box>
                   <Typography variant="caption" sx={{ fontWeight: 700, color: '#20202A', display: 'block' }}>
-                    Executive board nominations opened
+                    Announcement broadcast synchronized
                   </Typography>
-                  <Typography variant="caption" sx={{ color: '#9DA0AE' }}>Yesterday at 5:45 PM</Typography>
+                  <Typography variant="caption" sx={{ color: '#9DA0AE' }}>Active</Typography>
                 </Box>
               </Box>
             </Stack>
@@ -360,7 +403,7 @@ const PresidentAnnouncements = () => {
         </Grid>
       </Grid>
 
-      {/* Modal for Create/Edit Announcement */}
+      {/* Modal for Create/Edit Announcement with Type Selector */}
       <Dialog
         open={modalOpen}
         onClose={() => setModalOpen(false)}
@@ -380,6 +423,23 @@ const PresidentAnnouncements = () => {
               onChange={(e) => setForm({ ...form, title: e.target.value })}
               required
             />
+
+            {/* Announcement Type Selector */}
+            <TextField
+              select
+              label="Announcement Type / Category"
+              fullWidth
+              value={form.announcement_type || 'General'}
+              onChange={(e) => setForm({ ...form, announcement_type: e.target.value })}
+              helperText="Select priority level or notice category (e.g. Urgent, Event Notice, Election)."
+            >
+              {ANNOUNCEMENT_TYPES.map((type) => (
+                <MenuItem key={type} value={type}>
+                  {type}
+                </MenuItem>
+              ))}
+            </TextField>
+
             <TextField
               label="Announcement Details"
               fullWidth

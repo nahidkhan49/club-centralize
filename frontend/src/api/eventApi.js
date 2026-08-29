@@ -3,7 +3,6 @@ import api from './axiosInstance';
 
 /**
  * Fetch events for a specific club.
- * Supports optional pagination via `skip` and `limit` query params.
  */
 export const fetchEventsByClub = async (clubId, params = {}) => {
   const response = await api.get(`/events/club/${clubId}`, { params });
@@ -41,6 +40,33 @@ export const joinEvent = async (eventId) => {
 
 /** Leave an event. */
 export const leaveEvent = async (eventId) => {
-  const response = await api.post(`/events/${eventId}/leave`);
+  const response = await api.delete(`/events/${eventId}/join`);
+  return response.data;
+};
+
+/** Fetch participants/registrants of an event */
+export const fetchEventParticipants = async (eventId) => {
+  const response = await api.get(`/events/${eventId}/participants`);
+  return response.data;
+};
+
+/** Manually add participant to event */
+export const addEventParticipant = async (eventId, userId) => {
+  const response = await api.post(`/events/${eventId}/participants/${userId}`);
+  return response.data;
+};
+
+/** Remove participant from event */
+export const removeEventParticipant = async (eventId, userId) => {
+  await api.delete(`/events/${eventId}/participants/${userId}`);
+};
+
+/** Upload Android APK package */
+export const uploadApk = async (file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  const response = await api.post('/uploads/apk', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
   return response.data;
 };

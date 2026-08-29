@@ -15,7 +15,9 @@ router = APIRouter(
 DEFAULT_BRANDING = {
     "site_name": "Club Centralize",
     "site_logo": "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=200&q=80",
-    "tagline": "Empowering Campus Student Organizations"
+    "tagline": "Empowering Campus Student Organizations",
+    "apk_url": "/static/uploads/club-centralize.apk",
+    "app_version": "1.0.0"
 }
 
 
@@ -23,11 +25,13 @@ class BrandingSettings(BaseModel):
     site_name: str
     site_logo: str | None = None
     tagline: str | None = None
+    apk_url: str | None = None
+    app_version: str | None = None
 
 
 @router.get("/branding", response_model=BrandingSettings)
 def get_branding(db: Session = Depends(get_db)):
-    """Public endpoint to get site name, logo, and tagline."""
+    """Public endpoint to get site name, logo, tagline, and mobile APK download URL."""
     setting = db.query(SystemSetting).filter(SystemSetting.key == "branding").first()
     if not setting:
         return BrandingSettings(**DEFAULT_BRANDING)
@@ -44,11 +48,11 @@ def update_branding(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Admin-only endpoint to update site name, logo, and tagline."""
+    """Admin-only endpoint to update site name, logo, tagline, and APK download link."""
     if not current_user.is_superuser:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only administrators can customize site branding."
+            detail="Only administrators can customize site branding and mobile packages."
         )
 
     setting = db.query(SystemSetting).filter(SystemSetting.key == "branding").first()

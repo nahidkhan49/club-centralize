@@ -35,6 +35,9 @@ async def lifespan(app: FastAPI):
             
             # Safe column additions for users table
             conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url VARCHAR(500);"))
+
+            # Safe column additions for announcements table
+            conn.execute(text("ALTER TABLE announcements ADD COLUMN IF NOT EXISTS announcement_type VARCHAR(50) DEFAULT 'General';"))
     except Exception as e:
         print(f"Startup DDL column migration warning: {e}")
     

@@ -5,417 +5,295 @@ import {
   Paper,
   Grid,
   Chip,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   TextField,
+  InputAdornment,
   MenuItem,
-  Button as MuiButton,
+  CircularProgress,
+  Alert,
+  Stack,
+  Avatar,
 } from '@mui/material';
 import CampaignOutlinedIcon from '@mui/icons-material/CampaignOutlined';
-import AddIcon from '@mui/icons-material/Add';
-import CalendarTodayOutlinedIcon from '@mui/icons-material/CalendarTodayOutlined';
+import SearchIcon from '@mui/icons-material/Search';
+import PersonOutlineIcon from '@mui/icons-material/PersonOutlined';
+import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import LocationOnOutlinedIcon from '@mui/icons-material/LocationOnOutlined';
-import GroupsOutlinedIcon from '@mui/icons-material/GroupsOutlined';
-import api from '../api/axiosInstance';
-import Button from '../components/Button';
 
-const INITIAL_ANNOUNCEMENTS = [
+import api, { getClubLogoUrl } from '../api/axiosInstance';
+import { fetchAnnouncements } from '../api/announcementsApi';
+import Button from '../components/Button';
+import EmptyState from '../components/EmptyState';
+
+const ANNOUNCEMENT_TYPES = ['All', 'Urgent', 'General', 'Event Notice', 'Achievement', 'Election'];
+
+const TAG_CONFIG = {
+  Urgent: { bg: '#FEE2E2', color: '#DC2626' },
+  General: { bg: '#D1FAE5', color: '#059669' },
+  'Event Notice': { bg: '#FEF3C7', color: '#D97706' },
+  Achievement: { bg: '#E0F2FE', color: '#0284C7' },
+  Election: { bg: '#F3F0FF', color: '#7C3AED' },
+};
+
+const FALLBACK_POSTS = [
   {
     id: 1,
-    title: 'Spring Club Fair 2026 Announced!',
-    description:
-      'Join us at the Central Campus Plaza for the annual Spring Club Fair. Discover 50+ student organizations, meet club leaders, and register for exciting activities.',
-    date: '2026-08-25',
-    category: 'Notice',
-    author: 'Student Affairs',
-    clubName: 'Central Campus Community',
-    sourceLocation: 'Central Campus Plaza & Student Affairs Office',
+    title: 'Spring University Club Fair 2026 Announced!',
+    content: 'Join us at the Central Campus Plaza for the annual Spring Club Fair. Discover 50+ student organizations, meet club leaders, and register for exciting activities.',
+    announcement_type: 'General',
+    club_name: 'Campus Life & Student Affairs',
+    created_at: new Date().toISOString(),
   },
   {
     id: 2,
-    title: 'Computer Society Hackathon Registration Open',
-    description:
-      'The annual 24-hour university hackathon is now accepting project submissions and team registrations. Prizes up to $5,000 for top innovations!',
-    date: '2026-08-22',
-    category: 'Update',
-    author: 'President (nahid)',
-    clubName: 'Computer Society',
-    sourceLocation: 'CSE Dept Lab 4 & Computer Society Headquarters',
+    title: 'Important: Computer Society Annual Hackathon Registration Open',
+    content: 'The annual 24-hour university hackathon is now accepting project submissions and team registrations. Cash awards and internship tracks available!',
+    announcement_type: 'Urgent',
+    club_name: 'Computer Society',
+    created_at: new Date().toISOString(),
   },
   {
     id: 3,
-    title: 'New Club Registration & Grant Guidelines',
-    description:
-      'Review the updated university policies for starting new clubs and applying for annual activity grants for the upcoming academic semester.',
-    date: '2026-08-18',
-    category: 'General',
-    author: 'Club Centralize Administration',
-    clubName: 'University Administration',
-    sourceLocation: 'Administration Building Room 204',
-  },
-  {
-    id: 4,
-    title: 'Campus Leadership Workshop Series',
-    description:
-      'All club presidents and secretaries are invited to attend our executive leadership and event planning workshop series starting next Monday.',
-    date: '2026-08-15',
-    category: 'Info',
-    author: 'Student Development Center',
-    clubName: 'Leadership & Debating Club',
-    sourceLocation: 'Auditorium Hall 2',
+    title: 'National Inter-University Debate Championship Victory!',
+    content: 'Congratulations to our club debate delegation for securing 1st place at the National Championship tournament this weekend!',
+    announcement_type: 'Achievement',
+    club_name: 'Debating Club',
+    created_at: new Date().toISOString(),
   },
 ];
 
-const CATEGORY_COLORS = {
-  Notice: { bg: '#FEF3C7', color: '#B45309' },
-  Update: { bg: '#E0F2FE', color: '#0369A1' },
-  General: { bg: '#F3F0FF', color: '#4F2BCB' },
-  Info: { bg: '#E6F4EA', color: '#15803D' },
-};
-
 export default function Announcements() {
-  const [announcements, setAnnouncements] = useState(INITIAL_ANNOUNCEMENTS);
+  const [announcements, setAnnouncements] = useState([]);
   const [clubs, setClubs] = useState([]);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [newPost, setNewPost] = useState({
-    title: '',
-    description: '',
-    category: 'General',
-    clubName: 'Computer Society',
-    sourceLocation: 'CSE Department',
-  });
+  const [selectedClubId, setSelectedClubId] = useState('all');
+  const [selectedType, setSelectedType] = useState('All');
+  const [search, setSearch] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const fetchClubs = async () => {
-      try {
-        const res = await api.get('/clubs');
-        if (res.data && res.data.length > 0) {
-          setClubs(res.data);
-          setNewPost((prev) => ({ ...prev, clubName: res.data[0].name }));
-        }
-      } catch (err) {
-        console.error('Failed to load clubs', err);
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      const [annData, clubsRes] = await Promise.all([
+        fetchAnnouncements(selectedClubId !== 'all' ? selectedClubId : null).catch(() => []),
+        api.get('/clubs').catch(() => ({ data: [] })),
+      ]);
+
+      const clubsList = Array.isArray(clubsRes?.data) ? clubsRes.data : [];
+      setClubs(clubsList);
+
+      if (Array.isArray(annData) && annData.length > 0) {
+        setAnnouncements(annData);
+      } else {
+        setAnnouncements(FALLBACK_POSTS);
       }
-    };
-    fetchClubs();
-  }, []);
-
-  const handleCreate = (e) => {
-    e.preventDefault();
-    if (!newPost.title.trim()) return;
-
-    const created = {
-      id: Date.now(),
-      title: newPost.title.trim(),
-      description: newPost.description.trim(),
-      category: newPost.category,
-      date: new Date().toISOString().split('T')[0],
-      author: 'You (Club Leader)',
-      clubName: newPost.clubName || 'Computer Society',
-      sourceLocation: newPost.sourceLocation.trim() || 'Main Campus',
-    };
-
-    setAnnouncements([created, ...announcements]);
-    setNewPost({
-      title: '',
-      description: '',
-      category: 'General',
-      clubName: clubs[0]?.name || 'Computer Society',
-      sourceLocation: 'CSE Department',
-    });
-    setDialogOpen(false);
+    } catch (err) {
+      console.error('Failed to load announcements', err);
+      setAnnouncements(FALLBACK_POSTS);
+    } finally {
+      setLoading(false);
+    }
   };
 
+  useEffect(() => {
+    loadData();
+  }, [selectedClubId]);
+
+  const filtered = announcements.filter((item) => {
+    const titleMatch =
+      item.title.toLowerCase().includes(search.toLowerCase()) ||
+      item.content.toLowerCase().includes(search.toLowerCase()) ||
+      (item.club_name && item.club_name.toLowerCase().includes(search.toLowerCase()));
+
+    const type = item.announcement_type || 'General';
+    const typeMatch = selectedType === 'All' || type === selectedType;
+
+    return titleMatch && typeMatch;
+  });
+
   return (
-    <Box sx={{ maxWidth: 1100, mx: 'auto', py: 2 }}>
-      {/* Header */}
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: { xs: 'column', sm: 'row' },
-          justifyContent: 'space-between',
-          alignItems: { xs: 'flex-start', sm: 'center' },
-          gap: 2,
-          mb: 4,
-        }}
-      >
+    <Box sx={{ maxWidth: 1150, mx: 'auto', pb: 6, width: '100%' }}>
+      {/* Header Bar */}
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3} flexWrap="wrap" gap={2}>
         <Box>
-          <Typography variant="h4" sx={{ fontWeight: 800, color: '#20202A', fontSize: '1.8rem' }}>
-            Announcements
+          <Typography variant="h4" sx={{ fontWeight: 900, color: '#20202A', letterSpacing: '-0.02em' }}>
+            Club Announcements & Bulletins
           </Typography>
           <Typography variant="body2" sx={{ color: '#777788', mt: 0.5 }}>
-            Stay informed with the latest updates from university clubs and departments.
+            Official notices, urgent updates, and event alerts across all student clubs.
           </Typography>
         </Box>
-
-        <Button
-          variant="primary"
-          onClick={() => setDialogOpen(true)}
-          startIcon={<AddIcon />}
-          sx={{
-            backgroundColor: '#4F2BCB',
-            color: '#FFFFFF',
-            px: 2.5,
-            py: 1,
-            borderRadius: '10px',
-            fontWeight: 700,
-            boxShadow: '0 4px 14px rgba(79, 43, 203, 0.2)',
-            whiteSpace: 'nowrap',
-            '&:hover': { backgroundColor: '#39209A' },
-          }}
-        >
-          + New Announcement
-        </Button>
       </Box>
 
+      {/* Filter and Search Bar */}
+      <Paper
+        elevation={0}
+        sx={{
+          p: 2,
+          borderRadius: '16px',
+          border: '1px solid #E9E7F2',
+          backgroundColor: '#FFFFFF',
+          mb: 3.5,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 2,
+        }}
+      >
+        <Box display="flex" gap={2} flexWrap="wrap" alignItems="center">
+          <TextField
+            placeholder="Search announcements by keyword, topic, or club..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            size="small"
+            sx={{
+              flex: 1,
+              minWidth: 220,
+              '& .MuiOutlinedInput-root': { borderRadius: '12px', borderColor: '#E9E7F2' },
+            }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon sx={{ color: '#9DA0AE' }} />
+                </InputAdornment>
+              ),
+            }}
+          />
+
+          <TextField
+            select
+            size="small"
+            value={selectedClubId}
+            onChange={(e) => setSelectedClubId(e.target.value)}
+            sx={{
+              minWidth: 200,
+              '& .MuiOutlinedInput-root': { borderRadius: '12px', borderColor: '#E9E7F2' },
+            }}
+          >
+            <MenuItem value="all">All Clubs</MenuItem>
+            {clubs.map((c) => (
+              <MenuItem key={c.id} value={c.id}>
+                {c.name}
+              </MenuItem>
+            ))}
+          </TextField>
+        </Box>
+
+        {/* Category Pills */}
+        <Stack direction="row" spacing={1} overflow="auto" pb={0.5}>
+          {ANNOUNCEMENT_TYPES.map((type) => (
+            <Chip
+              key={type}
+              label={type}
+              clickable
+              onClick={() => setSelectedType(type)}
+              sx={{
+                fontWeight: 700,
+                fontSize: '0.8rem',
+                backgroundColor: selectedType === type ? '#4F2BCB' : '#FBFBFE',
+                color: selectedType === type ? '#FFFFFF' : '#6E6D7A',
+                border: '1px solid',
+                borderColor: selectedType === type ? '#4F2BCB' : '#E9E7F2',
+                borderRadius: '10px',
+              }}
+            />
+          ))}
+        </Stack>
+      </Paper>
+
       {/* Announcements List */}
-      <Grid container spacing={3}>
-        {announcements.map((item) => {
-          const badgeStyle = CATEGORY_COLORS[item.category] || CATEGORY_COLORS.General;
-          return (
-            <Grid item xs={12} key={item.id}>
+      {loading ? (
+        <Box display="flex" justifyContent="center" py={8}>
+          <CircularProgress sx={{ color: '#4F2BCB' }} />
+        </Box>
+      ) : filtered.length === 0 ? (
+        <EmptyState
+          icon={<CampaignOutlinedIcon />}
+          title="No announcements found"
+          message="Try adjusting your search query or category filter."
+        />
+      ) : (
+        <Stack spacing={2.5}>
+          {filtered.map((item) => {
+            const assignedTag = item.announcement_type || 'General';
+            const tagConfig = TAG_CONFIG[assignedTag] || TAG_CONFIG.General;
+
+            return (
               <Paper
+                key={item.id}
                 elevation={0}
                 sx={{
-                  p: 3.5,
-                  borderRadius: '16px',
+                  p: 3,
+                  borderRadius: '20px',
                   border: '1px solid #E9E7F2',
                   backgroundColor: '#FFFFFF',
-                  display: 'flex',
-                  flexDirection: { xs: 'column', sm: 'row' },
-                  gap: 3,
-                  alignItems: 'flex-start',
-                  transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                  transition: 'all 0.2s ease',
                   '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 8px 24px rgba(79, 43, 203, 0.06)',
-                    borderColor: '#C7B8FF',
+                    borderColor: '#4F2BCB',
+                    boxShadow: '0 6px 22px rgba(79, 43, 203, 0.06)',
                   },
                 }}
               >
-                <Box
-                  sx={{
-                    width: 52,
-                    height: 52,
-                    borderRadius: '14px',
-                    backgroundColor: '#F3F0FF',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                  }}
-                >
-                  <CampaignOutlinedIcon sx={{ color: '#4F2BCB', fontSize: 28 }} />
-                </Box>
-
-                <Box sx={{ flex: 1 }}>
-                  <Box display="flex" flexWrap="wrap" alignItems="center" justifyContent="space-between" gap={1.5} mb={1}>
-                    <Typography variant="h6" sx={{ fontWeight: 700, color: '#20202A', fontSize: '1.15rem' }}>
+                {/* Header Row */}
+                <Box display="flex" justifyContent="space-between" alignItems="flex-start" gap={1.5} mb={1}>
+                  <Box>
+                    <Typography variant="h6" sx={{ fontWeight: 800, color: '#20202A', fontSize: '1.1rem', mb: 0.5 }}>
                       {item.title}
                     </Typography>
 
-                    <Chip
-                      label={item.category}
-                      size="small"
-                      sx={{
-                        fontWeight: 700,
-                        fontSize: '0.72rem',
-                        backgroundColor: badgeStyle.bg,
-                        color: badgeStyle.color,
-                        borderRadius: '12px',
-                        px: 0.5,
-                      }}
-                    />
-                  </Box>
+                    <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap">
+                      {item.club_name && (
+                        <Box display="flex" alignItems="center" gap={0.5}>
+                          <BusinessOutlinedIcon sx={{ fontSize: 16, color: '#4F2BCB' }} />
+                          <Typography variant="caption" sx={{ color: '#4F2BCB', fontWeight: 700 }}>
+                            {item.club_name}
+                          </Typography>
+                        </Box>
+                      )}
 
-                  <Typography variant="body2" sx={{ color: '#525266', lineHeight: 1.6, mb: 2 }}>
-                    {item.description}
-                  </Typography>
-
-                  {/* Metadata Row: Posting Club, Source/Department, Date */}
-                  <Box display="flex" flexWrap="wrap" alignItems="center" gap={2.5}>
-                    {item.clubName && (
-                      <Box display="flex" alignItems="center" gap={0.8}>
-                        <GroupsOutlinedIcon sx={{ fontSize: 18, color: '#4F2BCB' }} />
-                        <Typography variant="caption" sx={{ color: '#4F2BCB', fontWeight: 700 }}>
-                          Club: {item.clubName}
+                      <Box display="flex" alignItems="center" gap={0.5}>
+                        <AccessTimeIcon sx={{ fontSize: 15, color: '#9DA0AE' }} />
+                        <Typography variant="caption" sx={{ color: '#777788', fontWeight: 500 }}>
+                          {item.created_at ? new Date(item.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : 'Recent'}
                         </Typography>
                       </Box>
-                    )}
-
-                    {item.sourceLocation && (
-                      <Box display="flex" alignItems="center" gap={0.8}>
-                        <LocationOnOutlinedIcon sx={{ fontSize: 18, color: '#777788' }} />
-                        <Typography variant="caption" sx={{ color: '#777788', fontWeight: 600 }}>
-                          Source: {item.sourceLocation}
-                        </Typography>
-                      </Box>
-                    )}
-
-                    <Box display="flex" alignItems="center" gap={0.8}>
-                      <CalendarTodayOutlinedIcon sx={{ fontSize: 16, color: '#777788' }} />
-                      <Typography variant="caption" sx={{ color: '#777788', fontWeight: 600 }}>
-                        {item.date}
-                      </Typography>
-                    </Box>
+                    </Stack>
                   </Box>
+
+                  <Chip
+                    label={assignedTag}
+                    size="small"
+                    sx={{
+                      backgroundColor: tagConfig.bg,
+                      color: tagConfig.color,
+                      fontWeight: 800,
+                      fontSize: '0.72rem',
+                      borderRadius: '8px',
+                      height: 24,
+                    }}
+                  />
+                </Box>
+
+                {/* Content */}
+                <Typography variant="body2" sx={{ color: '#444455', lineHeight: 1.75, my: 1.5 }}>
+                  {item.content}
+                </Typography>
+
+                {/* Action Buttons */}
+                <Box display="flex" justifyContent="flex-end" gap={1}>
+                  <Button
+                    variant="ghost"
+                    size="small"
+                    onClick={() => alert(`Viewing full notice for "${item.title}"`)}
+                    sx={{ color: '#4F2BCB', borderColor: '#D4CCF7', fontSize: '0.78rem' }}
+                  >
+                    View Full Notice →
+                  </Button>
                 </Box>
               </Paper>
-            </Grid>
-          );
-        })}
-      </Grid>
-
-      {/* New Announcement Dialog */}
-      <Dialog
-        open={dialogOpen}
-        onClose={() => setDialogOpen(false)}
-        PaperProps={{ sx: { borderRadius: '20px', p: 1, maxWidth: 520, width: '100%' } }}
-      >
-        <DialogTitle sx={{ fontWeight: 700, color: '#20202A' }}>
-          Create New Announcement
-        </DialogTitle>
-        <Box component="form" onSubmit={handleCreate}>
-          <DialogContent>
-            <Box sx={{ mb: 2.5 }}>
-              <Typography variant="body2" sx={{ fontWeight: 600, color: '#20202A', mb: 0.8 }}>
-                Announcement Title *
-              </Typography>
-              <TextField
-                fullWidth
-                placeholder="e.g. Annual Tech Symposium Announced"
-                value={newPost.title}
-                onChange={(e) => setNewPost({ ...newPost, title: e.target.value })}
-                required
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    backgroundColor: '#F3F6FC',
-                    borderRadius: '10px',
-                    '& fieldset': { borderColor: '#E9E7F2' },
-                  },
-                }}
-              />
-            </Box>
-
-            <Grid container spacing={2} sx={{ mb: 2.5 }}>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="body2" sx={{ fontWeight: 600, color: '#20202A', mb: 0.8 }}>
-                  Posting Club *
-                </Typography>
-                <TextField
-                  fullWidth
-                  select
-                  value={newPost.clubName}
-                  onChange={(e) => setNewPost({ ...newPost, clubName: e.target.value })}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      backgroundColor: '#F3F6FC',
-                      borderRadius: '10px',
-                      '& fieldset': { borderColor: '#E9E7F2' },
-                    },
-                  }}
-                >
-                  {clubs.length > 0 ? (
-                    clubs.map((c) => (
-                      <MenuItem key={c.id} value={c.name}>
-                        {c.name}
-                      </MenuItem>
-                    ))
-                  ) : (
-                    <MenuItem value="Computer Society">Computer Society</MenuItem>
-                  )}
-                </TextField>
-              </Grid>
-
-              <Grid item xs={12} sm={6}>
-                <Typography variant="body2" sx={{ fontWeight: 600, color: '#20202A', mb: 0.8 }}>
-                  Category
-                </Typography>
-                <TextField
-                  fullWidth
-                  select
-                  value={newPost.category}
-                  onChange={(e) => setNewPost({ ...newPost, category: e.target.value })}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      backgroundColor: '#F3F6FC',
-                      borderRadius: '10px',
-                      '& fieldset': { borderColor: '#E9E7F2' },
-                    },
-                  }}
-                >
-                  <MenuItem value="General">General</MenuItem>
-                  <MenuItem value="Notice">Notice</MenuItem>
-                  <MenuItem value="Update">Update</MenuItem>
-                  <MenuItem value="Info">Info</MenuItem>
-                </TextField>
-              </Grid>
-            </Grid>
-
-            <Box sx={{ mb: 2.5 }}>
-              <Typography variant="body2" sx={{ fontWeight: 600, color: '#20202A', mb: 0.8 }}>
-                Source / Posting Location (e.g. CSE Dept, Auditorium)
-              </Typography>
-              <TextField
-                fullWidth
-                placeholder="e.g. CSE Department / Auditorium Hall 2"
-                value={newPost.sourceLocation}
-                onChange={(e) => setNewPost({ ...newPost, sourceLocation: e.target.value })}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    backgroundColor: '#F3F6FC',
-                    borderRadius: '10px',
-                    '& fieldset': { borderColor: '#E9E7F2' },
-                  },
-                }}
-              />
-            </Box>
-
-            <Box sx={{ mb: 1 }}>
-              <Typography variant="body2" sx={{ fontWeight: 600, color: '#20202A', mb: 0.8 }}>
-                Announcement Content
-              </Typography>
-              <TextField
-                fullWidth
-                multiline
-                rows={4}
-                placeholder="Details of the announcement..."
-                value={newPost.description}
-                onChange={(e) => setNewPost({ ...newPost, description: e.target.value })}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    backgroundColor: '#F3F6FC',
-                    borderRadius: '10px',
-                    '& fieldset': { borderColor: '#E9E7F2' },
-                  },
-                }}
-              />
-            </Box>
-          </DialogContent>
-          <DialogActions sx={{ p: 2, gap: 1 }}>
-            <MuiButton onClick={() => setDialogOpen(false)} sx={{ color: '#777788', textTransform: 'none', fontWeight: 600 }}>
-              Cancel
-            </MuiButton>
-            <MuiButton
-              type="submit"
-              sx={{
-                backgroundColor: '#4F2BCB',
-                color: '#FFFFFF',
-                px: 3,
-                py: 1,
-                borderRadius: '10px',
-                fontWeight: 700,
-                textTransform: 'none',
-                '&:hover': { backgroundColor: '#39209A' },
-              }}
-            >
-              Post Announcement
-            </MuiButton>
-          </DialogActions>
-        </Box>
-      </Dialog>
+            );
+          })}
+        </Stack>
+      )}
     </Box>
   );
 }

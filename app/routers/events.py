@@ -45,7 +45,6 @@ def create_event(
     _check_event_permission(event_data.club_id, current_user, db)
 
     event_dict = event_data.model_dump() if hasattr(event_data, "model_dump") else event_data.dict()
-    # Strip any helper field like 'date' if not in model
     event_dict.pop("date", None)
 
     if not event_dict.get("start_time"):
@@ -86,7 +85,7 @@ def list_events(
     query = db.query(Event).filter(Event.club_id == club_id)
     if not include_inactive:
         query = query.filter(Event.is_active == True)
-    return query.all()
+    return query.order_by(Event.start_time.asc()).all()
 
 
 @router.get("/{event_id}", response_model=EventResponse)
@@ -183,7 +182,7 @@ def list_event_participants(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """List participants of an event. Admin, or President/Secretary of this specific club only."""
+    """List participants of an event."""
     event = db.query(Event).filter(Event.id == event_id).first()
     if not event:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
@@ -205,3 +204,61 @@ def list_event_participants(
         )
         for u in event.participants
     ]
+
+
+@router.post("/{event_id}/participants/{user_id}", response_model=UserResponse)
+def add_event_participant(
+    event_id: int,
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Manually add a member to the event roster (President / Secretary / Admin)."""
+    event = db.query(Event).filter(Event.id == event_id).first()
+    if not event:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
+
+    _check_event_permission(event.club_id, current_user, db)
+
+    target_user = db.query(User).filter(User.id == user_id).first()
+    if not target_user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    if target_user not in event.participants:
+        event.participants.append(target_user)
+        db.commit()
+
+    return UserResponse(
+        id=target_user.id,
+        email=target_user.email,
+        username=target_user.username,
+        full_name=target_user.full_name,
+        system_role=target_user.system_role.value if hasattr(target_user.system_role, "value") else str(target_user.system_role),
+        is_active=target_user.is_active,
+        is_superuser=target_user.is_superuser,
+        avatar_url=target_user.avatar_url,
+        created_at=target_user.created_at,
+        updated_at=target_user.updated_at
+    )
+
+
+@router.delete("/{event_id}/participants/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+def remove_event_participant(
+    event_id: int,
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Remove a registrant from the event roster (President / Secretary / Admin)."""
+    event = db.query(Event).filter(Event.id == event_id).first()
+    if not event:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
+
+    _check_event_permission(event.club_id, current_user, db)
+
+    target_user = db.query(User).filter(User.id == user_id).first()
+    if target_user and target_user in event.participants:
+        event.participants.remove(target_user)
+        db.commit()
+
+    return None

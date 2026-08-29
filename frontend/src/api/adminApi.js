@@ -36,6 +36,16 @@ export const updateClub = async (clubId, clubData) => {
   return res.data;
 };
 
+/** Upload image file */
+export const uploadImage = async (file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  const res = await api.post('/uploads/image', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return res.data;
+};
+
 /** Delete club (admin only) */
 export const deleteClub = async (clubId) => {
   const res = await api.delete(`/clubs/${clubId}`);

@@ -274,12 +274,14 @@ const Sidebar = ({ mobileOpen, onMobileClose }) => {
         variant="permanent"
         sx={{
           display: { xs: 'none', md: 'block' },
+          width: DRAWER_WIDTH,
+          flexShrink: 0,
           '& .MuiDrawer-paper': {
             width: DRAWER_WIDTH,
             boxSizing: 'border-box',
             mt: '64px',
             height: 'calc(100vh - 64px)',
-            borderRight: 'none',
+            borderRight: '1px solid #E9E7F2',
           },
         }}
         open

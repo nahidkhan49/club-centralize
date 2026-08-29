@@ -125,9 +125,11 @@ def update_club(
     club_id: int,
     club_data: ClubUpdate,
     db: Session = Depends(get_db),
-    admin_user: User = Depends(get_current_admin_user)
+    current_user: User = Depends(get_current_user)
 ):
-    """Admin-only: Update club core information."""
+    """Club Officers (President, Secretary) or Admin: Update club profile, cover, logo, and details."""
+    check_club_officer_permission(club_id, current_user, db)
+
     club = db.query(Club).filter(Club.id == club_id).first()
     if not club:
         raise HTTPException(
@@ -135,29 +137,44 @@ def update_club(
             detail="Club not found"
         )
 
-    if club_data.name is not None and club_data.name.strip() != club.name:
-        existing_club = db.query(Club).filter(Club.name == club_data.name.strip()).first()
-        if existing_club:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Club name already exists"
-            )
-        club.name = club_data.name.strip()
+    # Admin only updates for name, category, is_active
+    if current_user.is_superuser:
+        if club_data.name is not None and club_data.name.strip() != club.name:
+            existing_club = db.query(Club).filter(Club.name == club_data.name.strip()).first()
+            if existing_club:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Club name already exists"
+                )
+            club.name = club_data.name.strip()
 
+        if club_data.category is not None:
+            club.category = club_data.category.strip() if club_data.category else None
+
+        if club_data.is_active is not None:
+            club.is_active = club_data.is_active
+
+    # Officers & Admins can update description, cover, logo, contact, meeting info, gallery
     if club_data.description is not None:
         club.description = club_data.description.strip() if club_data.description else None
 
     if club_data.logo_url is not None:
         club.logo_url = club_data.logo_url.strip() if club_data.logo_url else None
 
+    if club_data.cover_url is not None:
+        club.cover_url = club_data.cover_url.strip() if club_data.cover_url else None
+
+    if club_data.meeting_location is not None:
+        club.meeting_location = club_data.meeting_location.strip() if club_data.meeting_location else None
+
+    if club_data.meeting_time is not None:
+        club.meeting_time = club_data.meeting_time.strip() if club_data.meeting_time else None
+
+    if club_data.gallery is not None:
+        club.gallery = club_data.gallery.strip() if club_data.gallery else None
+
     if club_data.contact_email is not None:
         club.contact_email = club_data.contact_email.strip() if club_data.contact_email else None
-
-    if club_data.category is not None:
-        club.category = club_data.category.strip() if club_data.category else None
-
-    if club_data.is_active is not None:
-        club.is_active = club_data.is_active
 
     db.commit()
     db.refresh(club)

@@ -24,6 +24,7 @@ import { useAuth } from '../../context/AuthContext';
 import api from '../../api/axiosInstance';
 import { fetchClubMembers, fetchClubStats } from '../../api/adminApi';
 import Button from '../../components/Button';
+import EditClubModal from '../../components/EditClubModal';
 
 const ROLE_CONFIGS = {
   president: { label: 'President', bg: '#FEF3C7', color: '#B45309' },
@@ -39,23 +40,11 @@ const DEFAULT_COVERS = [
   'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=1600&q=80',
 ];
 
-const GALLERY_ITEMS = [
-  {
-    url: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=600&q=80',
-    title: 'Executive Meeting',
-  },
-  {
-    url: 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?auto=format&fit=crop&w=600&q=80',
-    title: 'Club Orientation & Workshop',
-  },
-  {
-    url: 'https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&w=600&q=80',
-    title: 'Competitions & Project Display',
-  },
-  {
-    url: 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=600&q=80',
-    title: 'Annual Celebration Gathering',
-  },
+const DEFAULT_GALLERY = [
+  { url: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=600&q=80', title: 'Executive Meeting' },
+  { url: 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?auto=format&fit=crop&w=600&q=80', title: 'Orientation & Workshop' },
+  { url: 'https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&w=600&q=80', title: 'Competitions & Projects' },
+  { url: 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=600&q=80', title: 'Annual Celebration' },
 ];
 
 const PresidentClub = () => {
@@ -69,29 +58,31 @@ const PresidentClub = () => {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [editModalOpen, setEditModalOpen] = useState(false);
 
-  useEffect(() => {
+  const loadClubDetails = async () => {
     if (!myClubId) {
       setLoading(false);
       return;
     }
-    const loadClubDetails = async () => {
-      try {
-        setLoading(true);
-        const [clubRes, membersData, statsData] = await Promise.all([
-          api.get(`/clubs/${myClubId}`),
-          fetchClubMembers(myClubId),
-          fetchClubStats(myClubId),
-        ]);
-        setClub(clubRes.data);
-        setMembers(membersData || []);
-        setStats(statsData);
-      } catch (err) {
-        setError('Failed to fetch club information.');
-      } finally {
-        setLoading(false);
-      }
-    };
+    try {
+      setLoading(true);
+      const [clubRes, membersData, statsData] = await Promise.all([
+        api.get(`/clubs/${myClubId}`),
+        fetchClubMembers(myClubId),
+        fetchClubStats(myClubId),
+      ]);
+      setClub(clubRes.data);
+      setMembers(membersData || []);
+      setStats(statsData);
+    } catch (err) {
+      setError('Failed to fetch club information.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     loadClubDetails();
   }, [myClubId]);
 
@@ -111,15 +102,25 @@ const PresidentClub = () => {
     );
   }
 
-  const coverUrl =
-    club?.cover_url ||
-    DEFAULT_COVERS[(club?.id || 0) % DEFAULT_COVERS.length];
+  const coverUrl = club?.cover_url || DEFAULT_COVERS[(club?.id || 0) % DEFAULT_COVERS.length];
+
+  let displayGallery = DEFAULT_GALLERY;
+  if (club?.gallery) {
+    try {
+      const parsed = typeof club.gallery === 'string' ? JSON.parse(club.gallery) : club.gallery;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        displayGallery = parsed;
+      }
+    } catch (e) {
+      displayGallery = DEFAULT_GALLERY;
+    }
+  }
 
   const leadershipRoles = ['president', 'vice_president', 'secretary', 'treasurer'];
   const leadershipMembers = members.filter((m) => leadershipRoles.includes(m.role));
 
   return (
-    <Box sx={{ maxWidth: 1100, mx: 'auto', pb: 6 }}>
+    <Box sx={{ maxWidth: 1100, mx: 'auto', pb: 6, width: '100%' }}>
       {/* Header Info */}
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3} flexWrap="wrap" gap={2}>
         <Box>
@@ -130,7 +131,7 @@ const PresidentClub = () => {
             Club: <strong>{myClubName}</strong> — Full organization branding, leadership, and public view.
           </Typography>
         </Box>
-        <Stack direction="row" spacing={1.5}>
+        <Stack direction="row" spacing={1.5} flexWrap="wrap" gap={1}>
           <Button
             variant="ghost"
             onClick={() => navigate(`/clubs/${myClubId}`)}
@@ -140,10 +141,11 @@ const PresidentClub = () => {
           </Button>
           <Button
             variant="primary"
-            onClick={() => navigate('/president/events')}
+            startIcon={<EditOutlinedIcon />}
+            onClick={() => setEditModalOpen(true)}
             sx={{ backgroundColor: '#4F2BCB', fontSize: '0.85rem' }}
           >
-            Manage Events
+            Edit Club & Media
           </Button>
         </Stack>
       </Box>
@@ -162,6 +164,7 @@ const PresidentClub = () => {
           backgroundColor: '#FFFFFF',
           mb: 4,
           boxShadow: '0 8px 30px rgba(79, 43, 203, 0.05)',
+          position: 'relative',
         }}
       >
         <Box
@@ -174,8 +177,9 @@ const PresidentClub = () => {
             backgroundPosition: 'center',
           }}
         >
-          {club?.category && (
-            <Box sx={{ position: 'absolute', top: 20, right: 20 }}>
+          {/* Edit Cover Quick Action */}
+          <Box sx={{ position: 'absolute', top: 20, right: 20, display: 'flex', gap: 1 }}>
+            {club?.category && (
               <Chip
                 label={club.category}
                 sx={{
@@ -186,8 +190,22 @@ const PresidentClub = () => {
                   backdropFilter: 'blur(8px)',
                 }}
               />
-            </Box>
-          )}
+            )}
+            <Chip
+              icon={<EditOutlinedIcon style={{ fontSize: 16, color: '#4F2BCB' }} />}
+              label="Edit Media"
+              clickable
+              onClick={() => setEditModalOpen(true)}
+              sx={{
+                backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                color: '#4F2BCB',
+                fontWeight: 800,
+                fontSize: '0.82rem',
+                backdropFilter: 'blur(8px)',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+              }}
+            />
+          </Box>
         </Box>
 
         {/* Profile Card Overlay */}
@@ -295,9 +313,20 @@ const PresidentClub = () => {
               mb: 3.5,
             }}
           >
-            <Typography variant="h6" sx={{ fontWeight: 800, color: '#20202A', mb: 1.5 }}>
-              About Us
-            </Typography>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={1.5}>
+              <Typography variant="h6" sx={{ fontWeight: 800, color: '#20202A' }}>
+                About Us
+              </Typography>
+              <Button
+                variant="ghost"
+                size="small"
+                startIcon={<EditOutlinedIcon />}
+                onClick={() => setEditModalOpen(true)}
+                sx={{ fontSize: '0.78rem', color: '#4F2BCB' }}
+              >
+                Edit
+              </Button>
+            </Box>
             <Typography variant="body1" sx={{ color: '#555565', lineHeight: 1.8, fontSize: '0.96rem' }}>
               {club?.description ||
                 'Welcome to our club! We are dedicated to bringing students together through engaging workshops, competitions, skill-building events, and community initiatives.'}
@@ -412,17 +441,28 @@ const PresidentClub = () => {
               mb: 3.5,
             }}
           >
-            <Box display="flex" alignItems="center" gap={1} mb={2}>
-              <CollectionsOutlinedIcon sx={{ color: '#4F2BCB', fontSize: 20 }} />
-              <Typography variant="h6" sx={{ fontWeight: 800, color: '#20202A' }}>
-                Gallery
-              </Typography>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+              <Box display="flex" alignItems="center" gap={1}>
+                <CollectionsOutlinedIcon sx={{ color: '#4F2BCB', fontSize: 20 }} />
+                <Typography variant="h6" sx={{ fontWeight: 800, color: '#20202A' }}>
+                  Gallery
+                </Typography>
+              </Box>
+              <Button
+                variant="ghost"
+                size="small"
+                startIcon={<EditOutlinedIcon />}
+                onClick={() => setEditModalOpen(true)}
+                sx={{ fontSize: '0.78rem', color: '#4F2BCB' }}
+              >
+                Manage
+              </Button>
             </Box>
 
             <Grid container spacing={1.5}>
-              {GALLERY_ITEMS.map((item, index) => (
+              {displayGallery.map((item, index) => (
                 <Grid item xs={6} key={index}>
-                  <Tooltip title={item.title}>
+                  <Tooltip title={item.title || 'Photo'}>
                     <Box
                       sx={{
                         height: 100,
@@ -435,8 +475,8 @@ const PresidentClub = () => {
                     >
                       <Box
                         component="img"
-                        src={item.url}
-                        alt={item.title}
+                        src={item.url || item}
+                        alt={item.title || 'Photo'}
                         sx={{
                           width: '100%',
                           height: '100%',
@@ -461,9 +501,20 @@ const PresidentClub = () => {
               backgroundColor: '#FFFFFF',
             }}
           >
-            <Typography variant="h6" sx={{ fontWeight: 800, color: '#20202A', mb: 2.5 }}>
-              Contact Information
-            </Typography>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2.5}>
+              <Typography variant="h6" sx={{ fontWeight: 800, color: '#20202A' }}>
+                Contact & Details
+              </Typography>
+              <Button
+                variant="ghost"
+                size="small"
+                startIcon={<EditOutlinedIcon />}
+                onClick={() => setEditModalOpen(true)}
+                sx={{ fontSize: '0.78rem', color: '#4F2BCB' }}
+              >
+                Edit
+              </Button>
+            </Box>
 
             <Stack spacing={2}>
               <Box display="flex" alignItems="flex-start" gap={1.5}>
@@ -485,7 +536,7 @@ const PresidentClub = () => {
                     Meeting Location
                   </Typography>
                   <Typography variant="body2" sx={{ fontWeight: 600, color: '#20202A' }}>
-                    Student Center, Room 304
+                    {club?.meeting_location || 'Student Center, Room 304'}
                   </Typography>
                 </Box>
               </Box>
@@ -497,7 +548,7 @@ const PresidentClub = () => {
                     Meeting Schedule
                   </Typography>
                   <Typography variant="body2" sx={{ fontWeight: 600, color: '#20202A' }}>
-                    Every Thursday at 4:30 PM
+                    {club?.meeting_time || 'Every Thursday at 4:30 PM'}
                   </Typography>
                 </Box>
               </Box>
@@ -505,6 +556,19 @@ const PresidentClub = () => {
           </Paper>
         </Grid>
       </Grid>
+
+      {/* Edit Club Modal */}
+      {club && (
+        <EditClubModal
+          open={editModalOpen}
+          onClose={() => setEditModalOpen(false)}
+          club={club}
+          onUpdated={(updated) => {
+            setClub(updated);
+            loadClubDetails();
+          }}
+        />
+      )}
     </Box>
   );
 };

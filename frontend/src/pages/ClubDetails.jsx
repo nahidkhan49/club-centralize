@@ -26,9 +26,9 @@ import CollectionsOutlinedIcon from '@mui/icons-material/CollectionsOutlined';
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutlined';
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
-import AdminPanelSettingsOutlinedIcon from '@mui/icons-material/AdminPanelSettingsOutlined';
 import AccessTimeOutlinedIcon from '@mui/icons-material/AccessTimeOutlined';
 import MeetingRoomOutlinedIcon from '@mui/icons-material/MeetingRoomOutlined';
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 
 import api from '../api/axiosInstance';
 import { fetchEventsByClub } from '../api/eventApi';
@@ -36,6 +36,7 @@ import { fetchMyClubRequest, requestJoinClub, leaveClub } from '../api/adminApi'
 import { useAuth } from '../context/AuthContext';
 import Button from '../components/Button';
 import Card from '../components/Card';
+import EditClubModal from '../components/EditClubModal';
 
 const ROLE_CONFIGS = {
   president: { label: 'President', bg: '#FEF3C7', color: '#B45309' },
@@ -45,7 +46,6 @@ const ROLE_CONFIGS = {
   member: { label: 'Member', bg: '#F1F5F9', color: '#475569' },
 };
 
-// Fallback high-quality cover photos based on club category
 const DEFAULT_COVERS = [
   'https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1600&q=80',
   'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1600&q=80',
@@ -53,24 +53,11 @@ const DEFAULT_COVERS = [
   'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&w=1600&q=80',
 ];
 
-// Fallback gallery photos showcasing vibrant university club activities
-const GALLERY_ITEMS = [
-  {
-    url: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=600&q=80',
-    title: 'Annual General Meeting',
-  },
-  {
-    url: 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?auto=format&fit=crop&w=600&q=80',
-    title: 'Interactive Workshop',
-  },
-  {
-    url: 'https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&w=600&q=80',
-    title: 'Hackathon & Presentations',
-  },
-  {
-    url: 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=600&q=80',
-    title: 'Club Social & Networking',
-  },
+const DEFAULT_GALLERY = [
+  { url: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=600&q=80', title: 'Annual General Meeting' },
+  { url: 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?auto=format&fit=crop&w=600&q=80', title: 'Interactive Workshop' },
+  { url: 'https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&w=600&q=80', title: 'Hackathon & Presentations' },
+  { url: 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=600&q=80', title: 'Club Social & Networking' },
 ];
 
 const ClubDetails = () => {
@@ -90,6 +77,7 @@ const ClubDetails = () => {
   const [error, setError] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
+  const [editModalOpen, setEditModalOpen] = useState(false);
 
   const fetchClub = async () => {
     try {
@@ -184,10 +172,21 @@ const ClubDetails = () => {
   const leadershipRoles = ['president', 'vice_president', 'secretary', 'treasurer'];
   const leadershipMembers = members.filter((m) => leadershipRoles.includes(m.role));
 
-  // Determine cover photo
+  // Determine cover photo & gallery
   const coverUrl =
-    club?.cover_url ||
-    DEFAULT_COVERS[(club?.id || 0) % DEFAULT_COVERS.length];
+    club?.cover_url || DEFAULT_COVERS[(club?.id || 0) % DEFAULT_COVERS.length];
+
+  let displayGallery = DEFAULT_GALLERY;
+  if (club?.gallery) {
+    try {
+      const parsed = typeof club.gallery === 'string' ? JSON.parse(club.gallery) : club.gallery;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        displayGallery = parsed;
+      }
+    } catch (e) {
+      displayGallery = DEFAULT_GALLERY;
+    }
+  }
 
   if (loadingClub) {
     return (
@@ -199,7 +198,7 @@ const ClubDetails = () => {
 
   if (error && !club) {
     return (
-      <Box sx={{ maxWidth: 900, mx: 'auto', py: 4 }}>
+      <Box sx={{ maxWidth: 900, mx: 'auto', py: 4, width: '100%' }}>
         <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>{error}</Alert>
         <Button variant="primary" onClick={() => navigate('/clubs')}>
           Back to Clubs
@@ -209,9 +208,9 @@ const ClubDetails = () => {
   }
 
   return (
-    <Box sx={{ maxWidth: 1200, mx: 'auto', pb: 6 }}>
+    <Box sx={{ maxWidth: 1200, mx: 'auto', pb: 6, width: '100%' }}>
       {/* Top Back Link & Shortcuts */}
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2.5}>
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2.5} flexWrap="wrap" gap={1.5}>
         <Box
           component={RouterLink}
           to="/clubs"
@@ -229,16 +228,29 @@ const ClubDetails = () => {
           <ArrowBackIcon sx={{ fontSize: 18 }} /> Back to All Clubs
         </Box>
 
-        {isAdmin && (
-          <Button
-            variant="ghost"
-            component={RouterLink}
-            to="/admin/clubs"
-            sx={{ color: '#4F2BCB', borderColor: '#E9E7F2', fontSize: '0.85rem' }}
-          >
-            Admin Management
-          </Button>
-        )}
+        <Stack direction="row" spacing={1.5} flexWrap="wrap" gap={1}>
+          {isClubManager && (
+            <Button
+              variant="ghost"
+              startIcon={<EditOutlinedIcon />}
+              onClick={() => setEditModalOpen(true)}
+              sx={{ color: '#4F2BCB', borderColor: '#E9E7F2', fontSize: '0.85rem' }}
+            >
+              Edit Club Media
+            </Button>
+          )}
+
+          {isAdmin && (
+            <Button
+              variant="ghost"
+              component={RouterLink}
+              to="/admin/clubs"
+              sx={{ color: '#4F2BCB', borderColor: '#E9E7F2', fontSize: '0.85rem' }}
+            >
+              Admin Management
+            </Button>
+          )}
+        </Stack>
       </Box>
 
       {error && (
@@ -278,8 +290,8 @@ const ClubDetails = () => {
             backgroundPosition: 'center',
           }}
         >
-          {club?.category && (
-            <Box sx={{ position: 'absolute', top: 20, right: 20 }}>
+          <Box sx={{ position: 'absolute', top: 20, right: 20, display: 'flex', gap: 1 }}>
+            {club?.category && (
               <Chip
                 label={club.category}
                 sx={{
@@ -291,8 +303,24 @@ const ClubDetails = () => {
                   boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
                 }}
               />
-            </Box>
-          )}
+            )}
+            {isClubManager && (
+              <Chip
+                icon={<EditOutlinedIcon style={{ fontSize: 16, color: '#4F2BCB' }} />}
+                label="Edit Cover"
+                clickable
+                onClick={() => setEditModalOpen(true)}
+                sx={{
+                  backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                  color: '#4F2BCB',
+                  fontWeight: 800,
+                  fontSize: '0.82rem',
+                  backdropFilter: 'blur(8px)',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                }}
+              />
+            )}
+          </Box>
         </Box>
 
         {/* Club Profile Bar Overlaying Bottom of Banner */}
@@ -491,9 +519,22 @@ const ClubDetails = () => {
               mb: 3.5,
             }}
           >
-            <Typography variant="h6" sx={{ fontWeight: 800, color: '#20202A', mb: 1.5 }}>
-              About Us
-            </Typography>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={1.5}>
+              <Typography variant="h6" sx={{ fontWeight: 800, color: '#20202A' }}>
+                About Us
+              </Typography>
+              {isClubManager && (
+                <Button
+                  variant="ghost"
+                  size="small"
+                  startIcon={<EditOutlinedIcon />}
+                  onClick={() => setEditModalOpen(true)}
+                  sx={{ fontSize: '0.78rem', color: '#4F2BCB' }}
+                >
+                  Edit
+                </Button>
+              )}
+            </Box>
             <Typography variant="body1" sx={{ color: '#555565', lineHeight: 1.8, fontSize: '0.96rem' }}>
               {club?.description ||
                 'Welcome to our club! We are dedicated to bringing students together through engaging workshops, competitions, skill-building events, and community initiatives.'}
@@ -614,17 +655,30 @@ const ClubDetails = () => {
               mb: 3.5,
             }}
           >
-            <Box display="flex" alignItems="center" gap={1} mb={2}>
-              <CollectionsOutlinedIcon sx={{ color: '#4F2BCB', fontSize: 20 }} />
-              <Typography variant="h6" sx={{ fontWeight: 800, color: '#20202A' }}>
-                Gallery
-              </Typography>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+              <Box display="flex" alignItems="center" gap={1}>
+                <CollectionsOutlinedIcon sx={{ color: '#4F2BCB', fontSize: 20 }} />
+                <Typography variant="h6" sx={{ fontWeight: 800, color: '#20202A' }}>
+                  Gallery
+                </Typography>
+              </Box>
+              {isClubManager && (
+                <Button
+                  variant="ghost"
+                  size="small"
+                  startIcon={<EditOutlinedIcon />}
+                  onClick={() => setEditModalOpen(true)}
+                  sx={{ fontSize: '0.78rem', color: '#4F2BCB' }}
+                >
+                  Manage
+                </Button>
+              )}
             </Box>
 
             <Grid container spacing={1.5}>
-              {GALLERY_ITEMS.map((item, index) => (
+              {displayGallery.map((item, index) => (
                 <Grid item xs={6} key={index}>
-                  <Tooltip title={item.title}>
+                  <Tooltip title={item.title || 'Photo'}>
                     <Box
                       sx={{
                         height: 100,
@@ -637,8 +691,8 @@ const ClubDetails = () => {
                     >
                       <Box
                         component="img"
-                        src={item.url}
-                        alt={item.title}
+                        src={item.url || item}
+                        alt={item.title || 'Photo'}
                         sx={{
                           width: '100%',
                           height: '100%',
@@ -663,9 +717,22 @@ const ClubDetails = () => {
               backgroundColor: '#FFFFFF',
             }}
           >
-            <Typography variant="h6" sx={{ fontWeight: 800, color: '#20202A', mb: 2.5 }}>
-              Contact & Details
-            </Typography>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2.5}>
+              <Typography variant="h6" sx={{ fontWeight: 800, color: '#20202A' }}>
+                Contact & Details
+              </Typography>
+              {isClubManager && (
+                <Button
+                  variant="ghost"
+                  size="small"
+                  startIcon={<EditOutlinedIcon />}
+                  onClick={() => setEditModalOpen(true)}
+                  sx={{ fontSize: '0.78rem', color: '#4F2BCB' }}
+                >
+                  Edit
+                </Button>
+              )}
+            </Box>
 
             <Stack spacing={2}>
               <Box display="flex" alignItems="flex-start" gap={1.5}>
@@ -687,7 +754,7 @@ const ClubDetails = () => {
                     Meeting Location
                   </Typography>
                   <Typography variant="body2" sx={{ fontWeight: 600, color: '#20202A' }}>
-                    Student Center, Room 304
+                    {club?.meeting_location || 'Student Center, Room 304'}
                   </Typography>
                 </Box>
               </Box>
@@ -699,7 +766,7 @@ const ClubDetails = () => {
                     Regular Meetings
                   </Typography>
                   <Typography variant="body2" sx={{ fontWeight: 600, color: '#20202A' }}>
-                    Every Thursday at 4:30 PM
+                    {club?.meeting_time || 'Every Thursday at 4:30 PM'}
                   </Typography>
                 </Box>
               </Box>
@@ -734,7 +801,7 @@ const ClubDetails = () => {
       {/* Tab 0: Events */}
       {activeTab === 0 && (
         <Box>
-          <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+          <Box display="flex" justifyContent="space-between" alignItems="center" mb={3} flexWrap="wrap" gap={1.5}>
             <Typography variant="h6" sx={{ fontWeight: 800, color: '#20202A' }}>
               Upcoming & Recent Events
             </Typography>
@@ -917,6 +984,19 @@ const ClubDetails = () => {
             </Grid>
           )}
         </Box>
+      )}
+
+      {/* Edit Club Modal */}
+      {club && (
+        <EditClubModal
+          open={editModalOpen}
+          onClose={() => setEditModalOpen(false)}
+          club={club}
+          onUpdated={(updated) => {
+            setClub(updated);
+            fetchClub();
+          }}
+        />
       )}
     </Box>
   );

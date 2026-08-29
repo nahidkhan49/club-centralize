@@ -22,11 +22,11 @@ export default function AppLayout() {
         component="main"
         sx={{
           flexGrow: 1,
+          minWidth: 0,
           p: { xs: 2, sm: 2.5, md: 3.5 },
           mt: '64px',
-          width: { xs: '100%', md: `calc(100% - 240px)` },
-          maxWidth: { xs: '100vw', md: `calc(100vw - 240px)` },
-          overflowX: 'hidden',
+          width: '100%',
+          maxWidth: '100%',
           backgroundColor: '#FAF9FF',
           minHeight: 'calc(100vh - 64px)',
         }}

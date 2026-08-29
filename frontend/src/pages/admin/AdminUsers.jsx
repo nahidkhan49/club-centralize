@@ -7,7 +7,7 @@ import {
 import SearchIcon from '@mui/icons-material/Search';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined';
 import { fetchAllUsers, promoteUser, fetchAllClubs, deleteUser } from '../../api/adminApi';
 import api from '../../api/axiosInstance';
 import RoleChip from '../../components/RoleChip';

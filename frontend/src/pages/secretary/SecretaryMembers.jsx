@@ -183,8 +183,8 @@ const SecretaryMembers = () => {
             }}
           />
 
-          <TableContainer component={Paper} elevation={0} sx={{ borderRadius: '16px', border: '1px solid #E9E7F2' }}>
-            <Table>
+          <TableContainer component={Paper} elevation={0} sx={{ borderRadius: '16px', border: '1px solid #E9E7F2', overflowX: 'auto', width: '100%' }}>
+            <Table sx={{ minWidth: { xs: 500, sm: '100%' } }}>
               <TableHead>
                 <TableRow sx={{ backgroundColor: '#F7F6FC' }}>
                   <TableCell sx={{ fontWeight: 700, color: '#20202A' }}>User</TableCell>
@@ -251,7 +251,7 @@ const SecretaryMembers = () => {
               }}
             />
 
-            <Stack direction="row" spacing={1}>
+            <Stack direction="row" spacing={1} sx={{ overflowX: 'auto', pb: { xs: 1, sm: 0 }, maxWidth: '100%' }}>
               {['ALL', 'PENDING', 'APPROVED', 'REJECTED'].map((status) => (
                 <Chip
                   key={status}
@@ -274,8 +274,8 @@ const SecretaryMembers = () => {
             </Stack>
           </Box>
 
-          <TableContainer component={Paper} elevation={0} sx={{ borderRadius: '16px', border: '1px solid #E9E7F2' }}>
-            <Table>
+          <TableContainer component={Paper} elevation={0} sx={{ borderRadius: '16px', border: '1px solid #E9E7F2', overflowX: 'auto', width: '100%' }}>
+            <Table sx={{ minWidth: { xs: 650, sm: '100%' } }}>
               <TableHead>
                 <TableRow sx={{ backgroundColor: '#F7F6FC' }}>
                   <TableCell sx={{ fontWeight: 700, color: '#20202A' }}>Applicant</TableCell>

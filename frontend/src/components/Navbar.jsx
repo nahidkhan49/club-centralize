@@ -10,11 +10,11 @@ import {
   Box,
   Badge,
 } from '@mui/material';
-import { NotificationsNone, ShieldOutlined } from '@mui/icons-material';
+import { NotificationsNone, ShieldOutlined, Menu as MenuIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 
-export default function Navbar() {
+export default function Navbar({ onDrawerToggle }) {
   const { user, logout } = useContext(AuthContext);
   const username = user?.username || 'User';
   const initial = username.charAt(0).toUpperCase();
@@ -53,35 +53,56 @@ export default function Navbar() {
         borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
       }}
     >
-      <Toolbar sx={{ height: 64, px: { xs: 2, sm: 3 }, display: 'flex', justifyContent: 'space-between' }}>
-        {/* Brand Logo & Name */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, cursor: 'pointer' }} onClick={() => navigate('/dashboard')}>
+      <Toolbar sx={{ height: 64, px: { xs: 1.5, sm: 3 }, display: 'flex', justifyContent: 'space-between' }}>
+        {/* Left: Mobile Toggle + Brand Logo & Name */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 1.5 } }}>
+          <IconButton
+            color="inherit"
+            aria-label="open drawer"
+            edge="start"
+            onClick={onDrawerToggle}
+            sx={{
+              display: { xs: 'inline-flex', md: 'none' },
+              mr: { xs: 0.5, sm: 1 },
+              p: 1,
+            }}
+          >
+            <MenuIcon sx={{ fontSize: 24 }} />
+          </IconButton>
+
           <Box
-            sx={{
-              width: 34,
-              height: 34,
-              borderRadius: '50%',
-              backgroundColor: 'rgba(255, 255, 255, 0.2)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              border: '1px solid rgba(255, 255, 255, 0.3)',
-            }}
+            sx={{ display: 'flex', alignItems: 'center', gap: 1.5, cursor: 'pointer' }}
+            onClick={() => navigate('/dashboard')}
           >
-            <ShieldOutlined sx={{ color: '#FFFFFF', fontSize: 20 }} />
+            <Box
+              sx={{
+                width: 34,
+                height: 34,
+                borderRadius: '50%',
+                backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                border: '1px solid rgba(255, 255, 255, 0.3)',
+                flexShrink: 0,
+              }}
+            >
+              <ShieldOutlined sx={{ color: '#FFFFFF', fontSize: 20 }} />
+            </Box>
+            <Typography
+              variant="h6"
+              component="div"
+              sx={{
+                fontWeight: 700,
+                color: '#FFFFFF',
+                letterSpacing: '-0.02em',
+                fontSize: { xs: '1rem', sm: '1.15rem' },
+                whiteSpace: 'nowrap',
+              }}
+            >
+              Club Centralize
+            </Typography>
           </Box>
-          <Typography
-            variant="h6"
-            component="div"
-            sx={{
-              fontWeight: 700,
-              color: '#FFFFFF',
-              letterSpacing: '-0.02em',
-              fontSize: '1.15rem',
-            }}
-          >
-            Club Centralize
-          </Typography>
         </Box>
 
         {/* Right actions */}

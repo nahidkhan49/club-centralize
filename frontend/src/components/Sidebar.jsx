@@ -72,7 +72,7 @@ const ROLE_LABELS = {
   member:         { label: 'Member',         color: '#475569', bg: '#F1F5F9' },
 };
 
-const SidebarContent = () => {
+const SidebarContent = ({ onItemClick }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, systemRole, presidentOfClubs, secretaryOfClubs } = useContext(AuthContext);
@@ -88,6 +88,13 @@ const SidebarContent = () => {
   } else if (systemRole === 'secretary' && secretaryOfClubs?.length > 0) {
     clubName = secretaryOfClubs[0].club_name;
   }
+
+  const handleNav = (path) => {
+    navigate(path);
+    if (onItemClick) {
+      onItemClick();
+    }
+  };
 
   return (
     <Box
@@ -117,7 +124,7 @@ const SidebarContent = () => {
           return (
             <ListItem key={item.path} disablePadding sx={{ mb: 0.5 }}>
               <ListItemButton
-                onClick={() => navigate(item.path)}
+                onClick={() => handleNav(item.path)}
                 sx={{
                   borderRadius: '10px',
                   py: 1,
@@ -179,7 +186,7 @@ const SidebarContent = () => {
           cursor: 'pointer',
           '&:hover': { backgroundColor: '#ECEAFF' },
         }}
-        onClick={() => navigate('/profile')}
+        onClick={() => handleNav('/profile')}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, overflow: 'hidden' }}>
           <Avatar
@@ -259,7 +266,7 @@ const Sidebar = ({ mobileOpen, onMobileClose }) => {
           '& .MuiDrawer-paper': { width: DRAWER_WIDTH, boxSizing: 'border-box', mt: '64px' },
         }}
       >
-        <SidebarContent />
+        <SidebarContent onItemClick={onMobileClose} />
       </Drawer>
 
       {/* Desktop permanent drawer */}

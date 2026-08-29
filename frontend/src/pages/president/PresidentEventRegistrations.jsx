@@ -328,14 +328,14 @@ const PresidentEventRegistrations = () => {
                             fontWeight: 800,
                           }}
                         >
-                          {p.username?.charAt(0).toUpperCase()}
+                          {(p?.username || p?.email || 'U').charAt(0).toUpperCase()}
                         </Avatar>
                         <Box>
                           <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#20202A' }}>
-                            {p.full_name || p.username}
+                            {p.full_name || p.username || p.email}
                           </Typography>
                           <Typography variant="caption" sx={{ color: '#9DA0AE' }}>
-                            @{p.username}
+                            @{p.username || 'user'}
                           </Typography>
                         </Box>
                       </Box>

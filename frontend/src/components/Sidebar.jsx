@@ -21,6 +21,7 @@ import PeopleAltOutlinedIcon from '@mui/icons-material/PeopleAltOutlined';
 import AdminPanelSettingsOutlinedIcon from '@mui/icons-material/AdminPanelSettingsOutlined';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { AuthContext } from '../context/AuthContext';
+import { getImageUrl } from '../api/axiosInstance';
 
 const DRAWER_WIDTH = 240;
 
@@ -190,7 +191,7 @@ const SidebarContent = ({ onItemClick }) => {
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, overflow: 'hidden' }}>
           <Avatar
-            src={user?.avatarUrl || ''}
+            src={getImageUrl(user?.avatar_url || user?.avatarUrl)}
             sx={{
               width: 36,
               height: 36,
@@ -200,7 +201,7 @@ const SidebarContent = ({ onItemClick }) => {
               fontSize: '0.9rem',
             }}
           >
-            {user?.avatarUrl ? null : initial}
+            {user?.avatar_url || user?.avatarUrl ? null : initial}
           </Avatar>
           <Box sx={{ minWidth: 0 }}>
             <Typography

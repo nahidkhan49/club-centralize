@@ -31,6 +31,8 @@ class ClubMemberResponse(BaseModel):
     username: str
     email: str
     role: MembershipRole
+    avatar_url: str | None = None
+    created_at: datetime | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -49,6 +51,7 @@ class MembershipRequestResponse(BaseModel):
     user_id: int
     username: str | None = None
     user_email: str | None = None
+    avatar_url: str | None = None
     status: str
     created_at: datetime
     updated_at: datetime

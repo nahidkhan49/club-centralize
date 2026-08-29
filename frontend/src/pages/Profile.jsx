@@ -43,29 +43,57 @@ export default function Profile() {
   const [photoDialogOpen, setPhotoDialogOpen] = useState(false);
   const [photoUrlInput, setPhotoUrlInput] = useState(user?.avatarUrl || '');
   const [tempData, setTempData] = useState({ ...profileData });
+  const [photoUploading, setPhotoUploading] = useState(false);
 
   const initial = (profileData.username || 'N').charAt(0).toUpperCase();
 
-  const handleFileUpload = (e) => {
+  const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPhotoUrlInput(reader.result);
-      };
-      reader.readAsDataURL(file);
+      try {
+        setPhotoUploading(true);
+        const { uploadImage } = await import('../api/adminApi');
+        const res = await uploadImage(file);
+        setPhotoUrlInput(res.url);
+      } catch (err) {
+        console.error('Failed to upload avatar', err);
+        // Fallback to data url if offline
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setPhotoUrlInput(reader.result);
+        };
+        reader.readAsDataURL(file);
+      } finally {
+        setPhotoUploading(false);
+      }
     }
   };
 
-  const handleSavePhoto = () => {
-    updateUserAvatar(photoUrlInput);
-    setPhotoDialogOpen(false);
+  const handleSavePhoto = async () => {
+    try {
+      const { default: api } = await import('../api/axiosInstance');
+      await api.patch('/users/me', { avatar_url: photoUrlInput });
+      updateUserAvatar(photoUrlInput);
+      setPhotoDialogOpen(false);
+    } catch (err) {
+      console.error('Failed to update avatar on backend', err);
+      updateUserAvatar(photoUrlInput);
+      setPhotoDialogOpen(false);
+    }
   };
 
-  const handleRemovePhoto = () => {
-    setPhotoUrlInput('');
-    updateUserAvatar(null);
-    setPhotoDialogOpen(false);
+  const handleRemovePhoto = async () => {
+    try {
+      const { default: api } = await import('../api/axiosInstance');
+      await api.patch('/users/me', { avatar_url: '' });
+      setPhotoUrlInput('');
+      updateUserAvatar(null);
+      setPhotoDialogOpen(false);
+    } catch (err) {
+      setPhotoUrlInput('');
+      updateUserAvatar(null);
+      setPhotoDialogOpen(false);
+    }
   };
 
   const handleSaveProfile = (e) => {

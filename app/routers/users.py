@@ -41,6 +41,9 @@ def update_me(
             )
         current_user.email = user_data.email
 
+    if user_data.avatar_url is not None:
+        current_user.avatar_url = user_data.avatar_url.strip() if user_data.avatar_url else None
+
     db.commit()
     db.refresh(current_user)
 

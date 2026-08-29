@@ -13,6 +13,7 @@ import {
 import { NotificationsNone, ShieldOutlined, Menu as MenuIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
+import { getImageUrl } from '../api/axiosInstance';
 
 export default function Navbar({ onDrawerToggle }) {
   const { user, logout } = useContext(AuthContext);
@@ -115,7 +116,7 @@ export default function Navbar({ onDrawerToggle }) {
 
           <IconButton onClick={handleMenuOpen} sx={{ p: 0.5 }}>
             <Avatar
-              src={user?.avatarUrl || ''}
+              src={getImageUrl(user?.avatar_url || user?.avatarUrl)}
               sx={{
                 width: 36,
                 height: 36,
@@ -126,7 +127,7 @@ export default function Navbar({ onDrawerToggle }) {
                 border: '2px solid rgba(255, 255, 255, 0.8)',
               }}
             >
-              {user?.avatarUrl ? null : initial}
+              {user?.avatar_url || user?.avatarUrl ? null : initial}
             </Avatar>
           </IconButton>
 

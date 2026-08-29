@@ -21,7 +21,7 @@ import AccessTimeOutlinedIcon from '@mui/icons-material/AccessTimeOutlined';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 
 import { useAuth } from '../../context/AuthContext';
-import api from '../../api/axiosInstance';
+import api, { getImageUrl } from '../../api/axiosInstance';
 import { fetchClubMembers, fetchClubStats } from '../../api/adminApi';
 import Button from '../../components/Button';
 import EditClubModal from '../../components/EditClubModal';
@@ -102,7 +102,8 @@ const SecretaryClub = () => {
     );
   }
 
-  const coverUrl = club?.cover_url || DEFAULT_COVERS[(club?.id || 0) % DEFAULT_COVERS.length];
+  const rawCover = club?.cover_url || DEFAULT_COVERS[(club?.id || 0) % DEFAULT_COVERS.length];
+  const coverUrl = getImageUrl(rawCover);
 
   let displayGallery = DEFAULT_GALLERY;
   if (club?.gallery) {
@@ -120,12 +121,12 @@ const SecretaryClub = () => {
   const leadershipMembers = members.filter((m) => leadershipRoles.includes(m.role));
 
   return (
-    <Box sx={{ maxWidth: 1100, mx: 'auto', pb: 6, width: '100%' }}>
+    <Box sx={{ maxWidth: 1150, mx: 'auto', pb: 6, width: '100%' }}>
       {/* Header Info */}
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3} flexWrap="wrap" gap={2}>
         <Box>
           <Typography variant="h5" sx={{ fontWeight: 800, color: '#20202A' }}>
-            My Club Details (Secretary View)
+            My Club Details (Secretary)
           </Typography>
           <Typography variant="body2" sx={{ color: '#777788' }}>
             Club: <strong>{myClubName}</strong> — Full organization branding, leadership, and public view.
@@ -152,9 +153,7 @@ const SecretaryClub = () => {
 
       {error && <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>{error}</Alert>}
 
-      {/* ========================================================================= */}
-      {/* 1. HERO COVER BANNER SECTION                                             */}
-      {/* ========================================================================= */}
+      {/* 1. HERO COVER BANNER SECTION */}
       <Paper
         elevation={0}
         sx={{
@@ -164,6 +163,7 @@ const SecretaryClub = () => {
           backgroundColor: '#FFFFFF',
           mb: 4,
           boxShadow: '0 8px 30px rgba(79, 43, 203, 0.05)',
+          position: 'relative',
         }}
       >
         <Box
@@ -171,12 +171,11 @@ const SecretaryClub = () => {
             height: { xs: 180, sm: 260, md: 300 },
             width: '100%',
             position: 'relative',
-            backgroundImage: `linear-gradient(to bottom, rgba(15, 10, 40, 0.2), rgba(15, 10, 40, 0.75)), url(${coverUrl})`,
+            backgroundImage: `linear-gradient(to bottom, rgba(15, 10, 40, 0.15), rgba(15, 10, 40, 0.8)), url(${coverUrl})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
           }}
         >
-          {/* Edit Cover Quick Action */}
           <Box sx={{ position: 'absolute', top: 20, right: 20, display: 'flex', gap: 1 }}>
             {club?.category && (
               <Chip
@@ -207,7 +206,6 @@ const SecretaryClub = () => {
           </Box>
         </Box>
 
-        {/* Profile Card Overlay */}
         <Box
           sx={{
             px: { xs: 2.5, sm: 4 },
@@ -231,7 +229,7 @@ const SecretaryClub = () => {
             }}
           >
             <Avatar
-              src={club?.logo_url || ''}
+              src={getImageUrl(club?.logo_url)}
               variant="rounded"
               sx={{
                 width: { xs: 90, sm: 110 },
@@ -284,7 +282,7 @@ const SecretaryClub = () => {
               label="Secretary Workspace Active"
               sx={{
                 backgroundColor: '#F3F0FF',
-                color: '#7C3AED',
+                color: '#4F2BCB',
                 fontWeight: 800,
                 fontSize: '0.82rem',
                 py: 2,
@@ -295,13 +293,9 @@ const SecretaryClub = () => {
         </Box>
       </Paper>
 
-      {/* ========================================================================= */}
-      {/* 2. MAIN GRID (ABOUT US, LEADERSHIP TEAM, GALLERY, CONTACT)                */}
-      {/* ========================================================================= */}
+      {/* 2. MAIN GRID */}
       <Grid container spacing={3.5}>
-        {/* Left Column: About Us & Leadership Team */}
         <Grid item xs={12} md={7} lg={8}>
-          {/* About Us */}
           <Paper
             elevation={0}
             sx={{
@@ -328,11 +322,10 @@ const SecretaryClub = () => {
             </Box>
             <Typography variant="body1" sx={{ color: '#555565', lineHeight: 1.8, fontSize: '0.96rem' }}>
               {club?.description ||
-                'Welcome to our club! We are dedicated to bringing students together through engaging workshops, competitions, skill-building events, and community initiatives.'}
+                'Welcome to our club! We are dedicated to creating meaningful student experiences through workshops, competitions, skill-building sessions, and campus events.'}
             </Typography>
           </Paper>
 
-          {/* Leadership Team */}
           <Paper
             elevation={0}
             sx={{
@@ -348,7 +341,7 @@ const SecretaryClub = () => {
                   Leadership Team
                 </Typography>
                 <Typography variant="body2" sx={{ color: '#777788' }}>
-                  Appointed executive officers managing club operations.
+                  Elected officers leading club operations.
                 </Typography>
               </Box>
               <Chip
@@ -367,35 +360,46 @@ const SecretaryClub = () => {
                 {leadershipMembers.map((officer) => {
                   const roleConfig = ROLE_CONFIGS[officer.role] || ROLE_CONFIGS.member;
                   return (
-                    <Grid item xs={12} sm={6} key={officer.user_id}>
+                    <Grid item xs={12} sm={4} key={officer.user_id}>
                       <Box
                         sx={{
-                          p: 2,
+                          p: 2.5,
                           borderRadius: '16px',
                           border: '1px solid #F0EFF8',
                           backgroundColor: '#FBFBFE',
                           display: 'flex',
+                          flexDirection: 'column',
                           alignItems: 'center',
-                          gap: 1.5,
+                          textAlign: 'center',
+                          gap: 1,
+                          transition: 'all 0.2s ease',
+                          '&:hover': {
+                            backgroundColor: '#FFFFFF',
+                            boxShadow: '0 4px 15px rgba(79, 43, 203, 0.08)',
+                            borderColor: '#4F2BCB',
+                          },
                         }}
                       >
                         <Avatar
+                          src={getImageUrl(officer.avatar_url)}
                           sx={{
-                            width: 48,
-                            height: 48,
+                            width: 54,
+                            height: 54,
                             backgroundColor: '#EAEAFF',
                             color: '#4F2BCB',
                             fontWeight: 800,
-                            fontSize: '1.1rem',
+                            fontSize: '1.2rem',
+                            border: '2px solid #FFFFFF',
+                            boxShadow: '0 4px 10px rgba(0,0,0,0.06)',
                           }}
                         >
                           {officer.username?.charAt(0).toUpperCase()}
                         </Avatar>
-                        <Box sx={{ minWidth: 0, flex: 1 }}>
+                        <Box sx={{ minWidth: 0, width: '100%' }}>
                           <Typography
                             variant="subtitle2"
                             sx={{
-                              fontWeight: 700,
+                              fontWeight: 800,
                               color: '#20202A',
                               whiteSpace: 'nowrap',
                               overflow: 'hidden',
@@ -414,7 +418,7 @@ const SecretaryClub = () => {
                               color: roleConfig.color,
                               height: 20,
                               px: 0.5,
-                              mt: 0.3,
+                              mt: 0.5,
                             }}
                           />
                         </Box>
@@ -427,9 +431,7 @@ const SecretaryClub = () => {
           </Paper>
         </Grid>
 
-        {/* Right Column: Gallery & Contact Info */}
         <Grid item xs={12} md={5} lg={4}>
-          {/* Gallery */}
           <Paper
             elevation={0}
             sx={{
@@ -474,7 +476,7 @@ const SecretaryClub = () => {
                     >
                       <Box
                         component="img"
-                        src={item.url || item}
+                        src={getImageUrl(item.url || item)}
                         alt={item.title || 'Photo'}
                         sx={{
                           width: '100%',
@@ -490,7 +492,6 @@ const SecretaryClub = () => {
             </Grid>
           </Paper>
 
-          {/* Contact Details */}
           <Paper
             elevation={0}
             sx={{
@@ -502,7 +503,7 @@ const SecretaryClub = () => {
           >
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={2.5}>
               <Typography variant="h6" sx={{ fontWeight: 800, color: '#20202A' }}>
-                Contact Information
+                Contact
               </Typography>
               <Button
                 variant="ghost"
@@ -520,10 +521,10 @@ const SecretaryClub = () => {
                 <EmailOutlinedIcon sx={{ color: '#4F2BCB', fontSize: 20, mt: 0.2 }} />
                 <Box>
                   <Typography variant="caption" sx={{ color: '#777788', fontWeight: 700, textTransform: 'uppercase' }}>
-                    Contact Email
+                    Email Address
                   </Typography>
                   <Typography variant="body2" sx={{ fontWeight: 600, color: '#20202A' }}>
-                    {club?.contact_email || 'Not configured'}
+                    {club?.contact_email || 'contact@clubcentralize.edu'}
                   </Typography>
                 </Box>
               </Box>
@@ -544,7 +545,7 @@ const SecretaryClub = () => {
                 <AccessTimeOutlinedIcon sx={{ color: '#4F2BCB', fontSize: 20, mt: 0.2 }} />
                 <Box>
                   <Typography variant="caption" sx={{ color: '#777788', fontWeight: 700, textTransform: 'uppercase' }}>
-                    Meeting Schedule
+                    Regular Meetings
                   </Typography>
                   <Typography variant="body2" sx={{ fontWeight: 600, color: '#20202A' }}>
                     {club?.meeting_time || 'Every Thursday at 4:30 PM'}
@@ -556,7 +557,6 @@ const SecretaryClub = () => {
         </Grid>
       </Grid>
 
-      {/* Edit Club Modal */}
       {club && (
         <EditClubModal
           open={editModalOpen}

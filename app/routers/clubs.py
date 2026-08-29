@@ -551,7 +551,8 @@ def get_club_members(club_id: int, db: Session = Depends(get_db)):
             Membership.user_id,
             User.username,
             User.email,
-            Membership.role
+            Membership.role,
+            User.avatar_url
         )
         .join(User, Membership.user_id == User.id)
         .filter(Membership.club_id == club_id)
@@ -560,12 +561,13 @@ def get_club_members(club_id: int, db: Session = Depends(get_db)):
 
     return [
         ClubMemberResponse(
-            user_id=row.user_id,
-            username=row.username,
-            email=row.email,
-            role=row.role
+            user_id=r.user_id,
+            username=r.username,
+            email=r.email,
+            role=r.role,
+            avatar_url=r.avatar_url
         )
-        for row in results
+        for r in results
     ]
 
 

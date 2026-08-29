@@ -1,17 +1,28 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Grid, Typography, Box, Paper, CircularProgress, Alert } from '@mui/material';
+import {
+  Grid,
+  Typography,
+  Box,
+  Paper,
+  CircularProgress,
+  Alert,
+  Avatar,
+  Stack,
+} from '@mui/material';
 import PeopleAltOutlinedIcon from '@mui/icons-material/PeopleAltOutlined';
 import EventOutlinedIcon from '@mui/icons-material/EventOutlined';
 import CampaignOutlinedIcon from '@mui/icons-material/CampaignOutlined';
 import AssignmentTurnedInOutlinedIcon from '@mui/icons-material/AssignmentTurnedInOutlined';
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined';
+import GroupsOutlinedIcon from '@mui/icons-material/GroupsOutlined';
+
 import { useAuth } from '../../context/AuthContext';
 import { fetchClubStats } from '../../api/adminApi';
-import StatCard from '../../components/StatCard';
+import api, { getImageUrl } from '../../api/axiosInstance';
 import Button from '../../components/Button';
-import api from '../../api/axiosInstance';
 
 const PresidentDashboard = () => {
   const { user, systemRole, presidentOfClubs, secretaryOfClubs } = useAuth();
@@ -23,7 +34,9 @@ const PresidentDashboard = () => {
 
   const isPresident = systemRole === 'president';
   const myClubId = isPresident ? presidentOfClubs?.[0]?.club_id : secretaryOfClubs?.[0]?.club_id;
-  const myClubName = isPresident ? (presidentOfClubs?.[0]?.club_name || 'My Club') : (secretaryOfClubs?.[0]?.club_name || 'My Club');
+  const myClubName = isPresident
+    ? presidentOfClubs?.[0]?.club_name || 'My Club'
+    : secretaryOfClubs?.[0]?.club_name || 'My Club';
 
   useEffect(() => {
     if (!myClubId) {
@@ -70,52 +83,78 @@ const PresidentDashboard = () => {
   const pathPrefix = isPresident ? '/president' : '/secretary';
 
   return (
-    <Box sx={{ maxWidth: 1200, mx: 'auto' }}>
-      {/* Welcome Banner */}
+    <Box sx={{ maxWidth: 1150, mx: 'auto', pb: 5 }}>
+      {/* 1. Purple Welcome Banner (Matching Mockup) */}
       <Box
         sx={{
-          background: 'linear-gradient(135deg, #4F2BCB 0%, #7C3AED 100%)',
-          borderRadius: '20px',
-          p: { xs: 3, md: 4 },
+          background: 'linear-gradient(135deg, #4F2BCB 0%, #6838EE 100%)',
+          borderRadius: '24px',
+          p: { xs: 3, sm: 4, md: 4.5 },
           mb: 4,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           flexWrap: 'wrap',
-          gap: 2,
+          gap: 2.5,
           color: '#FFFFFF',
+          boxShadow: '0 10px 30px rgba(79, 43, 203, 0.25)',
+          position: 'relative',
+          overflow: 'hidden',
         }}
       >
-        <Box>
-          <Box display="flex" alignItems="center" gap={1} mb={0.5}>
-            <Typography sx={{ fontWeight: 600, fontSize: '0.85rem', opacity: 0.85 }}>
-              {isPresident ? 'President' : 'Secretary'} Dashboard
-            </Typography>
-          </Box>
-          <Typography variant="h4" sx={{ fontWeight: 800, fontSize: { xs: '1.5rem', md: '2rem' }, mb: 0.5 }}>
-            Welcome back, {user?.username}! 👋
+        <Box sx={{ zIndex: 1 }}>
+          <Typography
+            sx={{
+              fontWeight: 700,
+              fontSize: '0.8rem',
+              color: 'rgba(255, 255, 255, 0.8)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.08em',
+              mb: 1,
+            }}
+          >
+            {isPresident ? 'President Dashboard' : 'Secretary Dashboard'}
           </Typography>
-          <Typography sx={{ opacity: 0.9, fontSize: '0.92rem' }}>
+
+          <Typography
+            variant="h4"
+            sx={{
+              fontWeight: 900,
+              fontSize: { xs: '1.6rem', sm: '2.1rem', md: '2.4rem' },
+              mb: 1,
+              letterSpacing: '-0.02em',
+            }}
+          >
+            Welcome back, {user?.username || 'President'}! 👋
+          </Typography>
+
+          <Typography sx={{ color: 'rgba(255, 255, 255, 0.9)', fontSize: '0.95rem', fontWeight: 500 }}>
             Club: <strong>{myClubName}</strong>
           </Typography>
         </Box>
-        <Box
+
+        <Avatar
+          src={getImageUrl(club?.logo_url)}
+          variant="rounded"
           sx={{
-            width: 80,
-            height: 80,
-            borderRadius: '50%',
-            backgroundColor: 'rgba(255,255,255,0.15)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
+            width: { xs: 64, sm: 80 },
+            height: { xs: 64, sm: 80 },
+            borderRadius: '20px',
+            backgroundColor: 'rgba(255, 255, 255, 0.2)',
+            color: '#FFFFFF',
+            fontWeight: 800,
+            fontSize: '2rem',
+            border: '2px solid rgba(255, 255, 255, 0.4)',
+            backdropFilter: 'blur(10px)',
             flexShrink: 0,
+            zIndex: 1,
           }}
         >
-          <PeopleAltOutlinedIcon sx={{ fontSize: 40, color: '#FFFFFF' }} />
-        </Box>
+          {club?.name?.charAt(0).toUpperCase() || <GroupsOutlinedIcon sx={{ fontSize: 38 }} />}
+        </Avatar>
       </Box>
 
-      {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
+      {error && <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>{error}</Alert>}
 
       {/* Pending Join Requests Alert Banner */}
       {Boolean(stats?.pending_requests_count && stats.pending_requests_count > 0) && (
@@ -123,7 +162,7 @@ const PresidentDashboard = () => {
           sx={{
             p: 2.5,
             mb: 4,
-            borderRadius: '16px',
+            borderRadius: '18px',
             backgroundColor: '#FEF3C7',
             border: '1px solid #FDE68A',
             display: 'flex',
@@ -172,147 +211,293 @@ const PresidentDashboard = () => {
         </Box>
       )}
 
-      {/* Stats Cards */}
-      <Grid container spacing={2.5} mb={4}>
+      {/* 2. Top Stats Row (4 Cards) */}
+      <Grid container spacing={2.5} mb={4.5}>
         <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            icon={<PeopleAltOutlinedIcon />}
-            label="Total Members"
-            value={stats?.member_count ?? 0}
-            color="#4F2BCB"
-            bgColor="#F3F0FF"
-          />
+          <Paper
+            elevation={0}
+            sx={{
+              p: 2.5,
+              borderRadius: '18px',
+              border: '1px solid #E9E7F2',
+              backgroundColor: '#FFFFFF',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 2,
+            }}
+          >
+            <Box
+              sx={{
+                width: 48,
+                height: 48,
+                borderRadius: '14px',
+                backgroundColor: '#F3F0FF',
+                color: '#4F2BCB',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <PeopleAltOutlinedIcon sx={{ fontSize: 24 }} />
+            </Box>
+            <Box>
+              <Typography variant="h5" sx={{ fontWeight: 800, color: '#20202A' }}>
+                {stats?.member_count ?? 0}
+              </Typography>
+              <Typography variant="caption" sx={{ color: '#777788', fontWeight: 600, textTransform: 'uppercase' }}>
+                Total Members
+              </Typography>
+            </Box>
+          </Paper>
         </Grid>
+
         <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            icon={<EventOutlinedIcon />}
-            label="Total Events"
-            value={stats?.event_count ?? 0}
-            color="#0EA5E9"
-            bgColor="#E0F2FE"
-          />
+          <Paper
+            elevation={0}
+            sx={{
+              p: 2.5,
+              borderRadius: '18px',
+              border: '1px solid #E9E7F2',
+              backgroundColor: '#FFFFFF',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 2,
+            }}
+          >
+            <Box
+              sx={{
+                width: 48,
+                height: 48,
+                borderRadius: '14px',
+                backgroundColor: '#E0F2FE',
+                color: '#0284C7',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <EventOutlinedIcon sx={{ fontSize: 24 }} />
+            </Box>
+            <Box>
+              <Typography variant="h5" sx={{ fontWeight: 800, color: '#20202A' }}>
+                {stats?.event_count ?? 0}
+              </Typography>
+              <Typography variant="caption" sx={{ color: '#777788', fontWeight: 600, textTransform: 'uppercase' }}>
+                Total Events
+              </Typography>
+            </Box>
+          </Paper>
         </Grid>
+
         <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            icon={<CampaignOutlinedIcon />}
-            label="Announcements"
-            value={stats?.announcement_count ?? 0}
-            color="#059669"
-            bgColor="#D1FAE5"
-          />
+          <Paper
+            elevation={0}
+            sx={{
+              p: 2.5,
+              borderRadius: '18px',
+              border: '1px solid #E9E7F2',
+              backgroundColor: '#FFFFFF',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 2,
+            }}
+          >
+            <Box
+              sx={{
+                width: 48,
+                height: 48,
+                borderRadius: '14px',
+                backgroundColor: '#D1FAE5',
+                color: '#059669',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <CampaignOutlinedIcon sx={{ fontSize: 24 }} />
+            </Box>
+            <Box>
+              <Typography variant="h5" sx={{ fontWeight: 800, color: '#20202A' }}>
+                {stats?.announcement_count ?? 0}
+              </Typography>
+              <Typography variant="caption" sx={{ color: '#777788', fontWeight: 600, textTransform: 'uppercase' }}>
+                Announcements
+              </Typography>
+            </Box>
+          </Paper>
         </Grid>
+
         <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            icon={<AssignmentTurnedInOutlinedIcon />}
-            label="Total Registrations"
-            value={stats?.total_registrations ?? 0}
-            color="#D97706"
-            bgColor="#FEF3C7"
-          />
+          <Paper
+            elevation={0}
+            sx={{
+              p: 2.5,
+              borderRadius: '18px',
+              border: '1px solid #E9E7F2',
+              backgroundColor: '#FFFFFF',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 2,
+            }}
+          >
+            <Box
+              sx={{
+                width: 48,
+                height: 48,
+                borderRadius: '14px',
+                backgroundColor: '#FEF3C7',
+                color: '#D97706',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <AssignmentTurnedInOutlinedIcon sx={{ fontSize: 24 }} />
+            </Box>
+            <Box>
+              <Typography variant="h5" sx={{ fontWeight: 800, color: '#20202A' }}>
+                {stats?.total_registrations ?? 0}
+              </Typography>
+              <Typography variant="caption" sx={{ color: '#777788', fontWeight: 600, textTransform: 'uppercase' }}>
+                Total Registrations
+              </Typography>
+            </Box>
+          </Paper>
         </Grid>
       </Grid>
 
-      {/* Quick Action Navigation */}
-      <Typography variant="h6" sx={{ fontWeight: 700, color: '#20202A', mb: 2.5 }}>
-        Quick Management
-      </Typography>
-      <Grid container spacing={2.5}>
-        <Grid item xs={12} sm={6} md={3}>
-          <Paper
-            elevation={0}
-            onClick={() => navigate(`${pathPrefix}/club`)}
-            sx={{
-              p: 3,
-              borderRadius: '16px',
-              border: '1px solid #E9E7F2',
-              cursor: 'pointer',
-              '&:hover': { boxShadow: '0 4px 20px rgba(79,43,203,0.08)', borderColor: '#4F2BCB' },
-            }}
-          >
-            <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#20202A', mb: 0.5 }}>
-              Club Info
-            </Typography>
-            <Typography variant="body2" sx={{ color: '#777788', mb: 2 }}>
-              View club branding, description, and details.
-            </Typography>
-            <Box display="flex" alignItems="center" gap={0.5} sx={{ color: '#4F2BCB', fontWeight: 600, fontSize: '0.85rem' }}>
-              Go <ArrowForwardIcon sx={{ fontSize: 16 }} />
-            </Box>
-          </Paper>
-        </Grid>
+      {/* 3. Quick Management (2x2 Grid Matching Mockup) */}
+      <Box mb={2}>
+        <Typography variant="h6" sx={{ fontWeight: 800, color: '#20202A', mb: 2.5, textAlign: 'center' }}>
+          Quick Management
+        </Typography>
 
-        <Grid item xs={12} sm={6} md={3}>
-          <Paper
-            elevation={0}
-            onClick={() => navigate(`${pathPrefix}/members`)}
-            sx={{
-              p: 3,
-              borderRadius: '16px',
-              border: '1px solid #E9E7F2',
-              cursor: 'pointer',
-              '&:hover': { boxShadow: '0 4px 20px rgba(79,43,203,0.08)', borderColor: '#4F2BCB' },
-            }}
-          >
-            <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#20202A', mb: 0.5 }}>
-              Manage Members
-            </Typography>
-            <Typography variant="body2" sx={{ color: '#777788', mb: 2 }}>
-              View club member roster and profile details.
-            </Typography>
-            <Box display="flex" alignItems="center" gap={0.5} sx={{ color: '#4F2BCB', fontWeight: 600, fontSize: '0.85rem' }}>
-              Go <ArrowForwardIcon sx={{ fontSize: 16 }} />
-            </Box>
-          </Paper>
-        </Grid>
+        <Grid container spacing={3}>
+          {/* Card 1: Club Info */}
+          <Grid item xs={12} sm={6}>
+            <Paper
+              elevation={0}
+              onClick={() => navigate(`${pathPrefix}/club`)}
+              sx={{
+                p: { xs: 3, md: 3.5 },
+                borderRadius: '20px',
+                border: '1px solid #E9E7F2',
+                backgroundColor: '#FFFFFF',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                '&:hover': {
+                  transform: 'translateY(-3px)',
+                  boxShadow: '0 8px 25px rgba(79,43,203,0.08)',
+                  borderColor: '#4F2BCB',
+                },
+              }}
+            >
+              <Typography variant="h6" sx={{ fontWeight: 800, color: '#20202A', mb: 0.8 }}>
+                Club Info
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#777788', mb: 2 }}>
+                View club branding, description, and details.
+              </Typography>
+              <Box display="flex" alignItems="center" gap={0.5} sx={{ color: '#4F2BCB', fontWeight: 700, fontSize: '0.88rem' }}>
+                Go <ArrowForwardIcon sx={{ fontSize: 16 }} />
+              </Box>
+            </Paper>
+          </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
-          <Paper
-            elevation={0}
-            onClick={() => navigate(`${pathPrefix}/events`)}
-            sx={{
-              p: 3,
-              borderRadius: '16px',
-              border: '1px solid #E9E7F2',
-              cursor: 'pointer',
-              '&:hover': { boxShadow: '0 4px 20px rgba(79,43,203,0.08)', borderColor: '#4F2BCB' },
-            }}
-          >
-            <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#20202A', mb: 0.5 }}>
-              Manage Events
-            </Typography>
-            <Typography variant="body2" sx={{ color: '#777788', mb: 2 }}>
-              Create, edit, cancel events, and check registrations.
-            </Typography>
-            <Box display="flex" alignItems="center" gap={0.5} sx={{ color: '#4F2BCB', fontWeight: 600, fontSize: '0.85rem' }}>
-              Go <ArrowForwardIcon sx={{ fontSize: 16 }} />
-            </Box>
-          </Paper>
-        </Grid>
+          {/* Card 2: Manage Members */}
+          <Grid item xs={12} sm={6}>
+            <Paper
+              elevation={0}
+              onClick={() => navigate(`${pathPrefix}/members`)}
+              sx={{
+                p: { xs: 3, md: 3.5 },
+                borderRadius: '20px',
+                border: '1px solid #E9E7F2',
+                backgroundColor: '#FFFFFF',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                '&:hover': {
+                  transform: 'translateY(-3px)',
+                  boxShadow: '0 8px 25px rgba(79,43,203,0.08)',
+                  borderColor: '#4F2BCB',
+                },
+              }}
+            >
+              <Typography variant="h6" sx={{ fontWeight: 800, color: '#20202A', mb: 0.8 }}>
+                Manage Members
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#777788', mb: 2 }}>
+                View daily member roster and profile details.
+              </Typography>
+              <Box display="flex" alignItems="center" gap={0.5} sx={{ color: '#4F2BCB', fontWeight: 700, fontSize: '0.88rem' }}>
+                Go <ArrowForwardIcon sx={{ fontSize: 16 }} />
+              </Box>
+            </Paper>
+          </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
-          <Paper
-            elevation={0}
-            onClick={() => navigate(`${pathPrefix}/announcements`)}
-            sx={{
-              p: 3,
-              borderRadius: '16px',
-              border: '1px solid #E9E7F2',
-              cursor: 'pointer',
-              '&:hover': { boxShadow: '0 4px 20px rgba(79,43,203,0.08)', borderColor: '#4F2BCB' },
-            }}
-          >
-            <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#20202A', mb: 0.5 }}>
-              Announcements
-            </Typography>
-            <Typography variant="body2" sx={{ color: '#777788', mb: 2 }}>
-              Publish announcements to club members.
-            </Typography>
-            <Box display="flex" alignItems="center" gap={0.5} sx={{ color: '#4F2BCB', fontWeight: 600, fontSize: '0.85rem' }}>
-              Go <ArrowForwardIcon sx={{ fontSize: 16 }} />
-            </Box>
-          </Paper>
+          {/* Card 3: Manage Events */}
+          <Grid item xs={12} sm={6}>
+            <Paper
+              elevation={0}
+              onClick={() => navigate(`${pathPrefix}/events`)}
+              sx={{
+                p: { xs: 3, md: 3.5 },
+                borderRadius: '20px',
+                border: '1px solid #E9E7F2',
+                backgroundColor: '#FFFFFF',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                '&:hover': {
+                  transform: 'translateY(-3px)',
+                  boxShadow: '0 8px 25px rgba(79,43,203,0.08)',
+                  borderColor: '#4F2BCB',
+                },
+              }}
+            >
+              <Typography variant="h6" sx={{ fontWeight: 800, color: '#20202A', mb: 0.8 }}>
+                Manage Events
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#777788', mb: 2 }}>
+                Create, edit casual events, and check registrations.
+              </Typography>
+              <Box display="flex" alignItems="center" gap={0.5} sx={{ color: '#4F2BCB', fontWeight: 700, fontSize: '0.88rem' }}>
+                Go <ArrowForwardIcon sx={{ fontSize: 16 }} />
+              </Box>
+            </Paper>
+          </Grid>
+
+          {/* Card 4: Announcements */}
+          <Grid item xs={12} sm={6}>
+            <Paper
+              elevation={0}
+              onClick={() => navigate(`${pathPrefix}/announcements`)}
+              sx={{
+                p: { xs: 3, md: 3.5 },
+                borderRadius: '20px',
+                border: '1px solid #E9E7F2',
+                backgroundColor: '#FFFFFF',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                '&:hover': {
+                  transform: 'translateY(-3px)',
+                  boxShadow: '0 8px 25px rgba(79,43,203,0.08)',
+                  borderColor: '#4F2BCB',
+                },
+              }}
+            >
+              <Typography variant="h6" sx={{ fontWeight: 800, color: '#20202A', mb: 0.8 }}>
+                Announcements
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#777788', mb: 2 }}>
+                Publish announcements to club members.
+              </Typography>
+              <Box display="flex" alignItems="center" gap={0.5} sx={{ color: '#4F2BCB', fontWeight: 700, fontSize: '0.88rem' }}>
+                Go <ArrowForwardIcon sx={{ fontSize: 16 }} />
+              </Box>
+            </Paper>
+          </Grid>
         </Grid>
-      </Grid>
+      </Box>
     </Box>
   );
 };

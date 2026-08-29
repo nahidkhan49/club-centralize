@@ -30,7 +30,7 @@ import AccessTimeOutlinedIcon from '@mui/icons-material/AccessTimeOutlined';
 import MeetingRoomOutlinedIcon from '@mui/icons-material/MeetingRoomOutlined';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 
-import api from '../api/axiosInstance';
+import api, { getImageUrl } from '../api/axiosInstance';
 import { fetchEventsByClub } from '../api/eventApi';
 import { fetchMyClubRequest, requestJoinClub, leaveClub } from '../api/adminApi';
 import { useAuth } from '../context/AuthContext';
@@ -348,7 +348,7 @@ const ClubDetails = () => {
             }}
           >
             <Avatar
-              src={club?.logo_url || ''}
+              src={getImageUrl(club?.logo_url)}
               variant="rounded"
               sx={{
                 width: { xs: 90, sm: 120 },
@@ -595,6 +595,7 @@ const ClubDetails = () => {
                         }}
                       >
                         <Avatar
+                          src={getImageUrl(officer.avatar_url)}
                           sx={{
                             width: 48,
                             height: 48,
@@ -691,7 +692,7 @@ const ClubDetails = () => {
                     >
                       <Box
                         component="img"
-                        src={item.url || item}
+                        src={getImageUrl(item.url || item)}
                         alt={item.title || 'Photo'}
                         sx={{
                           width: '100%',
@@ -854,7 +855,7 @@ const ClubDetails = () => {
                     {ev.image_url && (
                       <Box
                         component="img"
-                        src={ev.image_url}
+                        src={getImageUrl(ev.image_url)}
                         alt={ev.title}
                         sx={{
                           width: '100%',
@@ -944,6 +945,7 @@ const ClubDetails = () => {
                       }}
                     >
                       <Avatar
+                        src={getImageUrl(member.avatar_url)}
                         sx={{
                           width: 52,
                           height: 52,

@@ -142,4 +142,25 @@ export const removeClubMember = async (clubId, userId) => {
   return res.data;
 };
 
+// ===== Personal Messaging between Club (Officers) and Members =====
+
+/** Fetch chat message history. Optionally pass userId if officer viewing a specific member's channel. */
+export const fetchClubMessages = async (clubId, userId = null) => {
+  const url = userId ? `/clubs/${clubId}/messages?user_id=${userId}` : `/clubs/${clubId}/messages`;
+  const res = await api.get(url);
+  return res.data;
+};
+
+/** Send a chat message. Optionally pass userId if officer replying to a specific member's channel. */
+export const sendClubMessage = async (clubId, content, userId = null) => {
+  const res = await api.post(`/clubs/${clubId}/messages`, { content, user_id: userId });
+  return res.data;
+};
+
+/** List all members who have exchanged messages with this club (officers/admins only) */
+export const fetchChatParticipants = async (clubId) => {
+  const res = await api.get(`/clubs/${clubId}/chat-participants`);
+  return res.data;
+};
+
 

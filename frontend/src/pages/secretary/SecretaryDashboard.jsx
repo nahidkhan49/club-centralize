@@ -510,6 +510,37 @@ const SecretaryDashboard = () => {
               </Box>
             </Paper>
           </Grid>
+
+          {/* Card 5: Member Messages */}
+          <Grid item xs={12} sm={6}>
+            <Paper
+              elevation={0}
+              onClick={() => navigate(`/clubs/${myClubId}/chat`)}
+              sx={{
+                p: { xs: 3, md: 3.5 },
+                borderRadius: '20px',
+                border: '1px solid #E9E7F2',
+                backgroundColor: '#FFFFFF',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                '&:hover': {
+                  transform: 'translateY(-3px)',
+                  boxShadow: '0 8px 25px rgba(79,43,203,0.08)',
+                  borderColor: '#4F2BCB',
+                },
+              }}
+            >
+              <Typography variant="h6" sx={{ fontWeight: 800, color: '#20202A', mb: 0.8 }}>
+                Member Messages
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#777788', mb: 2 }}>
+                Chat directly with individual club members.
+              </Typography>
+              <Box display="flex" alignItems="center" gap={0.5} sx={{ color: '#4F2BCB', fontWeight: 700, fontSize: '0.88rem' }}>
+                Go <ArrowForwardIcon sx={{ fontSize: 16 }} />
+              </Box>
+            </Paper>
+          </Grid>
         </Grid>
       </Box>
     </Box>

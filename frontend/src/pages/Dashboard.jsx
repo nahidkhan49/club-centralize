@@ -7,6 +7,7 @@ import {
   PersonOutlined,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import ForumIcon from '@mui/icons-material/Forum';
 import DeveloperIllustration from '../components/DeveloperIllustration';
 import WelcomeBanner from '../components/WelcomeBanner';
 import { useAuth } from '../context/AuthContext';
@@ -49,7 +50,7 @@ const actionCards = [
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const { user, systemRole, loading } = useAuth();
+  const { user, systemRole, memberships, loading } = useAuth();
   const { siteName, siteLogo, tagline, welcomeBannerEnabled } = useSiteSettings();
 
   React.useEffect(() => {
@@ -238,6 +239,79 @@ export default function Dashboard() {
           </Grid>
         ))}
       </Grid>
+      {/* Joined Clubs Direct Chat Channels */}
+      {memberships && memberships.length > 0 && (
+        <Box sx={{ mt: 5 }}>
+          <Typography variant="h6" sx={{ fontWeight: 800, color: '#20202A', mb: 2.5 }}>
+            Message Your Clubs
+          </Typography>
+          <Grid container spacing={3}>
+            {memberships.map((m) => (
+              <Grid item xs={12} sm={6} md={4} key={m.club_id}>
+                <Card
+                  elevation={0}
+                  onClick={() => navigate(`/clubs/${m.club_id}/chat`)}
+                  sx={{
+                    p: 2.5,
+                    borderRadius: '16px',
+                    border: '1px solid #E9E7F2',
+                    backgroundColor: '#FFFFFF',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease-in-out',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    '&:hover': {
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 8px 20px rgba(79, 43, 203, 0.06)',
+                      borderColor: '#C7B8FF',
+                    },
+                  }}
+                >
+                  <Box display="flex" alignItems="center" gap={1.8}>
+                    <Avatar
+                      sx={{
+                        width: 42,
+                        height: 42,
+                        backgroundColor: '#F3F0FF',
+                        color: '#4F2BCB',
+                        fontWeight: 800,
+                        fontSize: '1rem',
+                      }}
+                    >
+                      {m.club_name?.charAt(0).toUpperCase()}
+                    </Avatar>
+                    <Box>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#20202A' }}>
+                        {m.club_name}
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: '#777788', textTransform: 'capitalize' }}>
+                        Role: {m.role.replace('_', ' ')}
+                      </Typography>
+                    </Box>
+                  </Box>
+                  
+                  <Box
+                    sx={{
+                      backgroundColor: '#F3F0FF',
+                      color: '#4F2BCB',
+                      p: 1,
+                      borderRadius: '50%',
+                      width: 32,
+                      height: 32,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <ForumIcon sx={{ fontSize: 16 }} />
+                  </Box>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
+        </Box>
+      )}
     </Box>
   );
 }

@@ -28,6 +28,7 @@ import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
 import AccessTimeOutlinedIcon from '@mui/icons-material/AccessTimeOutlined';
 import MeetingRoomOutlinedIcon from '@mui/icons-material/MeetingRoomOutlined';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
+import ForumIcon from '@mui/icons-material/Forum';
 
 import api, { getImageUrl, getClubLogoUrl } from '../api/axiosInstance';
 import { fetchEventsByClub } from '../api/eventApi';
@@ -400,6 +401,23 @@ const ClubDetails = () => {
                     px: 1,
                   }}
                 />
+                <Button
+                  variant="primary"
+                  onClick={() => navigate(`/clubs/${clubId}/chat`)}
+                  startIcon={<ForumIcon />}
+                  sx={{
+                    backgroundColor: '#4F2BCB',
+                    color: '#FFFFFF',
+                    borderRadius: '10px',
+                    px: 3,
+                    py: 0.8,
+                    fontWeight: 700,
+                    boxShadow: '0 4px 12px rgba(79, 43, 203, 0.25)',
+                    '&:hover': { backgroundColor: '#39209A' },
+                  }}
+                >
+                  {isClubManager ? 'Chat Console' : 'Chat with Club'}
+                </Button>
                 <Button
                   variant="ghost"
                   onClick={handleLeave}

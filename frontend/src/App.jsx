@@ -15,6 +15,7 @@ import EventCreate from './pages/EventCreate';
 import EventEdit from './pages/EventEdit';
 import EventManage from './pages/EventManage';
 import Announcements from './pages/Announcements';
+import ClubChat from './pages/ClubChat';
 
 // Admin Pages
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -59,6 +60,7 @@ function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/clubs" element={<Clubs />} />
           <Route path="/clubs/:clubId" element={<ClubDetails />} />
+          <Route path="/clubs/:clubId/chat" element={<ClubChat />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/announcements" element={<Announcements />} />
           <Route path="/events" element={<Events />} />

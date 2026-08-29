@@ -15,6 +15,7 @@ from app.routers.announcements import router as announcements_router
 from app.routers.uploads import router as uploads_router
 from app.routers.settings import router as settings_router
 from app.routers.event_tasks import router as event_tasks_router
+from app.routers.club_messages import router as club_messages_router
 
 from sqlalchemy import text
 
@@ -80,6 +81,19 @@ async def lifespan(app: FastAPI):
             """))
             conn.execute(text("CREATE INDEX IF NOT EXISTS ix_event_tasks_event_id ON event_tasks(event_id);"))
             conn.execute(text("CREATE INDEX IF NOT EXISTS ix_event_tasks_assigned_to ON event_tasks(assigned_to);"))
+
+            # Create club_messages table if not exists
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS club_messages (
+                    id SERIAL PRIMARY KEY,
+                    club_id INTEGER NOT NULL REFERENCES clubs(id) ON DELETE CASCADE,
+                    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                    sender_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                    content TEXT NOT NULL,
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+                );
+            """))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_club_messages_club_user ON club_messages(club_id, user_id);"))
     except Exception as e:
         print(f"Startup DDL column migration warning: {e}")
 
@@ -190,3 +204,4 @@ app.include_router(announcements_router)
 app.include_router(uploads_router)
 app.include_router(settings_router)
 app.include_router(event_tasks_router)
+app.include_router(club_messages_router)

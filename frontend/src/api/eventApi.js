@@ -70,3 +70,29 @@ export const uploadApk = async (file) => {
   });
   return response.data;
 };
+
+// ===== Event Tasks =====
+
+/** Fetch all tasks for an event */
+export const fetchEventTasks = async (eventId) => {
+  const response = await api.get(`/events/${eventId}/tasks`);
+  return response.data;
+};
+
+/** Create a new task for an event */
+export const createEventTask = async (eventId, taskData) => {
+  const response = await api.post(`/events/${eventId}/tasks`, taskData);
+  return response.data;
+};
+
+/** Update an event task */
+export const updateEventTask = async (eventId, taskId, updateData) => {
+  const response = await api.patch(`/events/${eventId}/tasks/${taskId}`, updateData);
+  return response.data;
+};
+
+/** Delete an event task */
+export const deleteEventTask = async (eventId, taskId) => {
+  await api.delete(`/events/${eventId}/tasks/${taskId}`);
+};
+

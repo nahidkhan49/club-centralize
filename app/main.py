@@ -14,6 +14,7 @@ from app.routers.events import router as events_router
 from app.routers.announcements import router as announcements_router
 from app.routers.uploads import router as uploads_router
 from app.routers.settings import router as settings_router
+from app.routers.event_tasks import router as event_tasks_router
 
 from sqlalchemy import text
 
@@ -55,6 +56,26 @@ async def lifespan(app: FastAPI):
 
             # Safe column additions for announcements table
             conn.execute(text("ALTER TABLE announcements ADD COLUMN IF NOT EXISTS announcement_type VARCHAR(50) DEFAULT 'General';"))
+
+            # Create event_tasks table if not exists
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS event_tasks (
+                    id SERIAL PRIMARY KEY,
+                    event_id INTEGER NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+                    assigned_to INTEGER REFERENCES users(id) ON DELETE SET NULL,
+                    assigned_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+                    title VARCHAR(200) NOT NULL,
+                    description TEXT,
+                    status VARCHAR(30) NOT NULL DEFAULT 'pending',
+                    priority VARCHAR(20) NOT NULL DEFAULT 'medium',
+                    category VARCHAR(50),
+                    due_date TIMESTAMP WITH TIME ZONE,
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+                    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+                );
+            """))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_event_tasks_event_id ON event_tasks(event_id);"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_event_tasks_assigned_to ON event_tasks(assigned_to);"))
     except Exception as e:
         print(f"Startup DDL column migration warning: {e}")
 
@@ -164,3 +185,4 @@ app.include_router(events_router)
 app.include_router(announcements_router)
 app.include_router(uploads_router)
 app.include_router(settings_router)
+app.include_router(event_tasks_router)

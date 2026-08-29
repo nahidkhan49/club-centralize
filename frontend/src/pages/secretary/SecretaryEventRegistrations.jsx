@@ -32,7 +32,7 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
-import CheckCircleOutlinedIcon from '@mui/icons-material/CheckCircleOutlined';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutlined';
 
 import { useAuth } from '../../context/AuthContext';
 import { fetchEventParticipants, addEventParticipant, removeEventParticipant, getEvent } from '../../api/eventApi';
@@ -142,9 +142,9 @@ const SecretaryEventRegistrations = () => {
   };
 
   const filteredParticipants = participants.filter(p =>
-    p.username.toLowerCase().includes(search.toLowerCase()) ||
-    p.email.toLowerCase().includes(search.toLowerCase()) ||
-    (p.full_name && p.full_name.toLowerCase().includes(search.toLowerCase()))
+    (p.username || '').toLowerCase().includes(search.toLowerCase()) ||
+    (p.email || '').toLowerCase().includes(search.toLowerCase()) ||
+    (p.full_name || '').toLowerCase().includes(search.toLowerCase())
   );
 
   const existingUserIds = new Set(participants.map(p => p.id));

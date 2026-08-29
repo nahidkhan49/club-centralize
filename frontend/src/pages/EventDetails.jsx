@@ -24,7 +24,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
-import { getEvent, joinEvent, leaveEvent, deleteEvent } from '../api/eventApi';
+import { getEvent, joinEvent, leaveEvent, deleteEvent, fetchEventParticipants } from '../api/eventApi';
 import api, { getImageUrl } from '../api/axiosInstance';
 import { useAuth } from '../context/AuthContext';
 import Button from '../components/Button';
@@ -38,6 +38,7 @@ const EventDetails = () => {
   const isAdmin = systemRole === 'admin';
 
   const [event, setEvent] = useState(null);
+  const [participants, setParticipants] = useState([]);
   const [clubMembers, setClubMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -45,7 +46,7 @@ const EventDetails = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
 
-  const fetchEvent = async () => {
+  const fetchEventData = async () => {
     try {
       setLoading(true);
       const data = await getEvent(eventId);
@@ -56,6 +57,15 @@ const EventDetails = () => {
       setError(err?.response?.data?.detail || 'Failed to load event details.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadParticipants = async () => {
+    try {
+      const data = await fetchEventParticipants(eventId);
+      setParticipants(data || []);
+    } catch (err) {
+      console.warn('Could not fetch participants', err);
     }
   };
 
@@ -70,7 +80,8 @@ const EventDetails = () => {
   };
 
   useEffect(() => {
-    fetchEvent();
+    fetchEventData();
+    loadParticipants();
     fetchClubMembers();
   }, [eventId, clubId]);
 
@@ -78,7 +89,7 @@ const EventDetails = () => {
     try {
       setActionLoading(true);
       await joinEvent(eventId);
-      await fetchEvent();
+      await loadParticipants();
     } catch (err) {
       setError(err?.response?.data?.detail || 'Failed to join event');
     } finally {
@@ -90,7 +101,7 @@ const EventDetails = () => {
     try {
       setActionLoading(true);
       await leaveEvent(eventId);
-      await fetchEvent();
+      await loadParticipants();
     } catch (err) {
       setError(err?.response?.data?.detail || 'Failed to leave event');
     } finally {
@@ -112,7 +123,7 @@ const EventDetails = () => {
   };
 
   const currentUserId = Number(localStorage.getItem('user_id'));
-  const isParticipant = event?.participants?.some((p) => p.id === currentUserId || p.user_id === currentUserId);
+  const isParticipant = participants.some((p) => p.id === currentUserId || p.user_id === currentUserId);
   const isClubLeader = isAdmin || clubMembers.some(
     (m) => m.user_id === currentUserId && (m.role === 'president' || m.role === 'secretary')
   );
@@ -310,7 +321,7 @@ const EventDetails = () => {
           }}
         >
           <Tab label="About" />
-          {isClubLeader && <Tab label={`Attendees (${event?.participants?.length || 0})`} />}
+          {isClubLeader && <Tab label={`Attendees (${participants.length})`} />}
         </Tabs>
       </Box>
 
@@ -402,16 +413,16 @@ const EventDetails = () => {
           }}
         >
           <Typography variant="h6" sx={{ fontWeight: 700, color: '#20202A', mb: 2.5 }}>
-            Registered Attendees ({event?.participants?.length || 0})
+            Registered Attendees ({participants.length})
           </Typography>
 
-          {!event?.participants || event.participants.length === 0 ? (
+          {participants.length === 0 ? (
             <Typography variant="body2" sx={{ color: '#777788' }}>
               No registered attendees yet.
             </Typography>
           ) : (
             <Grid container spacing={2}>
-              {event.participants.map((p) => (
+              {participants.map((p) => (
                 <Grid item xs={12} sm={6} md={4} key={p.id || p.user_id}>
                   <Box
                     sx={{
@@ -425,11 +436,11 @@ const EventDetails = () => {
                     }}
                   >
                     <Avatar sx={{ width: 36, height: 36, bgcolor: '#4F2BCB', fontWeight: 700, fontSize: '0.9rem' }}>
-                      {p.username?.charAt(0).toUpperCase()}
+                      {(p.username || p.email || 'U').charAt(0).toUpperCase()}
                     </Avatar>
                     <Box>
                       <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#20202A' }}>
-                        {p.username}
+                        {p.full_name || p.username || p.email}
                       </Typography>
                       {p.email && (
                         <Typography variant="caption" sx={{ color: '#777788' }}>

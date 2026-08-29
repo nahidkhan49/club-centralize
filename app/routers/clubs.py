@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -5,17 +6,41 @@ from sqlalchemy.orm import Session
 from app.dependencies import get_current_user, get_db, get_current_admin_user
 from app.models.club import Club
 from app.models.membership import Membership
+from app.models.membership_request import MembershipRequest, RequestStatus
 from app.models.user import User
 from app.models.event import Event
 from app.models.announcement import Announcement
 from app.models.event_participant import event_participants
 from app.schemas.club import ClubCreate, ClubResponse, ClubUpdate
-from app.schemas.membership import ClubMemberResponse, MembershipResponse, MembershipRoleUpdate, MembershipRole
+from app.schemas.membership import (
+    ClubMemberResponse,
+    MembershipResponse,
+    MembershipRoleUpdate,
+    MembershipRole,
+    MembershipRequestResponse,
+    MyMembershipRequestStatusResponse,
+)
 
 router = APIRouter(
     prefix="/clubs",
     tags=["Clubs"]
 )
+
+
+def check_club_officer_permission(club_id: int, user: User, db: Session) -> bool:
+    """Ensures user is either superuser, president, or secretary of this specific club."""
+    if user.is_superuser:
+        return True
+    membership = db.query(Membership).filter(
+        Membership.club_id == club_id,
+        Membership.user_id == user.id
+    ).first()
+    if not membership or membership.role not in ("president", "secretary"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only club president or secretary can perform this action"
+        )
+    return True
 
 
 class AssignClubRoleRequest(BaseModel):
@@ -154,8 +179,9 @@ def delete_club(
             detail="Club not found"
         )
 
-    # Delete memberships
+    # Delete memberships & membership requests
     db.query(Membership).filter(Membership.club_id == club_id).delete()
+    db.query(MembershipRequest).filter(MembershipRequest.club_id == club_id).delete()
 
     # Delete announcements
     db.query(Announcement).filter(Announcement.club_id == club_id).delete()
@@ -172,12 +198,16 @@ def delete_club(
     return {"message": "Club deleted successfully"}
 
 
-@router.post("/{club_id}/join", response_model=MembershipResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/{club_id}/join", response_model=MembershipRequestResponse, status_code=status.HTTP_201_CREATED)
 def join_club(
     club_id: int,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    """
+    User submits a join request. Status is PENDING and no active member
+    permissions are granted until President/Secretary approves.
+    """
     club = db.query(Club).filter(Club.id == club_id).first()
     if not club:
         raise HTTPException(
@@ -185,6 +215,7 @@ def join_club(
             detail="Club not found"
         )
 
+    # 1. Prevent joining if already an active member
     existing_membership = db.query(Membership).filter(
         Membership.user_id == current_user.id,
         Membership.club_id == club_id
@@ -192,20 +223,266 @@ def join_club(
     if existing_membership:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="You are already a member of this club"
+            detail="You are already an active member of this club"
         )
 
-    membership = Membership(
-        user_id=current_user.id,
+    # 2. Check existing request status
+    existing_request = db.query(MembershipRequest).filter(
+        MembershipRequest.club_id == club_id,
+        MembershipRequest.user_id == current_user.id
+    ).first()
+
+    if existing_request:
+        if existing_request.status == RequestStatus.PENDING.value:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="You already have a pending join request for this club"
+            )
+        elif existing_request.status == RequestStatus.REJECTED.value:
+            # Allow user to reapply
+            existing_request.status = RequestStatus.PENDING.value
+            existing_request.reviewed_by_id = None
+            existing_request.reviewed_at = None
+            existing_request.updated_at = datetime.now(timezone.utc)
+            db.commit()
+            db.refresh(existing_request)
+            return MembershipRequestResponse(
+                id=existing_request.id,
+                club_id=existing_request.club_id,
+                user_id=existing_request.user_id,
+                username=current_user.username,
+                user_email=current_user.email,
+                status=existing_request.status,
+                created_at=existing_request.created_at,
+                updated_at=existing_request.updated_at,
+                reviewed_by_id=None,
+                reviewed_by_username=None,
+                reviewed_at=None,
+            )
+
+    new_request = MembershipRequest(
         club_id=club_id,
-        role="member"
+        user_id=current_user.id,
+        status=RequestStatus.PENDING.value
     )
 
-    db.add(membership)
+    db.add(new_request)
     db.commit()
-    db.refresh(membership)
+    db.refresh(new_request)
 
-    return membership
+    return MembershipRequestResponse(
+        id=new_request.id,
+        club_id=new_request.club_id,
+        user_id=new_request.user_id,
+        username=current_user.username,
+        user_email=current_user.email,
+        status=new_request.status,
+        created_at=new_request.created_at,
+        updated_at=new_request.updated_at,
+        reviewed_by_id=None,
+        reviewed_by_username=None,
+        reviewed_at=None,
+    )
+
+
+@router.get("/{club_id}/my-request", response_model=MyMembershipRequestStatusResponse)
+def get_my_club_request_status(
+    club_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get current user's join request & membership status for this club."""
+    club = db.query(Club).filter(Club.id == club_id).first()
+    if not club:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Club not found")
+
+    membership = db.query(Membership).filter(
+        Membership.user_id == current_user.id,
+        Membership.club_id == club_id
+    ).first()
+
+    req = db.query(MembershipRequest).filter(
+        MembershipRequest.user_id == current_user.id,
+        MembershipRequest.club_id == club_id
+    ).order_by(MembershipRequest.id.desc()).first()
+
+    return MyMembershipRequestStatusResponse(
+        club_id=club_id,
+        status=req.status if req else None,
+        is_member=bool(membership),
+        role=membership.role if membership else None,
+        request_id=req.id if req else None,
+    )
+
+
+@router.get("/{club_id}/requests", response_model=list[MembershipRequestResponse])
+def get_club_membership_requests(
+    club_id: int,
+    status_filter: str | None = None,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    President/Secretary/Admin only: List membership requests for a club.
+    """
+    club = db.query(Club).filter(Club.id == club_id).first()
+    if not club:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Club not found")
+
+    check_club_officer_permission(club_id, current_user, db)
+
+    query = db.query(
+        MembershipRequest,
+        User.username.label("applicant_username"),
+        User.email.label("applicant_email")
+    ).join(User, MembershipRequest.user_id == User.id).filter(
+        MembershipRequest.club_id == club_id
+    )
+
+    if status_filter:
+        query = query.filter(MembershipRequest.status == status_filter.upper())
+
+    results = query.order_by(MembershipRequest.created_at.desc()).all()
+
+    reviewer_ids = {r[0].reviewed_by_id for r in results if r[0].reviewed_by_id}
+    reviewers = {}
+    if reviewer_ids:
+        reviewers = {u.id: u.username for u in db.query(User).filter(User.id.in_(reviewer_ids)).all()}
+
+    output = []
+    for req_obj, u_name, u_email in results:
+        output.append(
+            MembershipRequestResponse(
+                id=req_obj.id,
+                club_id=req_obj.club_id,
+                user_id=req_obj.user_id,
+                username=u_name,
+                user_email=u_email,
+                status=req_obj.status,
+                created_at=req_obj.created_at,
+                updated_at=req_obj.updated_at,
+                reviewed_by_id=req_obj.reviewed_by_id,
+                reviewed_by_username=reviewers.get(req_obj.reviewed_by_id),
+                reviewed_at=req_obj.reviewed_at,
+            )
+        )
+    return output
+
+
+@router.post("/{club_id}/requests/{request_id}/approve", response_model=MembershipRequestResponse)
+def approve_membership_request(
+    club_id: int,
+    request_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    President/Secretary/Admin only: Approve a membership request.
+    User is granted active MEMBER role in this club.
+    """
+    club = db.query(Club).filter(Club.id == club_id).first()
+    if not club:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Club not found")
+
+    check_club_officer_permission(club_id, current_user, db)
+
+    req = db.query(MembershipRequest).filter(
+        MembershipRequest.id == request_id,
+        MembershipRequest.club_id == club_id
+    ).first()
+    if not req:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Membership request not found")
+
+    # Update request
+    req.status = RequestStatus.APPROVED.value
+    req.reviewed_by_id = current_user.id
+    req.reviewed_at = datetime.now(timezone.utc)
+    req.updated_at = datetime.now(timezone.utc)
+
+    # Ensure user has active Membership with role='member'
+    membership = db.query(Membership).filter(
+        Membership.club_id == club_id,
+        Membership.user_id == req.user_id
+    ).first()
+
+    if not membership:
+        membership = Membership(
+            club_id=club_id,
+            user_id=req.user_id,
+            role="member"
+        )
+        db.add(membership)
+
+    db.commit()
+    db.refresh(req)
+
+    applicant = db.query(User).filter(User.id == req.user_id).first()
+    return MembershipRequestResponse(
+        id=req.id,
+        club_id=req.club_id,
+        user_id=req.user_id,
+        username=applicant.username if applicant else None,
+        user_email=applicant.email if applicant else None,
+        status=req.status,
+        created_at=req.created_at,
+        updated_at=req.updated_at,
+        reviewed_by_id=req.reviewed_by_id,
+        reviewed_by_username=current_user.username,
+        reviewed_at=req.reviewed_at,
+    )
+
+
+@router.post("/{club_id}/requests/{request_id}/reject", response_model=MembershipRequestResponse)
+def reject_membership_request(
+    club_id: int,
+    request_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    President/Secretary/Admin only: Reject a membership request.
+    """
+    club = db.query(Club).filter(Club.id == club_id).first()
+    if not club:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Club not found")
+
+    check_club_officer_permission(club_id, current_user, db)
+
+    req = db.query(MembershipRequest).filter(
+        MembershipRequest.id == request_id,
+        MembershipRequest.club_id == club_id
+    ).first()
+    if not req:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Membership request not found")
+
+    req.status = RequestStatus.REJECTED.value
+    req.reviewed_by_id = current_user.id
+    req.reviewed_at = datetime.now(timezone.utc)
+    req.updated_at = datetime.now(timezone.utc)
+
+    # Ensure no active membership exists
+    db.query(Membership).filter(
+        Membership.club_id == club_id,
+        Membership.user_id == req.user_id
+    ).delete()
+
+    db.commit()
+    db.refresh(req)
+
+    applicant = db.query(User).filter(User.id == req.user_id).first()
+    return MembershipRequestResponse(
+        id=req.id,
+        club_id=req.club_id,
+        user_id=req.user_id,
+        username=applicant.username if applicant else None,
+        user_email=applicant.email if applicant else None,
+        status=req.status,
+        created_at=req.created_at,
+        updated_at=req.updated_at,
+        reviewed_by_id=req.reviewed_by_id,
+        reviewed_by_username=current_user.username,
+        reviewed_at=req.reviewed_at,
+    )
 
 
 @router.delete("/{club_id}/leave")
@@ -232,6 +509,12 @@ def leave_club(
         )
 
     db.delete(membership)
+    # Also clean up any membership requests for this user & club
+    db.query(MembershipRequest).filter(
+        MembershipRequest.user_id == current_user.id,
+        MembershipRequest.club_id == club_id
+    ).delete()
+
     db.commit()
 
     return {"message": "You have successfully left the club"}
@@ -431,6 +714,11 @@ def get_club_stats(
             )
         ).scalar() or 0
 
+    pending_requests_count = db.query(MembershipRequest).filter(
+        MembershipRequest.club_id == club_id,
+        MembershipRequest.status == RequestStatus.PENDING.value
+    ).count()
+
     return {
         "club_id": club_id,
         "member_count": member_count,
@@ -438,6 +726,7 @@ def get_club_stats(
         "upcoming_events": upcoming_events,
         "announcement_count": announcement_count,
         "total_registrations": registration_count,
+        "pending_requests_count": pending_requests_count,
     }
 
 

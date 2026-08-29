@@ -18,9 +18,12 @@ import AddIcon from '@mui/icons-material/Add';
 import EventIcon from '@mui/icons-material/Event';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
-import AdminPanelSettingsOutlinedIcon from '@mui/icons-material/AdminPanelSettingsOutlined';
+import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutlined';
+import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
 import api from '../api/axiosInstance';
 import { fetchEventsByClub } from '../api/eventApi';
+import { fetchMyClubRequest, requestJoinClub, leaveClub } from '../api/adminApi';
 import { useAuth } from '../context/AuthContext';
 import Button from '../components/Button';
 import Card from '../components/Card';
@@ -42,6 +45,8 @@ const ClubDetails = () => {
   const [club, setClub] = useState(null);
   const [members, setMembers] = useState([]);
   const [events, setEvents] = useState([]);
+  const [myRequest, setMyRequest] = useState(null);
+  const [successMsg, setSuccessMsg] = useState('');
   const [loadingClub, setLoadingClub] = useState(true);
   const [loadingMembers, setLoadingMembers] = useState(true);
   const [loadingEvents, setLoadingEvents] = useState(true);
@@ -73,6 +78,15 @@ const ClubDetails = () => {
     }
   };
 
+  const fetchUserRequest = async () => {
+    try {
+      const data = await fetchMyClubRequest(clubId);
+      setMyRequest(data);
+    } catch (err) {
+      console.error('Failed to fetch request status', err);
+    }
+  };
+
   const fetchEvents = async () => {
     try {
       setLoadingEvents(true);
@@ -89,15 +103,18 @@ const ClubDetails = () => {
     fetchClub();
     fetchMembers();
     fetchEvents();
+    fetchUserRequest();
   }, [clubId]);
 
   const handleJoin = async () => {
     try {
       setActionLoading(true);
-      await api.post(`/clubs/${clubId}/join`);
-      await fetchMembers();
+      setError(null);
+      await requestJoinClub(clubId);
+      setSuccessMsg('Membership request submitted successfully! Pending approval from club officers.');
+      await Promise.all([fetchMembers(), fetchUserRequest()]);
     } catch (err) {
-      setError(err?.response?.data?.detail || 'Failed to join club');
+      setError(err?.response?.data?.detail || 'Failed to submit join request');
     } finally {
       setActionLoading(false);
     }
@@ -106,8 +123,10 @@ const ClubDetails = () => {
   const handleLeave = async () => {
     try {
       setActionLoading(true);
-      await api.delete(`/clubs/${clubId}/leave`);
-      await fetchMembers();
+      setError(null);
+      await leaveClub(clubId);
+      setSuccessMsg('You have successfully left the club.');
+      await Promise.all([fetchMembers(), fetchUserRequest()]);
     } catch (err) {
       setError(err?.response?.data?.detail || 'Failed to leave club');
     } finally {
@@ -120,7 +139,7 @@ const ClubDetails = () => {
   const isMember = Boolean(myMembership);
   const myRole = myMembership?.role;
 
-  // Permission Check: President or Secretary of this club can manage events
+  // Permission Check: President or Secretary of this club can manage events & requests
   const isClubManager =
     isAdmin || myRole === 'president' || myRole === 'secretary' || myRole === 'vice_president';
 
@@ -182,6 +201,12 @@ const ClubDetails = () => {
         </Alert>
       )}
 
+      {successMsg && (
+        <Alert severity="success" sx={{ mb: 3, borderRadius: 2 }} onClose={() => setSuccessMsg('')}>
+          {successMsg}
+        </Alert>
+      )}
+
       {/* Main Club Details Header */}
       <Box
         sx={{
@@ -240,11 +265,10 @@ const ClubDetails = () => {
           {isMember ? (
             <Box display="flex" alignItems="center" gap={2} justifyContent={{ xs: 'center', sm: 'flex-start' }}>
               <Chip
-                icon={<AdminPanelSettingsOutlinedIcon style={{ color: '#4F2BCB' }} />}
+                icon={<CheckCircleOutlineIcon style={{ color: '#4F2BCB' }} />}
                 label={`Your Role: ${(myRole || 'member').replace('_', ' ').toUpperCase()}`}
                 sx={{ backgroundColor: '#F3F0FF', color: '#4F2BCB', fontWeight: 700 }}
               />
-              {/* Normal members or officers can leave; presidents can leave if not locked */}
               <Button
                 variant="ghost"
                 onClick={handleLeave}
@@ -259,6 +283,55 @@ const ClubDetails = () => {
                 }}
               >
                 {actionLoading ? 'Leaving...' : 'Leave Club'}
+              </Button>
+            </Box>
+          ) : myRequest?.status === 'PENDING' ? (
+            <Box display="flex" flexDirection="column" gap={1} alignItems={{ xs: 'center', sm: 'flex-start' }}>
+              <Chip
+                icon={<HourglassEmptyIcon style={{ color: '#B45309' }} />}
+                label="Request Pending Review"
+                sx={{
+                  backgroundColor: '#FEF3C7',
+                  color: '#B45309',
+                  fontWeight: 700,
+                  fontSize: '0.85rem',
+                  py: 2,
+                  px: 1,
+                  borderRadius: '10px',
+                }}
+              />
+              <Typography variant="caption" sx={{ color: '#777788', fontStyle: 'italic' }}>
+                Your join request is awaiting review by club leadership (President/Secretary).
+              </Typography>
+            </Box>
+          ) : myRequest?.status === 'REJECTED' ? (
+            <Box display="flex" alignItems="center" gap={2} flexWrap="wrap" justifyContent={{ xs: 'center', sm: 'flex-start' }}>
+              <Chip
+                icon={<CancelOutlinedIcon style={{ color: '#DC2626' }} />}
+                label="Request Declined"
+                sx={{
+                  backgroundColor: '#FEE2E2',
+                  color: '#DC2626',
+                  fontWeight: 700,
+                  fontSize: '0.85rem',
+                }}
+              />
+              <Button
+                variant="primary"
+                onClick={handleJoin}
+                disabled={actionLoading}
+                sx={{
+                  backgroundColor: '#4F2BCB',
+                  color: '#FFFFFF',
+                  borderRadius: '8px',
+                  px: 3,
+                  py: 0.8,
+                  fontWeight: 600,
+                  fontSize: '0.85rem',
+                  '&:hover': { backgroundColor: '#39209A' },
+                }}
+              >
+                {actionLoading ? 'Submitting...' : 'Reapply to Join'}
               </Button>
             </Box>
           ) : (
@@ -277,7 +350,7 @@ const ClubDetails = () => {
                 '&:hover': { backgroundColor: '#39209A' },
               }}
             >
-              {actionLoading ? 'Joining...' : 'Join Club'}
+              {actionLoading ? 'Submitting Request...' : 'Join Club'}
             </Button>
           )}
         </Box>

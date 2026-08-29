@@ -5,10 +5,12 @@ import PeopleAltOutlinedIcon from '@mui/icons-material/PeopleAltOutlined';
 import EventOutlinedIcon from '@mui/icons-material/EventOutlined';
 import CampaignOutlinedIcon from '@mui/icons-material/CampaignOutlined';
 import AssignmentTurnedInOutlinedIcon from '@mui/icons-material/AssignmentTurnedInOutlined';
+import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { useAuth } from '../../context/AuthContext';
 import { fetchClubStats } from '../../api/adminApi';
 import StatCard from '../../components/StatCard';
+import Button from '../../components/Button';
 import api from '../../api/axiosInstance';
 
 const PresidentDashboard = () => {
@@ -114,6 +116,61 @@ const PresidentDashboard = () => {
       </Box>
 
       {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
+
+      {/* Pending Join Requests Alert Banner */}
+      {Boolean(stats?.pending_requests_count && stats.pending_requests_count > 0) && (
+        <Box
+          sx={{
+            p: 2.5,
+            mb: 4,
+            borderRadius: '16px',
+            backgroundColor: '#FEF3C7',
+            border: '1px solid #FDE68A',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: 2,
+          }}
+        >
+          <Box display="flex" alignItems="center" gap={1.5}>
+            <Box
+              sx={{
+                width: 44,
+                height: 44,
+                borderRadius: '12px',
+                backgroundColor: '#FDE68A',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#B45309',
+                flexShrink: 0,
+              }}
+            >
+              <HourglassEmptyIcon />
+            </Box>
+            <Box>
+              <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#92400E' }}>
+                {stats.pending_requests_count} Pending Join Request{stats.pending_requests_count > 1 ? 's' : ''}
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#B45309' }}>
+                Prospective members are waiting for your review to join {myClubName}.
+              </Typography>
+            </Box>
+          </Box>
+          <Button
+            variant="primary"
+            onClick={() => navigate(`${pathPrefix}/members`)}
+            sx={{
+              backgroundColor: '#B45309',
+              fontSize: '0.85rem',
+              '&:hover': { backgroundColor: '#92400E' },
+            }}
+          >
+            Review Requests
+          </Button>
+        </Box>
+      )}
 
       {/* Stats Cards */}
       <Grid container spacing={2.5} mb={4}>

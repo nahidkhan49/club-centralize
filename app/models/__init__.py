@@ -1,5 +1,6 @@
 from app.models.user import User
 from app.models.club import Club
 from app.models.membership import Membership
+from app.models.membership_request import MembershipRequest, RequestStatus
 from app.models.event import Event
 from app.models.announcement import Announcement

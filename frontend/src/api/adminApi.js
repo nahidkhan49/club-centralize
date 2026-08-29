@@ -83,9 +83,40 @@ export const leaveEvent = async (eventId) => {
   await api.delete(`/events/${eventId}/join`);
 };
 
-/** Check if current user is registered for event */
-export const checkMyParticipation = async (eventId) => {
-  const res = await api.get(`/events/${eventId}/participants/me`);
+/** Join / Request to join a club */
+export const requestJoinClub = async (clubId) => {
+  const res = await api.post(`/clubs/${clubId}/join`);
+  return res.data;
+};
+
+/** Get current user's join request & membership status for a club */
+export const fetchMyClubRequest = async (clubId) => {
+  const res = await api.get(`/clubs/${clubId}/my-request`);
+  return res.data;
+};
+
+/** List membership requests for a club (president / secretary / admin only) */
+export const fetchClubRequests = async (clubId, status = null) => {
+  const url = status ? `/clubs/${clubId}/requests?status_filter=${status}` : `/clubs/${clubId}/requests`;
+  const res = await api.get(url);
+  return res.data;
+};
+
+/** Approve membership request (president / secretary / admin only) */
+export const approveClubRequest = async (clubId, requestId) => {
+  const res = await api.post(`/clubs/${clubId}/requests/${requestId}/approve`);
+  return res.data;
+};
+
+/** Reject membership request (president / secretary / admin only) */
+export const rejectClubRequest = async (clubId, requestId) => {
+  const res = await api.post(`/clubs/${clubId}/requests/${requestId}/reject`);
+  return res.data;
+};
+
+/** Leave a club */
+export const leaveClub = async (clubId) => {
+  const res = await api.delete(`/clubs/${clubId}/leave`);
   return res.data;
 };
 

@@ -263,6 +263,24 @@ def join_club(
             existing_request.updated_at = datetime.now(timezone.utc)
             db.commit()
             db.refresh(existing_request)
+
+            try:
+                from app.services.notification import create_notification
+                officers = db.query(Membership).filter(
+                    Membership.club_id == club_id,
+                    Membership.role.in_(["president", "secretary"])
+                ).all()
+                for officer in officers:
+                    create_notification(
+                        db=db,
+                        user_id=officer.user_id,
+                        title="New Join Request",
+                        content=f"{current_user.username} has requested to join {club.name}.",
+                        link="/president/members" if officer.role == "president" else "/secretary/members"
+                    )
+            except Exception as ne:
+                print(f"Failed to create join request notifications: {ne}")
+
             return MembershipRequestResponse(
                 id=existing_request.id,
                 club_id=existing_request.club_id,
@@ -286,6 +304,23 @@ def join_club(
     db.add(new_request)
     db.commit()
     db.refresh(new_request)
+
+    try:
+        from app.services.notification import create_notification
+        officers = db.query(Membership).filter(
+            Membership.club_id == club_id,
+            Membership.role.in_(["president", "secretary"])
+        ).all()
+        for officer in officers:
+            create_notification(
+                db=db,
+                user_id=officer.user_id,
+                title="New Join Request",
+                content=f"{current_user.username} has requested to join {club.name}.",
+                link="/president/members" if officer.role == "president" else "/secretary/members"
+            )
+    except Exception as ne:
+        print(f"Failed to create join request notifications: {ne}")
 
     return MembershipRequestResponse(
         id=new_request.id,
@@ -433,6 +468,18 @@ def approve_membership_request(
     db.commit()
     db.refresh(req)
 
+    try:
+        from app.services.notification import create_notification
+        create_notification(
+            db=db,
+            user_id=req.user_id,
+            title="Membership Approved",
+            content=f"Your membership request for {club.name} has been approved!",
+            link=f"/clubs/{club_id}"
+        )
+    except Exception as ne:
+        print(f"Failed to create approve request notification: {ne}")
+
     applicant = db.query(User).filter(User.id == req.user_id).first()
     return MembershipRequestResponse(
         id=req.id,
@@ -485,6 +532,18 @@ def reject_membership_request(
 
     db.commit()
     db.refresh(req)
+
+    try:
+        from app.services.notification import create_notification
+        create_notification(
+            db=db,
+            user_id=req.user_id,
+            title="Membership Rejected",
+            content=f"Your membership request for {club.name} has been rejected.",
+            link="/clubs"
+        )
+    except Exception as ne:
+        print(f"Failed to create reject request notification: {ne}")
 
     applicant = db.query(User).filter(User.id == req.user_id).first()
     return MembershipRequestResponse(

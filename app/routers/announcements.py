@@ -70,6 +70,29 @@ def create_announcement(
     db.add(announcement)
     db.commit()
     db.refresh(announcement)
+
+    try:
+        from app.services.notification import create_notification
+        if announcement.club_id:
+            from app.models.club import Club
+            club = db.query(Club).filter(Club.id == announcement.club_id).first()
+            club_name = club.name if club else "Club"
+            members = db.query(Membership).filter(
+                Membership.club_id == announcement.club_id
+            ).all()
+            for member in members:
+                if member.user_id == current_user.id:
+                    continue
+                create_notification(
+                    db=db,
+                    user_id=member.user_id,
+                    title=f"New Announcement in {club_name}",
+                    content=announcement.title,
+                    link="/announcements"
+                )
+    except Exception as ne:
+        print(f"Failed to create announcement notifications: {ne}")
+
     return announcement
 
 

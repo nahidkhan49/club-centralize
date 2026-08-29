@@ -16,6 +16,7 @@ from app.routers.uploads import router as uploads_router
 from app.routers.settings import router as settings_router
 from app.routers.event_tasks import router as event_tasks_router
 from app.routers.club_messages import router as club_messages_router
+from app.routers.notifications import router as notifications_router
 
 from sqlalchemy import text
 
@@ -94,6 +95,21 @@ async def lifespan(app: FastAPI):
                 );
             """))
             conn.execute(text("CREATE INDEX IF NOT EXISTS ix_club_messages_club_user ON club_messages(club_id, user_id);"))
+
+            # Create notifications table if not exists
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS notifications (
+                    id SERIAL PRIMARY KEY,
+                    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                    title VARCHAR(255) NOT NULL,
+                    content TEXT NOT NULL,
+                    link VARCHAR(255),
+                    is_read BOOLEAN NOT NULL DEFAULT FALSE,
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+                );
+            """))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_notifications_user_id ON notifications(user_id);"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_notifications_is_read ON notifications(is_read);"))
     except Exception as e:
         print(f"Startup DDL column migration warning: {e}")
 
@@ -205,3 +221,4 @@ app.include_router(uploads_router)
 app.include_router(settings_router)
 app.include_router(event_tasks_router)
 app.include_router(club_messages_router)
+app.include_router(notifications_router)

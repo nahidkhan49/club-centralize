@@ -61,6 +61,28 @@ def create_event(
     db.add(event)
     db.commit()
     db.refresh(event)
+
+    try:
+        from app.services.notification import create_notification
+        from app.models.club import Club
+        club = db.query(Club).filter(Club.id == event.club_id).first()
+        club_name = club.name if club else "Club"
+        members = db.query(Membership).filter(
+            Membership.club_id == event.club_id
+        ).all()
+        for member in members:
+            if member.user_id == current_user.id:
+                continue
+            create_notification(
+                db=db,
+                user_id=member.user_id,
+                title=f"New Event in {club_name}",
+                content=f"A new event '{event.title}' has been scheduled.",
+                link=f"/events/{event.id}"
+            )
+    except Exception as ne:
+        print(f"Failed to create event notifications: {ne}")
+
     return event
 
 

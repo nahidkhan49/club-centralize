@@ -121,6 +121,40 @@ def send_club_message(
     db.commit()
     db.refresh(new_msg)
 
+    # Trigger notifications
+    if not is_officer:
+        # Member sent a message to the club -> notify president & secretary
+        try:
+            from app.services.notification import create_notification
+            officers = db.query(Membership).filter(
+                Membership.club_id == club_id,
+                Membership.role.in_(["president", "secretary"])
+            ).all()
+            for officer in officers:
+                create_notification(
+                    db=db,
+                    user_id=officer.user_id,
+                    title=f"New Chat Message - {club.name}",
+                    content=f"{current_user.username}: {new_msg.content[:60]}...",
+                    link=f"/clubs/{club_id}/chat"
+                )
+        except Exception as ne:
+            print(f"Failed to notify club officers of new chat: {ne}")
+    else:
+        # Officer sent a message to a member -> notify member (target_user_id)
+        if target_user_id != current_user.id:
+            try:
+                from app.services.notification import create_notification
+                create_notification(
+                    db=db,
+                    user_id=target_user_id,
+                    title=f"New message from {club.name}",
+                    content=new_msg.content[:60] + "..." if len(new_msg.content) > 60 else new_msg.content,
+                    link=f"/clubs/{club_id}/chat"
+                )
+            except Exception as ne:
+                print(f"Failed to notify member of officer chat: {ne}")
+
     return ClubMessageResponse(
         id=new_msg.id,
         club_id=new_msg.club_id,

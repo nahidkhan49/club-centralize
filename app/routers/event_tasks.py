@@ -113,6 +113,20 @@ def create_event_task(
     db.add(new_task)
     db.commit()
     db.refresh(new_task)
+
+    try:
+        if new_task.assigned_to and new_task.assigned_to != current_user.id:
+            from app.services.notification import create_notification
+            create_notification(
+                db=db,
+                user_id=new_task.assigned_to,
+                title="New Task Assigned",
+                content=f"You have been assigned the task '{new_task.title}' for event '{event.title}'.",
+                link=f"/events/{event_id}/manage"
+            )
+    except Exception as ne:
+        print(f"Failed to create task notification: {ne}")
+
     return _task_to_response(new_task)
 
 
@@ -137,7 +151,9 @@ def update_event_task(
     is_assignee = task.assigned_to == current_user.id
 
     if not is_leader and not is_assignee:
-        raise HTTPException(status_code=403, detail="Permission denied")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied")
+
+    old_assignee = task.assigned_to
 
     # If only assignee (not leader), they can only update status
     if is_assignee and not is_leader:
@@ -151,6 +167,21 @@ def update_event_task(
 
     db.commit()
     db.refresh(task)
+
+    # Notify if assignee has changed
+    if task.assigned_to and task.assigned_to != old_assignee and task.assigned_to != current_user.id:
+        try:
+            from app.services.notification import create_notification
+            create_notification(
+                db=db,
+                user_id=task.assigned_to,
+                title="New Task Assigned",
+                content=f"You have been assigned the task '{task.title}' for event '{event.title}'.",
+                link=f"/events/{event_id}/manage"
+            )
+        except Exception as ne:
+            print(f"Failed to create task update notification: {ne}")
+
     return _task_to_response(task)
 
 

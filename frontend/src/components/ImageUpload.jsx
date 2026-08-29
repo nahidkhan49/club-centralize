@@ -3,6 +3,7 @@ import { Box, Typography, Button, CircularProgress, Alert, Avatar } from '@mui/m
 import CloudUploadOutlinedIcon from '@mui/icons-material/CloudUploadOutlined';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { uploadImage } from '../api/uploadApi';
+import { getImageUrl } from '../api/axiosInstance';
 
 const ImageUpload = ({ value, onChange, label = 'Upload Image', aspect = 'square', helperText = 'Recommended: PNG, JPG, WEBP under 5MB' }) => {
   const [uploading, setUploading] = useState(false);
@@ -67,14 +68,14 @@ const ImageUpload = ({ value, onChange, label = 'Upload Image', aspect = 'square
         >
           {isSquare ? (
             <Avatar
-              src={value}
+              src={getImageUrl(value)}
               variant="rounded"
               sx={{ width: 72, height: 72, borderRadius: '12px', border: '1px solid #E2D9FF' }}
             />
           ) : (
             <Box
               component="img"
-              src={value}
+              src={getImageUrl(value)}
               alt="Preview"
               sx={{
                 width: 140,

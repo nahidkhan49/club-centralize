@@ -4,3 +4,5 @@ from app.models.membership import Membership
 from app.models.membership_request import MembershipRequest, RequestStatus
 from app.models.event import Event
 from app.models.announcement import Announcement
+from app.models.setting import SystemSetting
+from app.models.media import MediaFile

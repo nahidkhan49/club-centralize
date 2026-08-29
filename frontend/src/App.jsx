@@ -30,12 +30,15 @@ import PresidentMembers from './pages/president/PresidentMembers';
 import PresidentEvents from './pages/president/PresidentEvents';
 import PresidentEventRegistrations from './pages/president/PresidentEventRegistrations';
 import PresidentAnnouncements from './pages/president/PresidentAnnouncements';
+
+// Secretary Pages
 import SecretaryDashboard from './pages/secretary/SecretaryDashboard';
 import SecretaryClub from './pages/secretary/SecretaryClub';
 import SecretaryMembers from './pages/secretary/SecretaryMembers';
 import SecretaryEvents from './pages/secretary/SecretaryEvents';
 import SecretaryEventRegistrations from './pages/secretary/SecretaryEventRegistrations';
 import SecretaryAnnouncements from './pages/secretary/SecretaryAnnouncements';
+
 // Route Guards
 import AdminRoute from './components/AdminRoute';
 import PresidentRoute from './components/PresidentRoute';
@@ -59,9 +62,19 @@ function App() {
           <Route path="/profile" element={<Profile />} />
           <Route path="/announcements" element={<Announcements />} />
           <Route path="/events" element={<Events />} />
+          
+          {/* Universal Event Management & Registration Routes */}
+          <Route path="/events/create" element={<EventCreate />} />
+          <Route path="/events/:eventId" element={<EventDetails />} />
+          <Route path="/events/:eventId/manage" element={<EventManage />} />
+          <Route path="/events/:eventId/registrations" element={<PresidentEventRegistrations />} />
+          <Route path="/events/:eventId/edit" element={<EventEdit />} />
+
+          <Route path="/clubs/:clubId/events/create" element={<EventCreate />} />
           <Route path="/clubs/:clubId/events/:eventId" element={<EventDetails />} />
           <Route path="/clubs/:clubId/events/:eventId/manage" element={<EventManage />} />
           <Route path="/clubs/:clubId/events/:eventId/registrations" element={<PresidentEventRegistrations />} />
+          <Route path="/clubs/:clubId/events/:eventId/edit" element={<EventEdit />} />
 
           {/* Admin Routes */}
           <Route element={<AdminRoute />}>
@@ -80,11 +93,11 @@ function App() {
             <Route path="/president/club" element={<PresidentClub />} />
             <Route path="/president/members" element={<PresidentMembers />} />
             <Route path="/president/events" element={<PresidentEvents />} />
+            <Route path="/president/events/create" element={<EventCreate />} />
             <Route path="/president/events/:eventId/manage" element={<EventManage />} />
             <Route path="/president/events/:eventId/registrations" element={<PresidentEventRegistrations />} />
+            <Route path="/president/events/:eventId/edit" element={<EventEdit />} />
             <Route path="/president/announcements" element={<PresidentAnnouncements />} />
-            <Route path="/clubs/:clubId/events/create" element={<EventCreate />} />
-            <Route path="/clubs/:clubId/events/:eventId/edit" element={<EventEdit />} />
           </Route>
 
           {/* Secretary Routes */}
@@ -93,11 +106,11 @@ function App() {
             <Route path="/secretary/club" element={<SecretaryClub />} />
             <Route path="/secretary/members" element={<SecretaryMembers />} />
             <Route path="/secretary/events" element={<SecretaryEvents />} />
+            <Route path="/secretary/events/create" element={<EventCreate />} />
             <Route path="/secretary/events/:eventId/manage" element={<EventManage />} />
             <Route path="/secretary/events/:eventId/registrations" element={<SecretaryEventRegistrations />} />
+            <Route path="/secretary/events/:eventId/edit" element={<EventEdit />} />
             <Route path="/secretary/announcements" element={<SecretaryAnnouncements />} />
-            <Route path="/clubs/:clubId/events/create" element={<EventCreate />} />
-            <Route path="/clubs/:clubId/events/:eventId/edit" element={<EventEdit />} />
           </Route>
 
           {/* Catch‑all redirects based on default Route Guard rules */}

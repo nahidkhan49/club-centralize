@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link as RouterLink } from 'react-router-dom';
 import {
   Typography,
@@ -8,15 +8,28 @@ import {
   Grid,
   CircularProgress,
   TextField,
+  MenuItem,
   Button as MuiButton,
+  Stack,
+  Chip,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import EventAvailableIcon from '@mui/icons-material/EventAvailable';
+
+import { useAuth } from '../context/AuthContext';
 import { createEvent } from '../api/eventApi';
+import api from '../api/axiosInstance';
 import ImageUpload from '../components/ImageUpload';
+import Button from '../components/Button';
 
 const EventCreate = () => {
   const { clubId } = useParams();
   const navigate = useNavigate();
+  const { user, systemRole, presidentOfClubs, secretaryOfClubs } = useAuth();
+
+  const [clubs, setClubs] = useState([]);
+  const [selectedClubId, setSelectedClubId] = useState(clubId ? String(clubId) : '');
+  const [loadingClubs, setLoadingClubs] = useState(true);
 
   const [form, setForm] = useState({
     title: '',
@@ -27,6 +40,32 @@ const EventCreate = () => {
   });
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchClubs = async () => {
+      try {
+        setLoadingClubs(true);
+        const res = await api.get('/clubs');
+        const list = Array.isArray(res.data) ? res.data : [];
+        setClubs(list);
+
+        if (!selectedClubId || selectedClubId === 'undefined' || selectedClubId === 'null') {
+          const defaultId =
+            presidentOfClubs?.[0]?.club_id ||
+            secretaryOfClubs?.[0]?.club_id ||
+            list[0]?.id;
+          if (defaultId) {
+            setSelectedClubId(String(defaultId));
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load clubs list', err);
+      } finally {
+        setLoadingClubs(false);
+      }
+    };
+    fetchClubs();
+  }, [clubId, presidentOfClubs, secretaryOfClubs]);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -39,11 +78,18 @@ const EventCreate = () => {
       return;
     }
 
+    const targetClubId = Number(selectedClubId);
+    if (!targetClubId || isNaN(targetClubId)) {
+      setError('Please select a valid club for this event.');
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
       const isoDate = new Date(form.date).toISOString();
       const endIsoDate = new Date(new Date(form.date).getTime() + 2 * 60 * 60 * 1000).toISOString();
+
       await createEvent({
         title: form.title.trim(),
         date: isoDate,
@@ -52,36 +98,56 @@ const EventCreate = () => {
         location: form.location.trim(),
         description: form.description.trim(),
         image_url: form.image_url.trim() || undefined,
-        club_id: Number(clubId),
+        club_id: targetClubId,
       });
-      navigate(-1);
+
+      if (systemRole === 'president') {
+        navigate('/president/events');
+      } else if (systemRole === 'secretary') {
+        navigate('/secretary/events');
+      } else if (systemRole === 'admin') {
+        navigate('/admin/events');
+      } else {
+        navigate(`/clubs/${targetClubId}`);
+      }
     } catch (err) {
       console.error('Failed to create event', err);
-      setError(err?.response?.data?.detail || 'Failed to create event. Make sure you are a club leader.');
+      setError(err?.response?.data?.detail || 'Failed to create event. Please ensure you have permission to manage this club.');
     } finally {
       setLoading(false);
     }
   };
 
+  const backPath =
+    systemRole === 'president'
+      ? '/president/events'
+      : systemRole === 'secretary'
+      ? '/secretary/events'
+      : systemRole === 'admin'
+      ? '/admin/events'
+      : selectedClubId
+      ? `/clubs/${selectedClubId}`
+      : '/events';
+
   return (
     <Box sx={{ maxWidth: 850, mx: 'auto', py: 2 }}>
-      <Box sx={{ mb: 4 }}>
+      {/* Header */}
+      <Box sx={{ mb: 3 }}>
         <Box
-          component={RouterLink}
-          to={`/clubs/${clubId}`}
+          onClick={() => navigate(backPath)}
           sx={{
             display: 'inline-flex',
             alignItems: 'center',
             gap: 0.8,
             color: '#4F2BCB',
-            fontWeight: 600,
-            fontSize: '0.9rem',
-            textDecoration: 'none',
+            fontWeight: 700,
+            fontSize: '0.92rem',
+            cursor: 'pointer',
             mb: 2,
             '&:hover': { textDecoration: 'underline' },
           }}
         >
-          <ArrowBackIcon sx={{ fontSize: 18 }} /> Back to Club
+          <ArrowBackIcon sx={{ fontSize: 18 }} /> Back to Events
         </Box>
 
         <Typography variant="h4" sx={{ fontWeight: 800, color: '#20202A', fontSize: '1.8rem', mb: 0.5 }}>
@@ -109,9 +175,38 @@ const EventCreate = () => {
       >
         <Box component="form" onSubmit={handleSubmit} noValidate>
           <Grid container spacing={3}>
+            {/* Club Selection Dropdown */}
+            <Grid item xs={12}>
+              <Typography variant="body2" sx={{ fontWeight: 700, color: '#20202A', mb: 0.8 }}>
+                Club Organizing This Event *
+              </Typography>
+              <TextField
+                select
+                fullWidth
+                value={selectedClubId}
+                onChange={(e) => setSelectedClubId(e.target.value)}
+                disabled={loadingClubs}
+                helperText="Select which club will host and manage this event."
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: '#F3F6FC',
+                    borderRadius: '10px',
+                    '& fieldset': { borderColor: '#E9E7F2' },
+                    '&.Mui-focused fieldset': { borderColor: '#4F2BCB' },
+                  },
+                }}
+              >
+                {clubs.map((c) => (
+                  <MenuItem key={c.id} value={String(c.id)}>
+                    {c.name} {c.category ? `(${c.category})` : ''}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Grid>
+
             <Grid item xs={12}>
               <ImageUpload
-                label="Event Photo / Banner"
+                label="Event Photo / Promotional Banner"
                 value={form.image_url}
                 onChange={(url) => setForm({ ...form, image_url: url })}
                 aspect="banner"
@@ -120,7 +215,7 @@ const EventCreate = () => {
             </Grid>
 
             <Grid item xs={12}>
-              <Typography variant="body2" sx={{ fontWeight: 600, color: '#20202A', mb: 0.8 }}>
+              <Typography variant="body2" sx={{ fontWeight: 700, color: '#20202A', mb: 0.8 }}>
                 Event Title *
               </Typography>
               <TextField
@@ -128,7 +223,7 @@ const EventCreate = () => {
                 name="title"
                 value={form.title}
                 onChange={handleChange}
-                placeholder="e.g. Web Development Bootcamp 2026"
+                placeholder="e.g. Annual Public Speaking Workshop 2026"
                 required
                 sx={{
                   '& .MuiOutlinedInput-root': {
@@ -142,8 +237,8 @@ const EventCreate = () => {
             </Grid>
 
             <Grid item xs={12} sm={6}>
-              <Typography variant="body2" sx={{ fontWeight: 600, color: '#20202A', mb: 0.8 }}>
-                Date & Time *
+              <Typography variant="body2" sx={{ fontWeight: 700, color: '#20202A', mb: 0.8 }}>
+                Date & Start Time *
               </Typography>
               <TextField
                 fullWidth
@@ -165,7 +260,7 @@ const EventCreate = () => {
             </Grid>
 
             <Grid item xs={12} sm={6}>
-              <Typography variant="body2" sx={{ fontWeight: 600, color: '#20202A', mb: 0.8 }}>
+              <Typography variant="body2" sx={{ fontWeight: 700, color: '#20202A', mb: 0.8 }}>
                 Location / Venue *
               </Typography>
               <TextField
@@ -173,7 +268,7 @@ const EventCreate = () => {
                 name="location"
                 value={form.location}
                 onChange={handleChange}
-                placeholder="e.g. Auditorium / Room 402"
+                placeholder="e.g. Auditorium 101 / Campus Center"
                 required
                 sx={{
                   '& .MuiOutlinedInput-root': {
@@ -187,8 +282,8 @@ const EventCreate = () => {
             </Grid>
 
             <Grid item xs={12}>
-              <Typography variant="body2" sx={{ fontWeight: 600, color: '#20202A', mb: 0.8 }}>
-                Description
+              <Typography variant="body2" sx={{ fontWeight: 700, color: '#20202A', mb: 0.8 }}>
+                Event Description & Goals
               </Typography>
               <TextField
                 fullWidth
@@ -197,7 +292,7 @@ const EventCreate = () => {
                 name="description"
                 value={form.description}
                 onChange={handleChange}
-                placeholder="Details about speaker, agenda, prerequisites..."
+                placeholder="Details about speaker, agenda, prerequisites, workshop goals..."
                 sx={{
                   '& .MuiOutlinedInput-root': {
                     backgroundColor: '#F3F6FC',
@@ -211,7 +306,7 @@ const EventCreate = () => {
 
             <Grid item xs={12} sx={{ mt: 1, display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
               <MuiButton
-                onClick={() => navigate(`/clubs/${clubId}`)}
+                onClick={() => navigate(backPath)}
                 disabled={loading}
                 sx={{ color: '#777788', textTransform: 'none', fontWeight: 600 }}
               >

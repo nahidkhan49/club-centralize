@@ -250,7 +250,7 @@ const SecretaryEvents = () => {
               <Button
                 variant="primary"
                 fullWidth
-                onClick={() => navigate(`/clubs/${myClubId}/events/create`)}
+                onClick={() => navigate(myClubId ? `/clubs/${myClubId}/events/create` : '/secretary/events/create')}
                 sx={{ backgroundColor: '#4F2BCB', py: 1.1, borderRadius: '12px', fontWeight: 700 }}
               >
                 Create New Event

@@ -3,7 +3,7 @@ import { Navigate, Outlet } from 'react-router-dom';
 import { Box, CircularProgress } from '@mui/material';
 import { useAuth } from '../context/AuthContext';
 
-/** Secretary (and admin) can access secretary routes */
+/** Secretary, President, and Admin can access secretary routes */
 const SecretaryRoute = () => {
   const { isAuthenticated, loading, systemRole } = useAuth();
 
@@ -16,10 +16,12 @@ const SecretaryRoute = () => {
   }
 
   if (!isAuthenticated) return <Navigate to="/login" replace />;
-  if (systemRole === 'admin') return <Navigate to="/admin/dashboard" replace />;
-  if (systemRole === 'president') return <Navigate to="/president/dashboard" replace />;
-  if (systemRole !== 'secretary') return <Navigate to="/dashboard" replace />;
-  return <Outlet />;
+  // Admin, President, and Secretary are allowed
+  if (systemRole === 'admin' || systemRole === 'president' || systemRole === 'secretary') {
+    return <Outlet />;
+  }
+
+  return <Navigate to="/dashboard" replace />;
 };
 
 export default SecretaryRoute;

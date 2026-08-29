@@ -42,6 +42,8 @@ import {
   fetchClubRequests,
   approveClubRequest,
   rejectClubRequest,
+  updateClubMemberRole,
+  removeClubMember,
 } from '../../api/adminApi';
 import { getImageUrl } from '../../api/axiosInstance';
 import RoleChip from '../../components/RoleChip';
@@ -73,6 +75,11 @@ const PresidentMembers = () => {
   // Options dropdown menu state
   const [menuAnchor, setMenuAnchor] = useState(null);
   const [selectedMember, setSelectedMember] = useState(null);
+
+  // Role dialog & submission states
+  const [roleDialogOpen, setRoleDialogOpen] = useState(false);
+  const [newRole, setNewRole] = useState('member');
+  const [submittingRole, setSubmittingRole] = useState(false);
 
   const loadData = async () => {
     if (!myClubId) return;
@@ -122,6 +129,40 @@ const PresidentMembers = () => {
       setActionLoading(null);
     }
   };
+
+  const handleUpdateRole = async () => {
+    if (!selectedMember || !newRole) return;
+    setSubmittingRole(true);
+    setError('');
+    try {
+      await updateClubMemberRole(myClubId, selectedMember.user_id, newRole);
+      setSuccess(`Updated role for ${selectedMember.username} to ${newRole.toUpperCase()}.`);
+      setRoleDialogOpen(false);
+      loadData();
+    } catch (err) {
+      setError(err?.response?.data?.detail || 'Failed to update member role.');
+    } finally {
+      setSubmittingRole(false);
+    }
+  };
+
+  const handleRemoveMemberClick = async (member) => {
+    if (!member) return;
+    if (member.user_id === Number(localStorage.getItem('user_id'))) {
+      alert("You cannot remove yourself from the club roster.");
+      return;
+    }
+    if (!window.confirm(`Are you sure you want to remove ${member.username} from this club?`)) return;
+    setError('');
+    try {
+      await removeClubMember(myClubId, member.user_id);
+      setSuccess(`Successfully removed ${member.username} from the club.`);
+      loadData();
+    } catch (err) {
+      setError(err?.response?.data?.detail || 'Failed to remove member.');
+    }
+  };
+
 
   const handleSelectAll = (e) => {
     if (e.target.checked) {
@@ -540,16 +581,72 @@ const PresidentMembers = () => {
           sx: { borderRadius: '12px', minWidth: 160, mt: 1 },
         }}
       >
-        <MenuItem onClick={() => { alert(`Viewing profile for ${selectedMember?.username}`); handleCloseMenu(); }}>
-          View Profile
+        <MenuItem onClick={() => {
+          if (selectedMember?.email) {
+            window.location.href = `mailto:${selectedMember.email}`;
+          }
+          handleCloseMenu();
+        }}>
+          Send Email
         </MenuItem>
-        <MenuItem onClick={() => { alert(`Composing email to ${selectedMember?.email}`); handleCloseMenu(); }}>
-          Send Message
-        </MenuItem>
-        <MenuItem onClick={() => { alert(`Change role for ${selectedMember?.username}`); handleCloseMenu(); }} sx={{ color: '#4F2BCB' }}>
+        <MenuItem onClick={() => {
+          setNewRole(selectedMember?.role || 'member');
+          setRoleDialogOpen(true);
+          setMenuAnchor(null);
+        }} sx={{ color: '#4F2BCB' }}>
           Change Role
         </MenuItem>
+        <MenuItem onClick={() => {
+          handleRemoveMemberClick(selectedMember);
+          handleCloseMenu();
+        }} sx={{ color: '#EF4444' }}>
+          Remove from Club
+        </MenuItem>
       </Menu>
+
+      {/* Change Role Dialog */}
+      <Dialog
+        open={roleDialogOpen}
+        onClose={() => setRoleDialogOpen(false)}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: '20px' } }}
+      >
+        <DialogTitle sx={{ fontWeight: 800, color: '#20202A' }}>
+          Change Role: {selectedMember?.username}
+        </DialogTitle>
+        <DialogContent dividers>
+          <Box pt={1}>
+            <TextField
+              select
+              label="Select Member Role"
+              fullWidth
+              value={newRole}
+              onChange={(e) => setNewRole(e.target.value)}
+              helperText="Assign a new role to this member. Note: Assigning President will transfer your President status."
+            >
+              <MenuItem value="member">Member</MenuItem>
+              <MenuItem value="vice_president">Vice President</MenuItem>
+              <MenuItem value="secretary">Secretary</MenuItem>
+              <MenuItem value="treasurer">Treasurer</MenuItem>
+              <MenuItem value="president">President</MenuItem>
+            </TextField>
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ p: 2.5 }}>
+          <Button variant="ghost" onClick={() => setRoleDialogOpen(false)} disabled={submittingRole}>
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            onClick={handleUpdateRole}
+            disabled={submittingRole}
+            sx={{ backgroundColor: '#4F2BCB' }}
+          >
+            {submittingRole ? 'Saving...' : 'Update Role'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

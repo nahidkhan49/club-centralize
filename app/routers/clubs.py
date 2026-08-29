@@ -576,10 +576,12 @@ def update_membership_role(
     club_id: int,
     user_id: int,
     role_data: MembershipRoleUpdate,
-    admin_user: User = Depends(get_current_admin_user),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Admin-only: Update a user's role in a club."""
+    """Update a user's role in a club (officers or admins)."""
+    check_club_officer_permission(club_id, current_user, db)
+
     membership = db.query(Membership).filter(
         Membership.club_id == club_id,
         Membership.user_id == user_id
@@ -616,6 +618,40 @@ def update_membership_role(
     db.refresh(membership)
 
     return membership
+
+
+@router.delete("/{club_id}/members/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+def remove_club_member(
+    club_id: int,
+    user_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Remove a member from the club (officers or admins)."""
+    check_club_officer_permission(club_id, current_user, db)
+
+    membership = db.query(Membership).filter(
+        Membership.club_id == club_id,
+        Membership.user_id == user_id
+    ).first()
+
+    if not membership:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Membership not found"
+        )
+
+    db.delete(membership)
+
+    # Also clean up any membership requests for this user & club
+    db.query(MembershipRequest).filter(
+        MembershipRequest.user_id == user_id,
+        MembershipRequest.club_id == club_id
+    ).delete()
+
+    db.commit()
+    return None
+
 
 
 @router.post("/{club_id}/assign-role", response_model=MembershipResponse)

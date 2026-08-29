@@ -130,3 +130,16 @@ export const leaveClub = async (clubId) => {
   return res.data;
 };
 
+/** Update a member's role in a club (officer or admin) */
+export const updateClubMemberRole = async (clubId, userId, role) => {
+  const res = await api.patch(`/clubs/${clubId}/members/${userId}/role`, { role });
+  return res.data;
+};
+
+/** Remove/delete a member from a club (officer or admin) */
+export const removeClubMember = async (clubId, userId) => {
+  const res = await api.delete(`/clubs/${clubId}/members/${userId}`);
+  return res.data;
+};
+
+

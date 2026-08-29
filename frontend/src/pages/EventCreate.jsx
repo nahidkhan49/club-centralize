@@ -42,15 +42,19 @@ const EventCreate = () => {
     try {
       setLoading(true);
       setError(null);
+      const isoDate = new Date(form.date).toISOString();
+      const endIsoDate = new Date(new Date(form.date).getTime() + 2 * 60 * 60 * 1000).toISOString();
       await createEvent({
         title: form.title.trim(),
-        date: new Date(form.date).toISOString(),
+        date: isoDate,
+        start_time: isoDate,
+        end_time: endIsoDate,
         location: form.location.trim(),
         description: form.description.trim(),
         image_url: form.image_url.trim() || undefined,
         club_id: Number(clubId),
       });
-      navigate(`/clubs/${clubId}`);
+      navigate(-1);
     } catch (err) {
       console.error('Failed to create event', err);
       setError(err?.response?.data?.detail || 'Failed to create event. Make sure you are a club leader.');

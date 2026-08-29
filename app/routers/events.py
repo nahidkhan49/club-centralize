@@ -1,11 +1,13 @@
+from datetime import datetime, timedelta
+from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from app.models.user import User
+
+from app.dependencies import get_current_user, get_db
 from app.models.event import Event
 from app.models.event_participant import event_participants
-from typing import List
-
-from app.dependencies import get_current_user, get_db, get_club_event_manager
+from app.models.membership import Membership
+from app.models.user import User
 from app.schemas.event import EventCreate, EventUpdate, EventResponse
 from app.schemas.user import UserResponse
 
@@ -14,15 +16,44 @@ router = APIRouter(
     tags=["Events"]
 )
 
+ALLOWED_EVENT_MANAGERS = ("president", "secretary", "vice_president")
 
-@router.post("/", response_model=EventResponse)
+
+def _check_event_permission(club_id: int, current_user: User, db: Session):
+    if current_user.is_superuser:
+        return True
+    membership = db.query(Membership).filter(
+        Membership.club_id == club_id,
+        Membership.user_id == current_user.id,
+        Membership.role.in_(ALLOWED_EVENT_MANAGERS)
+    ).first()
+    if not membership:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only club president or secretary can manage events for this club"
+        )
+    return True
+
+
+@router.post("/", response_model=EventResponse, status_code=status.HTTP_201_CREATED)
 def create_event(
     event_data: EventCreate,
-    db: Session = Depends(get_db),
-    manager: None = Depends(get_club_event_manager)  # ensures president or secretary
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
 ):
-    """Create a new event for a club. Only president or secretary (or admin) may create."""
-    event = Event(**event_data.dict())
+    """Create a new event for a club. Only president, secretary, or admin may create."""
+    _check_event_permission(event_data.club_id, current_user, db)
+
+    event_dict = event_data.model_dump() if hasattr(event_data, "model_dump") else event_data.dict()
+    # Strip any helper field like 'date' if not in model
+    event_dict.pop("date", None)
+
+    if not event_dict.get("start_time"):
+        event_dict["start_time"] = datetime.now()
+    if not event_dict.get("end_time"):
+        event_dict["end_time"] = event_dict["start_time"] + timedelta(hours=2)
+
+    event = Event(**event_dict)
     db.add(event)
     db.commit()
     db.refresh(event)
@@ -49,7 +80,7 @@ def list_events(
     club_id: int,
     include_inactive: bool = False,
     db: Session = Depends(get_db),
-    current_user: None = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     """List events for a club. Any authenticated user can view. Set include_inactive=True to see all."""
     query = db.query(Event).filter(Event.club_id == club_id)
@@ -62,7 +93,7 @@ def list_events(
 def get_event(
     event_id: int,
     db: Session = Depends(get_db),
-    current_user: None = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     event = db.query(Event).filter(Event.id == event_id).first()
     if not event:
@@ -80,10 +111,15 @@ def update_event(
     event = db.query(Event).filter(Event.id == event_id).first()
     if not event:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
-    # Authorization: ensure the user is president or secretary of the club
-    get_club_event_manager(event.club_id, current_user=current_user, db=db)
-    for field, value in update_data.dict(exclude_unset=True).items():
+
+    _check_event_permission(event.club_id, current_user, db)
+
+    data = update_data.model_dump(exclude_unset=True) if hasattr(update_data, "model_dump") else update_data.dict(exclude_unset=True)
+    data.pop("date", None)
+
+    for field, value in data.items():
         setattr(event, field, value)
+
     db.commit()
     db.refresh(event)
     return event
@@ -98,8 +134,9 @@ def delete_event(
     event = db.query(Event).filter(Event.id == event_id).first()
     if not event:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
-    # Authorization check
-    get_club_event_manager(event.club_id, current_user=current_user, db=db)
+
+    _check_event_permission(event.club_id, current_user, db)
+
     db.delete(event)
     db.commit()
     return None
@@ -151,51 +188,20 @@ def list_event_participants(
     if not event:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
 
-    if not current_user.is_superuser:
-        from app.models.membership import Membership
-        membership = db.query(Membership).filter(
-            Membership.club_id == event.club_id,
-            Membership.user_id == current_user.id,
-            Membership.role.in_(["president", "secretary", "vice_president"])
-        ).first()
-        if not membership:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="You do not have permission to view participants for this event"
-            )
+    _check_event_permission(event.club_id, current_user, db)
 
-    return event.participants
-
-
-@router.get("/{event_id}/participants/me", response_model=dict)
-def check_my_participation(
-    event_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """Check if the current user is registered for a specific event."""
-    event = db.query(Event).filter(Event.id == event_id).first()
-    if not event:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
-    is_registered = current_user in event.participants
-    return {"registered": is_registered, "participant_count": len(event.participants)}
-
-
-@router.delete("/{event_id}/participants/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
-def remove_participant(
-    event_id: int,
-    user_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """Admin/president/secretary can remove a participant from an event."""
-    event = db.query(Event).filter(Event.id == event_id).first()
-    if not event:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
-    get_club_event_manager(event.club_id, current_user=current_user, db=db)
-    participant = db.query(User).filter(User.id == user_id).first()
-    if not participant or participant not in event.participants:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Participant not found in event")
-    event.participants.remove(participant)
-    db.commit()
-    return None
+    return [
+        UserResponse(
+            id=u.id,
+            email=u.email,
+            username=u.username,
+            full_name=u.full_name,
+            system_role=u.system_role.value if hasattr(u.system_role, "value") else str(u.system_role),
+            is_active=u.is_active,
+            is_superuser=u.is_superuser,
+            avatar_url=u.avatar_url,
+            created_at=u.created_at,
+            updated_at=u.updated_at
+        )
+        for u in event.participants
+    ]

@@ -59,7 +59,11 @@ export const AuthProvider = ({ children }) => {
           username: userData.username,
           email: userData.email,
           is_superuser: userData.is_superuser,
-          avatarUrl: savedAvatar || null,
+          avatarUrl: userData.avatar_url || savedAvatar || null,
+          fullName: userData.full_name,
+          department: userData.department,
+          contact: userData.contact,
+          bio: userData.bio,
         },
         isAuthenticated: true,
         loading: false,
@@ -131,6 +135,21 @@ export const AuthProvider = ({ children }) => {
     }));
   };
 
+  const updateUserProfile = (profileInfo) => {
+    setAuth((prev) => ({
+      ...prev,
+      user: {
+        ...prev?.user,
+        username: profileInfo.username !== undefined ? profileInfo.username : prev?.user?.username,
+        email: profileInfo.email !== undefined ? profileInfo.email : prev?.user?.email,
+        fullName: profileInfo.full_name !== undefined ? profileInfo.full_name : prev?.user?.fullName,
+        department: profileInfo.department !== undefined ? profileInfo.department : prev?.user?.department,
+        contact: profileInfo.contact !== undefined ? profileInfo.contact : prev?.user?.contact,
+        bio: profileInfo.bio !== undefined ? profileInfo.bio : prev?.user?.bio,
+      },
+    }));
+  };
+
   const logout = () => {
     localStorage.removeItem('access_token');
     localStorage.removeItem('user_avatar');
@@ -157,6 +176,7 @@ export const AuthProvider = ({ children }) => {
         register,
         logout,
         updateUserAvatar,
+        updateUserProfile,
         fetchCurrentUser,
       }}
     >

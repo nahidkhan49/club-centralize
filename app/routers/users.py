@@ -44,6 +44,18 @@ def update_me(
     if user_data.avatar_url is not None:
         current_user.avatar_url = user_data.avatar_url.strip() if user_data.avatar_url else None
 
+    if user_data.full_name is not None:
+        current_user.full_name = user_data.full_name.strip() if user_data.full_name else None
+
+    if user_data.department is not None:
+        current_user.department = user_data.department.strip() if user_data.department else None
+
+    if user_data.contact is not None:
+        current_user.contact = user_data.contact.strip() if user_data.contact else None
+
+    if user_data.bio is not None:
+        current_user.bio = user_data.bio.strip() if user_data.bio else None
+
     db.commit()
     db.refresh(current_user)
 

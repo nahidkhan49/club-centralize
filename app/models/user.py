@@ -13,6 +13,10 @@ class User(Base):
     password: Mapped[str] = mapped_column(String(255), nullable=False)
     avatar_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     is_superuser: Mapped[bool] = mapped_column(Boolean, default=False, server_default='false', nullable=False)
+    full_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    department: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    contact: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    bio: Mapped[str | None] = mapped_column(String(500), nullable=True)
     
     joined_events: Mapped[list["Event"]] = relationship(
         "Event",

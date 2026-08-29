@@ -52,6 +52,10 @@ async def lifespan(app: FastAPI):
             # Safe column adjustments for users & events
             conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT;"))
             conn.execute(text("ALTER TABLE users ALTER COLUMN avatar_url TYPE TEXT;"))
+            conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS full_name VARCHAR(100);"))
+            conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS department VARCHAR(100);"))
+            conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS contact VARCHAR(50);"))
+            conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS bio VARCHAR(500);"))
             conn.execute(text("ALTER TABLE events ALTER COLUMN image_url TYPE TEXT;"))
 
             # Safe column additions for announcements table

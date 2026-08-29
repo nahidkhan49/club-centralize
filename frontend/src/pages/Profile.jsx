@@ -31,7 +31,7 @@ import { getImageUrl } from '../api/axiosInstance';
 import Button from '../components/Button';
 
 export default function Profile() {
-  const { user, updateUserAvatar, logout } = useContext(AuthContext);
+  const { user, updateUserAvatar, updateUserProfile, logout } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -40,13 +40,13 @@ export default function Profile() {
   };
 
   const [profileData, setProfileData] = useState({
-    fullName: user?.full_name || user?.username || 'Nahid Khan',
-    username: user?.username || 'nahid',
-    email: user?.email || 'nahid@example.com',
-    role: user?.role || 'President',
-    department: user?.department || 'Computer Science & Engineering',
-    contact: '+880 1712-345678',
-    bio: 'Passionate computer science student and president of the University Computer Society.',
+    fullName: user?.fullName || '',
+    username: user?.username || '',
+    email: user?.email || '',
+    role: user?.is_superuser ? 'Site Administrator' : 'President',
+    department: user?.department || '',
+    contact: user?.contact || '',
+    bio: user?.bio || '',
   });
 
   const [editOpen, setEditOpen] = useState(false);
@@ -54,6 +54,26 @@ export default function Profile() {
   const [photoUrlInput, setPhotoUrlInput] = useState(user?.avatarUrl || '');
   const [tempData, setTempData] = useState({ ...profileData });
   const [photoUploading, setPhotoUploading] = useState(false);
+  
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+
+  React.useEffect(() => {
+    if (user) {
+      const data = {
+        fullName: user.fullName || '',
+        username: user.username || '',
+        email: user.email || '',
+        role: user.is_superuser ? 'Site Administrator' : 'President',
+        department: user.department || '',
+        contact: user.contact || '',
+        bio: user.bio || '',
+      };
+      setProfileData(data);
+      setTempData(data);
+    }
+  }, [user]);
 
   const initial = (profileData.username || 'N').charAt(0).toUpperCase();
 
@@ -106,10 +126,31 @@ export default function Profile() {
     }
   };
 
-  const handleSaveProfile = (e) => {
+  const handleSaveProfile = async (e) => {
     e.preventDefault();
-    setProfileData({ ...tempData });
-    setEditOpen(false);
+    setSaving(true);
+    setError('');
+    setSuccess('');
+    try {
+      const { default: api } = await import('../api/axiosInstance');
+      const payload = {
+        username: tempData.username.trim(),
+        email: tempData.email.trim(),
+        full_name: tempData.fullName.trim() || null,
+        department: tempData.department.trim() || null,
+        contact: tempData.contact.trim() || null,
+        bio: tempData.bio.trim() || null,
+      };
+      const res = await api.patch('/users/me', payload);
+      updateUserProfile(res.data);
+      setSuccess('Profile updated successfully!');
+      setEditOpen(false);
+    } catch (err) {
+      console.error('Failed to update profile', err);
+      setError(err?.response?.data?.detail || 'Failed to update profile.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (

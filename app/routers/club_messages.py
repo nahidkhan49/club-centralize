@@ -178,8 +178,8 @@ def get_chat_participants(
         )
 
     # Sort participants so those with messages appear first, ordered by latest message time
-    from datetime import datetime
-    participants.sort(key=lambda x: x.last_message_time or datetime.min, reverse=True)
+    from datetime import datetime, timezone
+    participants.sort(key=lambda x: x.last_message_time or datetime.min.replace(tzinfo=timezone.utc), reverse=True)
     return participants
 
 

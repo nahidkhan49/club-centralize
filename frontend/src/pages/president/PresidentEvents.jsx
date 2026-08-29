@@ -60,12 +60,18 @@ const PresidentEvents = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
 
   const loadEvents = async () => {
-    if (!myClubId) return;
     try {
       setLoading(true);
-      const data = await fetchEventsByClub(myClubId, { include_inactive: true });
-      setEvents(data || []);
+      setError('');
+      if (myClubId) {
+        const data = await fetchEventsByClub(myClubId, { include_inactive: true });
+        setEvents(data || []);
+      } else {
+        const res = await api.get('/events/?include_inactive=true&limit=200');
+        setEvents(res.data || []);
+      }
     } catch (err) {
+      console.error('Failed to load events', err);
       setError('Failed to load events.');
     } finally {
       setLoading(false);

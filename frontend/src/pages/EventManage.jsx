@@ -701,7 +701,7 @@ const EventManage = () => {
                       </Typography>
                     </Box>
                     <Box display="flex" alignItems="center" gap={0.5}>
-                      <MailOutlineIcon sx={{ fontSize: 13, color: '#777788' }} />
+                      <MailOutlinedIcon sx={{ fontSize: 13, color: '#777788' }} />
                       <Typography variant="caption" sx={{ color: '#4F2BCB', wordBreak: 'break-all' }}>
                         {c.email}
                       </Typography>

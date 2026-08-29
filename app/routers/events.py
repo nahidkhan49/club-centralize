@@ -2,7 +2,6 @@ from datetime import datetime, timedelta
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from sqlalchemy import func
 
 from app.dependencies import get_current_user, get_db
 from app.models.event import Event
@@ -73,7 +72,7 @@ def create_event(
 @router.get("/", response_model=List[EventResponse])
 def list_all_events(
     skip: int = 0,
-    limit: int = 100,
+    limit: int = 200,
     include_inactive: bool = False,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
@@ -141,12 +140,18 @@ def delete_event(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    """Delete an event and cleanly clear participants association."""
     event = db.query(Event).filter(Event.id == event_id).first()
     if not event:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
 
     _check_event_permission(event.club_id, current_user, db)
 
+    # 1. Clear many-to-many participants association first to prevent FK violation
+    event.participants.clear()
+    db.commit()
+
+    # 2. Delete event record
     db.delete(event)
     db.commit()
     return None
@@ -193,7 +198,7 @@ def list_event_participants(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """List participants of an event. Any authenticated user can view."""
+    """List participants of an event. Public / authenticated read."""
     event = db.query(Event).filter(Event.id == event_id).first()
     if not event:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")

@@ -72,3 +72,40 @@ def mark_all_notifications_as_read(
     ).update({"is_read": True}, synchronize_session=False)
     db.commit()
     return {"message": "All notifications marked as read"}
+
+
+@router.delete("/clear-all", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/", status_code=status.HTTP_204_NO_CONTENT)
+def clear_all_notifications(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Delete all notifications for the current user."""
+    db.query(Notification).filter(
+        Notification.user_id == current_user.id
+    ).delete(synchronize_session=False)
+    db.commit()
+    return None
+
+
+@router.delete("/{notification_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_notification(
+    notification_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Delete a specific notification for the current user."""
+    notification = db.query(Notification).filter(
+        Notification.id == notification_id,
+        Notification.user_id == current_user.id
+    ).first()
+
+    if not notification:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Notification not found"
+        )
+
+    db.delete(notification)
+    db.commit()
+    return None

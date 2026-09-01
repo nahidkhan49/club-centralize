@@ -23,6 +23,7 @@ import {
   PersonOutlineOutlined,
   LogoutOutlined,
 } from '@mui/icons-material';
+import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
 import AndroidIcon from '@mui/icons-material/Android';
 import BrandingWatermarkOutlinedIcon from '@mui/icons-material/BrandingWatermarkOutlined';
 import { useNavigate } from 'react-router-dom';
@@ -79,6 +80,26 @@ export default function Navbar({ onDrawerToggle }) {
       fetchNotificationsData();
     } catch (err) {
       console.error('Error marking all notifications as read:', err);
+    }
+  };
+
+  const handleDeleteNotification = async (e, notiId) => {
+    e.stopPropagation();
+    try {
+      await api.delete(`/notifications/${notiId}`);
+      fetchNotificationsData();
+    } catch (err) {
+      console.error('Error deleting notification:', err);
+    }
+  };
+
+  const handleClearAllNotifications = async () => {
+    if (!window.confirm('Are you sure you want to delete all notifications?')) return;
+    try {
+      await api.delete('/notifications/clear-all');
+      fetchNotificationsData();
+    } catch (err) {
+      console.error('Error clearing all notifications:', err);
     }
   };
 
@@ -337,8 +358,8 @@ export default function Navbar({ onDrawerToggle }) {
                 elevation: 4,
                 sx: {
                   mt: 1.5,
-                  width: { xs: 300, sm: 380 },
-                  maxHeight: 500,
+                  width: { xs: 320, sm: 400 },
+                  maxHeight: 520,
                   borderRadius: '18px',
                   border: '1px solid #E9E7F2',
                   boxShadow: '0 16px 36px rgba(79, 43, 203, 0.14)',
@@ -380,25 +401,47 @@ export default function Navbar({ onDrawerToggle }) {
                     />
                   )}
                 </Box>
-                {unreadNotificationsCount > 0 && (
-                  <Chip
-                    label="Mark all read"
-                    size="small"
-                    clickable
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleMarkAllRead();
-                    }}
-                    sx={{
-                      fontSize: '0.72rem',
-                      fontWeight: 700,
-                      backgroundColor: '#F3F0FF',
-                      color: '#4F2BCB',
-                      border: '1px solid #D4CCF7',
-                      '&:hover': { backgroundColor: '#E0DBFF' },
-                    }}
-                  />
-                )}
+                <Box display="flex" alignItems="center" gap={0.8}>
+                  {unreadNotificationsCount > 0 && (
+                    <Chip
+                      label="Mark read"
+                      size="small"
+                      clickable
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleMarkAllRead();
+                      }}
+                      sx={{
+                        fontSize: '0.72rem',
+                        fontWeight: 700,
+                        backgroundColor: '#F3F0FF',
+                        color: '#4F2BCB',
+                        border: '1px solid #D4CCF7',
+                        '&:hover': { backgroundColor: '#E0DBFF' },
+                      }}
+                    />
+                  )}
+                  {notifications.length > 0 && (
+                    <Chip
+                      icon={<DeleteOutlinedIcon style={{ fontSize: 14, color: '#DC2626' }} />}
+                      label="Clear all"
+                      size="small"
+                      clickable
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleClearAllNotifications();
+                      }}
+                      sx={{
+                        fontSize: '0.72rem',
+                        fontWeight: 700,
+                        backgroundColor: '#FEE2E2',
+                        color: '#DC2626',
+                        border: '1px solid #FECACA',
+                        '&:hover': { backgroundColor: '#FCA5A5', color: '#B91C1C' },
+                      }}
+                    />
+                  )}
+                </Box>
               </Box>
 
               {/* Roster of notifications */}
@@ -416,7 +459,7 @@ export default function Navbar({ onDrawerToggle }) {
                       key={noti.id}
                       onClick={() => handleNotificationClick(noti)}
                       sx={{
-                        px: 2.5,
+                        px: 2.2,
                         py: 1.6,
                         display: 'flex',
                         gap: 1.5,
@@ -476,6 +519,27 @@ export default function Navbar({ onDrawerToggle }) {
                           {formatRelativeTime(noti.created_at)}
                         </Typography>
                       </Box>
+
+                      {/* Delete Single Notification Button */}
+                      <Tooltip title="Delete notification">
+                        <IconButton
+                          size="small"
+                          onClick={(e) => handleDeleteNotification(e, noti.id)}
+                          sx={{
+                            color: '#9DA0AE',
+                            p: 0.6,
+                            mt: 0.2,
+                            borderRadius: '8px',
+                            transition: 'all 0.18s ease',
+                            '&:hover': {
+                              color: '#DC2626',
+                              backgroundColor: '#FEE2E2',
+                            },
+                          }}
+                        >
+                          <DeleteOutlinedIcon sx={{ fontSize: 18 }} />
+                        </IconButton>
+                      </Tooltip>
                     </Box>
                   ))
                 )}

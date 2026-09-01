@@ -17,6 +17,7 @@ function deriveSystemRole(isAdmin, memberships) {
   const roles = list.map((m) => m.role);
   if (roles.includes('president')) return 'president';
   if (roles.includes('secretary')) return 'secretary';
+  if (roles.includes('event_manager')) return 'event_manager';
   if (roles.includes('vice_president')) return 'vice_president';
   if (roles.includes('treasurer')) return 'treasurer';
   return 'member';
@@ -28,10 +29,11 @@ export const AuthProvider = ({ children }) => {
     user: null,
     isAuthenticated: false,
     loading: true,
-    systemRole: null,      // 'admin' | 'president' | 'secretary' | 'member'
-    memberships: [],       // [{ club_id, club_name, role }]
-    presidentOfClubs: [],  // clubs where user is president
-    secretaryOfClubs: [],  // clubs where user is secretary
+    systemRole: null,          // 'admin' | 'president' | 'secretary' | 'event_manager' | 'member'
+    memberships: [],           // [{ club_id, club_name, role }]
+    presidentOfClubs: [],      // clubs where user is president
+    secretaryOfClubs: [],      // clubs where user is secretary
+    eventManagerOfClubs: [],   // clubs where user is event_manager
   });
 
   const fetchCurrentUser = async (token) => {
@@ -51,6 +53,7 @@ export const AuthProvider = ({ children }) => {
       const systemRole = deriveSystemRole(userData.is_superuser, memberships);
       const presidentOfClubs = memberships.filter((m) => m.role === 'president');
       const secretaryOfClubs = memberships.filter((m) => m.role === 'secretary');
+      const eventManagerOfClubs = memberships.filter((m) => m.role === 'event_manager');
 
       setAuth({
         accessToken: token,
@@ -71,6 +74,7 @@ export const AuthProvider = ({ children }) => {
         memberships,
         presidentOfClubs,
         secretaryOfClubs,
+        eventManagerOfClubs,
       });
 
       return { userData, memberships, systemRole };

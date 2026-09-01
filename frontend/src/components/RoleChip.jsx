@@ -32,6 +32,12 @@ const ROLE_CONFIG = {
     color: '#059669',
     border: '#A7F3D0',
   },
+  event_manager: {
+    label: 'Event Manager',
+    bg: '#E0F2FE',
+    color: '#0284C7',
+    border: '#BAE6FD',
+  },
   member: {
     label: 'Member',
     bg: '#F1F5F9',

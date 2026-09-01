@@ -138,8 +138,11 @@ const EventDetails = () => {
     isAdmin ||
     systemRole === 'president' ||
     systemRole === 'secretary' ||
+    systemRole === 'event_manager' ||
     clubMembers.some(
-      (m) => m.user_id === currentUserId && (m.role === 'president' || m.role === 'secretary')
+      (m) =>
+        m.user_id === currentUserId &&
+        (m.role === 'president' || m.role === 'secretary' || m.role === 'event_manager' || m.role === 'vice_president')
     );
 
   if (loading) {

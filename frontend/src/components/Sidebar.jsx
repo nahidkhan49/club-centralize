@@ -32,7 +32,8 @@ const ROLE_LABELS = {
   president: { label: 'President', color: '#B45309', bg: '#FEF3C7' },
   secretary: { label: 'Secretary', color: '#7C3AED', bg: '#F3F0FF' },
   vice_president: { label: 'Vice President', color: '#4F2BCB', bg: '#EEF2FF' },
-  treasurer: { label: 'Treasurer', bg: '#059669', bg: '#D1FAE5' },
+  treasurer: { label: 'Treasurer', color: '#059669', bg: '#D1FAE5' },
+  event_manager: { label: 'Event Manager', color: '#0284C7', bg: '#E0F2FE' },
   member: { label: 'Campus Member', color: '#475569', bg: '#F1F5F9' },
 };
 

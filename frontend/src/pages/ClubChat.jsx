@@ -79,7 +79,9 @@ const ClubChat = () => {
       const clubMembership = memberships.find((m) => Number(m.club_id) === Number(clubId));
       const hasOfficerRole =
         clubMembership &&
-        (clubMembership.role === 'president' || clubMembership.role === 'secretary');
+        (clubMembership.role === 'president' ||
+          clubMembership.role === 'secretary' ||
+          clubMembership.role === 'event_manager');
 
       const officerFlag = isSuper || hasOfficerRole;
       setIsOfficer(officerFlag);
@@ -207,6 +209,32 @@ const ClubChat = () => {
       }
     } catch (err) {
       setError('Failed to clear conversation.');
+    }
+  };
+
+  const handleDeleteMemberChannel = async (e, part) => {
+    e.stopPropagation();
+    if (
+      !window.confirm(
+        `Are you sure you want to delete all chat history with member "${part.username}"?`
+      )
+    ) {
+      return;
+    }
+    try {
+      await clearClubMessages(clubId, part.user_id);
+      if (selectedUser?.user_id === part.user_id) {
+        setMessages([]);
+      }
+      setParticipants((prev) =>
+        prev.map((p) =>
+          p.user_id === part.user_id
+            ? { ...p, last_message: null, last_message_time: null }
+            : p
+        )
+      );
+    } catch (err) {
+      setError('Failed to delete member chat history.');
     }
   };
 
@@ -384,6 +412,9 @@ const ClubChat = () => {
                           borderRadius: '14px',
                           mb: 0.8,
                           p: 1.2,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 1,
                           '&.Mui-selected': {
                             backgroundColor: '#F3F0FF',
                             border: '1px solid #D4CCF7',
@@ -391,13 +422,16 @@ const ClubChat = () => {
                           },
                         }}
                       >
-                        <ListItemAvatar>
+                        <ListItemAvatar sx={{ minWidth: 44 }}>
                           <Avatar
                             src={getImageUrl(part.avatar_url)}
                             sx={{
+                              width: 36,
+                              height: 36,
                               backgroundColor: '#EDE9FE',
                               color: '#4F2BCB',
                               fontWeight: 800,
+                              fontSize: '0.9rem',
                             }}
                           >
                             {part.username?.charAt(0).toUpperCase()}
@@ -412,11 +446,12 @@ const ClubChat = () => {
                                   fontWeight: 800,
                                   color: isSelected ? '#4F2BCB' : '#20202A',
                                   fontFamily: "'Plus Jakarta Sans', sans-serif",
+                                  fontSize: '0.9rem',
                                 }}
                               >
                                 {part.username}
                               </Typography>
-                              <Typography variant="caption" sx={{ color: '#8E90A2' }}>
+                              <Typography variant="caption" sx={{ color: '#8E90A2', fontSize: '0.68rem' }}>
                                 {dateStr}
                               </Typography>
                             </Box>
@@ -430,12 +465,34 @@ const ClubChat = () => {
                                 textOverflow: 'ellipsis',
                                 overflow: 'hidden',
                                 whiteSpace: 'nowrap',
+                                fontSize: '0.74rem',
+                                mt: 0.2,
                               }}
                             >
                               {part.last_message || 'Start chatting...'}
                             </Typography>
                           }
                         />
+
+                        {/* Delete Chat Action for this Member */}
+                        <Tooltip title={`Delete chat with ${part.username}`}>
+                          <IconButton
+                            size="small"
+                            onClick={(e) => handleDeleteMemberChannel(e, part)}
+                            sx={{
+                              color: '#9DA0AE',
+                              p: 0.6,
+                              borderRadius: '8px',
+                              transition: 'all 0.18s ease',
+                              '&:hover': {
+                                color: '#DC2626',
+                                backgroundColor: '#FEE2E2',
+                              },
+                            }}
+                          >
+                            <DeleteOutlinedIcon sx={{ fontSize: 17 }} />
+                          </IconButton>
+                        </Tooltip>
                       </ListItem>
                     );
                   })
@@ -488,8 +545,8 @@ const ClubChat = () => {
                       isOfficer ? selectedUser?.avatar_url : club?.logo_url
                     )}
                     sx={{
-                      width: 36,
-                      height: 36,
+                      width: 38,
+                      height: 38,
                       backgroundColor: '#EDE9FE',
                       color: '#4F2BCB',
                       fontWeight: 800,
@@ -506,6 +563,7 @@ const ClubChat = () => {
                         fontWeight: 900,
                         color: '#20202A',
                         fontFamily: "'Plus Jakarta Sans', sans-serif",
+                        fontSize: '0.95rem',
                       }}
                     >
                       {isOfficer ? selectedUser?.username || 'Select Member' : 'Club Leadership Desk'}
@@ -577,8 +635,9 @@ const ClubChat = () => {
                               ? '18px 18px 4px 18px'
                               : '18px 18px 18px 4px',
                             backgroundColor: isMyMsg ? '#4F2BCB' : '#FFFFFF',
-                            color: isMyMsg ? '#FFFFFF' : '#20202A',
-                            boxShadow: '0 2px 8px rgba(79, 43, 203, 0.05)',
+                            boxShadow: isMyMsg
+                              ? '0 4px 14px rgba(79, 43, 203, 0.2)'
+                              : '0 2px 8px rgba(0, 0, 0, 0.04)',
                             border: isMyMsg ? 'none' : '1px solid #E9E7F2',
                           }}
                         >
@@ -590,12 +649,22 @@ const ClubChat = () => {
                                 fontWeight: 800,
                                 display: 'block',
                                 mb: 0.4,
+                                fontSize: '0.74rem',
                               }}
                             >
                               {msg.sender_name || 'Officer'}
                             </Typography>
                           )}
-                          <Typography variant="body2" sx={{ lineHeight: 1.6, whiteSpace: 'pre-line' }}>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              lineHeight: 1.6,
+                              whiteSpace: 'pre-line',
+                              color: isMyMsg ? '#FFFFFF !important' : '#20202A !important',
+                              fontWeight: 500,
+                              fontSize: '0.88rem',
+                            }}
+                          >
                             {msg.content}
                           </Typography>
                         </Box>

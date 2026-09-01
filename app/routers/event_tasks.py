@@ -16,14 +16,14 @@ router = APIRouter(
 
 
 def _is_club_leader(club_id: int, user: User, db: Session) -> bool:
-    """Check if user is admin/president/secretary of the club."""
+    """Check if user is admin/president/secretary/event_manager of the club."""
     if user.is_superuser:
         return True
     membership = db.query(Membership).filter(
         Membership.user_id == user.id,
         Membership.club_id == club_id
     ).first()
-    if membership and membership.role in ("president", "secretary"):
+    if membership and membership.role in ("president", "secretary", "event_manager"):
         return True
     return False
 

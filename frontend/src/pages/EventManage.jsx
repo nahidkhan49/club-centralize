@@ -143,7 +143,15 @@ const EventManage = () => {
   const [submitting, setSubmitting] = useState(false);
 
   const isLeader =
-    systemRole === 'admin' || systemRole === 'president' || systemRole === 'secretary';
+    systemRole === 'admin' ||
+    systemRole === 'president' ||
+    systemRole === 'secretary' ||
+    systemRole === 'event_manager' ||
+    teamMembers.some(
+      (m) =>
+        m.user_id === currentUserId &&
+        (m.role === 'president' || m.role === 'secretary' || m.role === 'event_manager' || m.role === 'vice_president')
+    );
 
   const loadData = async () => {
     try {

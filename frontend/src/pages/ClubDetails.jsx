@@ -44,6 +44,7 @@ const ROLE_CONFIGS = {
   vice_president: { label: 'Vice President', bg: '#EEF2FF', color: '#4F2BCB' },
   secretary: { label: 'Secretary', bg: '#F3F0FF', color: '#7C3AED' },
   treasurer: { label: 'Treasurer', bg: '#D1FAE5', color: '#059669' },
+  event_manager: { label: 'Event Manager', bg: '#E0F2FE', color: '#0284C7' },
   member: { label: 'Member', bg: '#F1F5F9', color: '#475569' },
 };
 
@@ -168,7 +169,7 @@ const ClubDetails = () => {
   const isClubManager =
     isAdmin || myRole === 'president' || myRole === 'secretary' || myRole === 'vice_president';
 
-  const leadershipRoles = ['president', 'vice_president', 'secretary', 'treasurer'];
+  const leadershipRoles = ['president', 'vice_president', 'secretary', 'treasurer', 'event_manager'];
   const leadershipMembers = members.filter((m) => leadershipRoles.includes(m.role));
 
   const rawCover = club?.cover_url || DEFAULT_COVERS[(club?.id || 0) % DEFAULT_COVERS.length];

@@ -635,6 +635,7 @@ const PresidentMembers = () => {
               onChange={(e) => setNewRole(e.target.value)}
             >
               <MenuItem value="member">Member</MenuItem>
+              <MenuItem value="event_manager">🎯 Event Manager (Manage Club Events & Tasks)</MenuItem>
               <MenuItem value="vice_president">Vice President</MenuItem>
               <MenuItem value="treasurer">Treasurer</MenuItem>
               <MenuItem value="secretary">Secretary</MenuItem>

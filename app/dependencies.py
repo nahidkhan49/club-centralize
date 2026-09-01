@@ -145,7 +145,7 @@ def get_club_event_manager(
     db: Session = Depends(get_db)
 ) -> Membership:
     """
-    Dependency that ensures the current user is either the club president, secretary, or a superuser.
+    Dependency that ensures the current user is either the club president, secretary, event manager, or a superuser.
     Returns the Membership object for further use.
     """
     from app.models.membership import Membership
@@ -163,10 +163,11 @@ def get_club_event_manager(
     if not membership or membership.role not in (
         MembershipRole.president.value,
         MembershipRole.secretary.value,
+        MembershipRole.event_manager.value,
     ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only club president or secretary can perform this action",
+            detail="Only club president, secretary, or designated event manager can perform this action",
         )
     return membership
 

@@ -682,9 +682,26 @@ def update_membership_role(
         for s in prev_secretaries:
             s.role = "member"
 
-    membership.role = role_data.role
+    role_val = role_data.role.value if hasattr(role_data.role, "value") else str(role_data.role)
+    membership.role = role_val
     db.commit()
     db.refresh(membership)
+
+    try:
+        from app.services.notification import create_notification
+        club = db.query(Club).filter(Club.id == club_id).first()
+        club_name = club.name if club else "Club"
+        role_display = role_val.replace('_', ' ').title()
+        if user_id != current_user.id:
+            create_notification(
+                db=db,
+                user_id=user_id,
+                title="Club Role Assigned",
+                content=f"You have been appointed as {role_display} for {club_name}!",
+                link=f"/clubs/{club_id}"
+            )
+    except Exception as ne:
+        print(f"Failed to create role update notification: {ne}")
 
     return membership
 

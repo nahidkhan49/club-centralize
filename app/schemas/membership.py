@@ -8,6 +8,7 @@ class MembershipRole(str, Enum):
     vice_president = "vice_president"
     secretary = "secretary"
     treasurer = "treasurer"
+    event_manager = "event_manager"
     member = "member"
 
 

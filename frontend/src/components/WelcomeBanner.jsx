@@ -2,7 +2,8 @@ import React from 'react';
 import { Box, Typography, Avatar } from '@mui/material';
 import { useSiteSettings } from '../context/SiteSettingsContext';
 
-const WelcomeBanner = ({ username, roleLabel, actionButton }) => {
+const WelcomeBanner = ({ username, roleLabel, actionButton, action }) => {
+  const finalAction = actionButton || action;
   const {
     welcomeBannerImage,
     welcomeBannerTitle,
@@ -20,9 +21,9 @@ const WelcomeBanner = ({ username, roleLabel, actionButton }) => {
         borderRadius: '24px',
         overflow: 'hidden',
         mb: 4,
-        minHeight: { xs: 170, sm: 200, md: 220 },
+        minHeight: { xs: 180, sm: 210, md: 230 },
         background: welcomeBannerImage
-          ? `linear-gradient(135deg, rgba(79, 43, 203, 0.92) 0%, rgba(104, 56, 238, 0.88) 100%), url(${welcomeBannerImage})`
+          ? `linear-gradient(135deg, rgba(20, 10, 60, 0.58) 0%, rgba(79, 43, 203, 0.40) 50%, rgba(124, 58, 237, 0.58) 100%), url(${welcomeBannerImage})`
           : 'linear-gradient(135deg, #4F2BCB 0%, #6838EE 50%, #7C3AED 100%)',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
@@ -31,7 +32,7 @@ const WelcomeBanner = ({ username, roleLabel, actionButton }) => {
         color: '#FFFFFF',
         p: { xs: 3, sm: 4, md: 4.5 },
         boxShadow: '0 12px 36px rgba(79, 43, 203, 0.22)',
-        border: '1px solid rgba(255, 255, 255, 0.15)',
+        border: '1px solid rgba(255, 255, 255, 0.22)',
       }}
     >
       <Box
@@ -42,7 +43,21 @@ const WelcomeBanner = ({ username, roleLabel, actionButton }) => {
         flexWrap="wrap"
         gap={3}
       >
-        <Box display="flex" alignItems="center" gap={{ xs: 2, sm: 3 }} flexWrap="wrap" sx={{ flex: 1, minWidth: 260 }}>
+        <Box
+          display="flex"
+          alignItems="center"
+          gap={{ xs: 2, sm: 3 }}
+          flexWrap="wrap"
+          sx={{
+            flex: 1,
+            minWidth: 260,
+            p: { xs: 1.5, sm: 2 },
+            borderRadius: '20px',
+            backgroundColor: 'rgba(15, 8, 48, 0.28)',
+            backdropFilter: 'blur(10px)',
+            border: '1px solid rgba(255, 255, 255, 0.18)',
+          }}
+        >
           <Avatar
             src={siteLogo}
             alt="Site Logo"
@@ -51,12 +66,12 @@ const WelcomeBanner = ({ username, roleLabel, actionButton }) => {
               width: { xs: 58, sm: 72, md: 80 },
               height: { xs: 58, sm: 72, md: 80 },
               borderRadius: '20px',
-              border: '2.5px solid rgba(255, 255, 255, 0.6)',
+              border: '2.5px solid rgba(255, 255, 255, 0.85)',
               backgroundColor: '#FFFFFF',
               color: '#4F2BCB',
               fontWeight: 900,
               fontSize: '1.8rem',
-              boxShadow: '0 8px 24px rgba(0, 0, 0, 0.18)',
+              boxShadow: '0 8px 24px rgba(0, 0, 0, 0.25)',
               flexShrink: 0,
             }}
           >
@@ -71,11 +86,12 @@ const WelcomeBanner = ({ username, roleLabel, actionButton }) => {
                   alignItems: 'center',
                   mb: 1,
                   px: 1.5,
-                  py: 0.3,
+                  py: 0.35,
                   borderRadius: '20px',
-                  backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                  backdropFilter: 'blur(8px)',
-                  border: '1px solid rgba(255, 255, 255, 0.3)',
+                  backgroundColor: 'rgba(255, 255, 255, 0.25)',
+                  backdropFilter: 'blur(12px)',
+                  border: '1px solid rgba(255, 255, 255, 0.4)',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                 }}
               >
                 <Typography
@@ -83,9 +99,10 @@ const WelcomeBanner = ({ username, roleLabel, actionButton }) => {
                   sx={{
                     fontWeight: 800,
                     textTransform: 'uppercase',
-                    letterSpacing: '0.06em',
-                    fontSize: '0.68rem',
+                    letterSpacing: '0.08em',
+                    fontSize: '0.7rem',
                     color: '#FFFFFF',
+                    textShadow: '0 1px 3px rgba(0,0,0,0.3)',
                   }}
                 >
                   {roleLabel}
@@ -102,7 +119,8 @@ const WelcomeBanner = ({ username, roleLabel, actionButton }) => {
                 mb: 0.8,
                 letterSpacing: '-0.025em',
                 fontFamily: "'Plus Jakarta Sans', sans-serif",
-                textShadow: '0 2px 10px rgba(0,0,0,0.15)',
+                color: '#FFFFFF',
+                textShadow: '0 2px 12px rgba(0,0,0,0.35)',
               }}
             >
               {welcomeBannerTitle}
@@ -112,12 +130,13 @@ const WelcomeBanner = ({ username, roleLabel, actionButton }) => {
             <Typography
               variant="body1"
               sx={{
-                opacity: 0.92,
-                fontSize: { xs: '0.86rem', sm: '0.96rem' },
+                color: '#F8F7FD',
+                opacity: 0.98,
+                fontSize: { xs: '0.88rem', sm: '0.98rem' },
                 maxWidth: '640px',
                 lineHeight: 1.55,
-                fontWeight: 500,
-                textShadow: '0 1px 4px rgba(0,0,0,0.15)',
+                fontWeight: 600,
+                textShadow: '0 1px 6px rgba(0,0,0,0.4)',
               }}
             >
               {welcomeBannerSubtitle}
@@ -125,7 +144,7 @@ const WelcomeBanner = ({ username, roleLabel, actionButton }) => {
           </Box>
         </Box>
 
-        {actionButton && <Box sx={{ flexShrink: 0 }}>{actionButton}</Box>}
+        {finalAction && <Box sx={{ flexShrink: 0 }}>{finalAction}</Box>}
       </Box>
     </Box>
   );

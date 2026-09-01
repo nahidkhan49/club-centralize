@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect } from 'react';
+import React, { useContext, useState } from 'react';
 import api, { getImageUrl } from '../api/axiosInstance';
 import {
   AppBar,
@@ -28,11 +28,14 @@ import BrandingWatermarkOutlinedIcon from '@mui/icons-material/BrandingWatermark
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { useSiteSettings } from '../context/SiteSettingsContext';
+import { useLiveUpdates } from '../context/LiveUpdatesContext';
 import AdminBrandingModal from './AdminBrandingModal';
 
 export default function Navbar({ onDrawerToggle }) {
   const { user, systemRole, logout } = useContext(AuthContext);
   const { siteName, siteLogo, apkUrl } = useSiteSettings();
+  const { unreadNotificationsCount, notifications, fetchNotificationsData } = useLiveUpdates();
+
   const username = user?.username || 'User';
   const initial = username.charAt(0).toUpperCase();
   const navigate = useNavigate();
@@ -42,33 +45,10 @@ export default function Navbar({ onDrawerToggle }) {
   const [brandingOpen, setBrandingOpen] = useState(false);
   const open = Boolean(anchorEl);
 
-  const [notifications, setNotifications] = useState([]);
-  const [unreadCount, setUnreadCount] = useState(0);
   const [notiAnchorEl, setNotiAnchorEl] = useState(null);
   const notiOpen = Boolean(notiAnchorEl);
 
   const [headerSearch, setHeaderSearch] = useState('');
-
-  const fetchNotifications = async () => {
-    try {
-      const [listRes, countRes] = await Promise.all([
-        api.get('/notifications/'),
-        api.get('/notifications/unread-count'),
-      ]);
-      setNotifications(listRes.data || []);
-      setUnreadCount(countRes.data?.unread_count || 0);
-    } catch (err) {
-      console.error('Error fetching notifications:', err);
-    }
-  };
-
-  useEffect(() => {
-    if (user) {
-      fetchNotifications();
-      const interval = setInterval(fetchNotifications, 6000);
-      return () => clearInterval(interval);
-    }
-  }, [user]);
 
   const handleNotiOpen = (event) => {
     setNotiAnchorEl(event.currentTarget);
@@ -82,10 +62,7 @@ export default function Navbar({ onDrawerToggle }) {
     try {
       if (!noti.is_read) {
         await api.post(`/notifications/${noti.id}/read`);
-        setNotifications((prev) =>
-          prev.map((n) => (n.id === noti.id ? { ...n, is_read: true } : n))
-        );
-        setUnreadCount((prev) => Math.max(0, prev - 1));
+        fetchNotificationsData();
       }
       handleNotiClose();
       if (noti.link) {
@@ -99,8 +76,7 @@ export default function Navbar({ onDrawerToggle }) {
   const handleMarkAllRead = async () => {
     try {
       await api.post('/notifications/read-all');
-      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
-      setUnreadCount(0);
+      fetchNotificationsData();
     } catch (err) {
       console.error('Error marking all notifications as read:', err);
     }
@@ -321,7 +297,7 @@ export default function Navbar({ onDrawerToggle }) {
               />
             </Tooltip>
 
-            {/* Notification Bell */}
+            {/* Notification Bell with Real-time Count */}
             <IconButton
               onClick={handleNotiOpen}
               aria-label="notifications"
@@ -337,7 +313,7 @@ export default function Navbar({ onDrawerToggle }) {
               }}
             >
               <Badge
-                badgeContent={unreadCount}
+                badgeContent={unreadNotificationsCount}
                 color="error"
                 max={99}
                 sx={{
@@ -357,7 +333,6 @@ export default function Navbar({ onDrawerToggle }) {
               anchorEl={notiAnchorEl}
               open={notiOpen}
               onClose={handleNotiClose}
-              onClick={handleNotiClose}
               PaperProps={{
                 elevation: 4,
                 sx: {
@@ -391,9 +366,9 @@ export default function Navbar({ onDrawerToggle }) {
                   <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#20202A' }}>
                     Notifications
                   </Typography>
-                  {unreadCount > 0 && (
+                  {unreadNotificationsCount > 0 && (
                     <Chip
-                      label={unreadCount}
+                      label={unreadNotificationsCount}
                       size="small"
                       sx={{
                         height: 20,
@@ -405,7 +380,7 @@ export default function Navbar({ onDrawerToggle }) {
                     />
                   )}
                 </Box>
-                {unreadCount > 0 && (
+                {unreadNotificationsCount > 0 && (
                   <Chip
                     label="Mark all read"
                     size="small"
@@ -541,7 +516,6 @@ export default function Navbar({ onDrawerToggle }) {
               anchorEl={anchorEl}
               open={open}
               onClose={handleMenuClose}
-              onClick={handleMenuClose}
               PaperProps={{
                 elevation: 4,
                 sx: {

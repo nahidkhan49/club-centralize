@@ -273,8 +273,8 @@ const ClubDetails = () => {
           mb: 4,
           boxShadow: '0 8px 32px rgba(79, 43, 203, 0.08)',
           position: 'relative',
-          height: { xs: 280, sm: 320, md: 350 },
-          backgroundImage: `linear-gradient(180deg, rgba(15, 10, 40, 0.2) 0%, rgba(15, 10, 40, 0.88) 100%), url(${coverUrl})`,
+          height: { xs: 290, sm: 330, md: 360 },
+          backgroundImage: `linear-gradient(180deg, rgba(15, 10, 40, 0.05) 0%, rgba(15, 10, 40, 0.58) 100%), url(${coverUrl})`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           display: 'flex',
@@ -295,6 +295,7 @@ const ClubDetails = () => {
                 fontSize: '0.82rem',
                 backdropFilter: 'blur(8px)',
                 borderRadius: '8px',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
               }}
             />
           )}
@@ -308,6 +309,11 @@ const ClubDetails = () => {
             justifyContent: 'space-between',
             gap: 2.5,
             width: '100%',
+            p: { xs: 2, sm: 2.5 },
+            borderRadius: '20px',
+            backgroundColor: 'rgba(15, 8, 48, 0.38)',
+            backdropFilter: 'blur(10px)',
+            border: '1px solid rgba(255, 255, 255, 0.2)',
           }}
         >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5 }}>
@@ -339,7 +345,7 @@ const ClubDetails = () => {
                   fontSize: { xs: '1.5rem', sm: '2.1rem' },
                   letterSpacing: '-0.02em',
                   fontFamily: "'Plus Jakarta Sans', sans-serif",
-                  textShadow: '0 2px 10px rgba(0, 0, 0, 0.5)',
+                  textShadow: '0 2px 12px rgba(0, 0, 0, 0.6)',
                   mb: 0.8,
                 }}
               >

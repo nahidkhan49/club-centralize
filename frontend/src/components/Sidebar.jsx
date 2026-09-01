@@ -9,6 +9,7 @@ import {
   ListItemText,
   Avatar,
   Typography,
+  Chip,
 } from '@mui/material';
 import { useLocation, useNavigate } from 'react-router-dom';
 import DashboardOutlinedIcon from '@mui/icons-material/DashboardOutlined';
@@ -18,146 +19,187 @@ import CampaignOutlinedIcon from '@mui/icons-material/CampaignOutlined';
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined';
 import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined';
 import PeopleAltOutlinedIcon from '@mui/icons-material/PeopleAltOutlined';
+import ForumOutlinedIcon from '@mui/icons-material/ForumOutlined';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { AuthContext } from '../context/AuthContext';
+import { useLiveUpdates } from '../context/LiveUpdatesContext';
 import { getImageUrl } from '../api/axiosInstance';
 
 const DRAWER_WIDTH = 254;
-
-// Grouped Nav Items per Role
-const NAV_SECTIONS = {
-  admin: [
-    {
-      title: 'OVERVIEW',
-      items: [
-        { label: 'Dashboard', icon: <DashboardOutlinedIcon />, path: '/admin/dashboard' },
-      ],
-    },
-    {
-      title: 'MANAGEMENT',
-      items: [
-        { label: 'All Clubs', icon: <BusinessOutlinedIcon />, path: '/admin/clubs' },
-        { label: 'User Directory', icon: <PeopleAltOutlinedIcon />, path: '/admin/users' },
-        { label: 'Events Hub', icon: <EventOutlinedIcon />, path: '/admin/events' },
-        { label: 'Announcements', icon: <CampaignOutlinedIcon />, path: '/admin/announcements' },
-      ],
-    },
-    {
-      title: 'ACCOUNT',
-      items: [
-        { label: 'My Profile', icon: <PersonOutlinedIcon />, path: '/profile' },
-      ],
-    },
-  ],
-  president: [
-    {
-      title: 'OVERVIEW',
-      items: [
-        { label: 'Dashboard', icon: <DashboardOutlinedIcon />, path: '/president/dashboard' },
-        { label: 'My Club Hub', icon: <BusinessOutlinedIcon />, path: '/president/club' },
-      ],
-    },
-    {
-      title: 'CLUB OPERATIONS',
-      items: [
-        { label: 'Member Roster', icon: <PeopleAltOutlinedIcon />, path: '/president/members' },
-        { label: 'Manage Events', icon: <EventOutlinedIcon />, path: '/president/events' },
-        { label: 'Broadcasts', icon: <CampaignOutlinedIcon />, path: '/president/announcements' },
-      ],
-    },
-    {
-      title: 'CAMPUS',
-      items: [
-        { label: 'Browse Clubs', icon: <GroupsOutlinedIcon />, path: '/clubs' },
-        { label: 'Campus Events', icon: <EventOutlinedIcon />, path: '/events' },
-        { label: 'Notice Wall', icon: <CampaignOutlinedIcon />, path: '/announcements' },
-      ],
-    },
-    {
-      title: 'ACCOUNT',
-      items: [
-        { label: 'My Profile', icon: <PersonOutlinedIcon />, path: '/profile' },
-      ],
-    },
-  ],
-  secretary: [
-    {
-      title: 'OVERVIEW',
-      items: [
-        { label: 'Dashboard', icon: <DashboardOutlinedIcon />, path: '/secretary/dashboard' },
-        { label: 'My Club Hub', icon: <BusinessOutlinedIcon />, path: '/secretary/club' },
-      ],
-    },
-    {
-      title: 'CLUB OPERATIONS',
-      items: [
-        { label: 'Member Roster', icon: <PeopleAltOutlinedIcon />, path: '/secretary/members' },
-        { label: 'Manage Events', icon: <EventOutlinedIcon />, path: '/secretary/events' },
-        { label: 'Broadcasts', icon: <CampaignOutlinedIcon />, path: '/secretary/announcements' },
-      ],
-    },
-    {
-      title: 'CAMPUS',
-      items: [
-        { label: 'Browse Clubs', icon: <GroupsOutlinedIcon />, path: '/clubs' },
-        { label: 'Campus Events', icon: <EventOutlinedIcon />, path: '/events' },
-        { label: 'Notice Wall', icon: <CampaignOutlinedIcon />, path: '/announcements' },
-      ],
-    },
-    {
-      title: 'ACCOUNT',
-      items: [
-        { label: 'My Profile', icon: <PersonOutlinedIcon />, path: '/profile' },
-      ],
-    },
-  ],
-  member: [
-    {
-      title: 'OVERVIEW',
-      items: [
-        { label: 'Dashboard', icon: <DashboardOutlinedIcon />, path: '/dashboard' },
-      ],
-    },
-    {
-      title: 'CAMPUS LIFE',
-      items: [
-        { label: 'Student Clubs', icon: <GroupsOutlinedIcon />, path: '/clubs' },
-        { label: 'Events & Workshops', icon: <EventOutlinedIcon />, path: '/events' },
-        { label: 'Announcements', icon: <CampaignOutlinedIcon />, path: '/announcements' },
-      ],
-    },
-    {
-      title: 'ACCOUNT',
-      items: [
-        { label: 'My Profile', icon: <PersonOutlinedIcon />, path: '/profile' },
-      ],
-    },
-  ],
-};
 
 const ROLE_LABELS = {
   admin: { label: 'Platform Admin', color: '#DC2626', bg: '#FEE2E2' },
   president: { label: 'President', color: '#B45309', bg: '#FEF3C7' },
   secretary: { label: 'Secretary', color: '#7C3AED', bg: '#F3F0FF' },
   vice_president: { label: 'Vice President', color: '#4F2BCB', bg: '#EEF2FF' },
+  treasurer: { label: 'Treasurer', bg: '#059669', bg: '#D1FAE5' },
   member: { label: 'Campus Member', color: '#475569', bg: '#F1F5F9' },
 };
 
 const SidebarContent = ({ onItemClick }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, systemRole, presidentOfClubs, secretaryOfClubs } = useContext(AuthContext);
+  const { user, systemRole, presidentOfClubs, secretaryOfClubs, memberships } = useContext(AuthContext);
+  const { pendingJoinRequestsCount, unreadNotificationsCount } = useLiveUpdates();
 
-  const sections = NAV_SECTIONS[systemRole] || NAV_SECTIONS.member;
-  const initial = user?.username?.charAt(0)?.toUpperCase() || '?';
-  const roleInfo = ROLE_LABELS[systemRole] || ROLE_LABELS.member;
+  const isPresident =
+    systemRole === 'president' || (Array.isArray(presidentOfClubs) && presidentOfClubs.length > 0);
+  const isSecretary =
+    !isPresident &&
+    (systemRole === 'secretary' || (Array.isArray(secretaryOfClubs) && secretaryOfClubs.length > 0));
+  const isAdmin = systemRole === 'admin';
 
-  let clubName = '';
-  if (systemRole === 'president' && presidentOfClubs?.length > 0) {
-    clubName = presidentOfClubs[0].club_name;
-  } else if (systemRole === 'secretary' && secretaryOfClubs?.length > 0) {
-    clubName = secretaryOfClubs[0].club_name;
+  const myClubId = isPresident
+    ? presidentOfClubs?.[0]?.club_id
+    : isSecretary
+    ? secretaryOfClubs?.[0]?.club_id
+    : null;
+
+  const myClubName = isPresident
+    ? presidentOfClubs?.[0]?.club_name
+    : isSecretary
+    ? secretaryOfClubs?.[0]?.club_name
+    : '';
+
+  // Dynamic Navigation Sections based on Role
+  let sections = [];
+
+  if (isAdmin) {
+    sections = [
+      {
+        title: 'OVERVIEW',
+        items: [
+          { label: 'Dashboard', icon: <DashboardOutlinedIcon />, path: '/admin/dashboard' },
+        ],
+      },
+      {
+        title: 'MANAGEMENT',
+        items: [
+          { label: 'All Clubs', icon: <BusinessOutlinedIcon />, path: '/admin/clubs' },
+          { label: 'User Directory', icon: <PeopleAltOutlinedIcon />, path: '/admin/users' },
+          { label: 'Events Hub', icon: <EventOutlinedIcon />, path: '/admin/events' },
+          { label: 'Announcements', icon: <CampaignOutlinedIcon />, path: '/admin/announcements' },
+        ],
+      },
+      {
+        title: 'ACCOUNT',
+        items: [
+          { label: 'My Profile', icon: <PersonOutlinedIcon />, path: '/profile' },
+        ],
+      },
+    ];
+  } else if (isPresident) {
+    sections = [
+      {
+        title: 'OVERVIEW',
+        items: [
+          { label: 'Dashboard', icon: <DashboardOutlinedIcon />, path: '/president/dashboard' },
+          { label: 'My Club Hub', icon: <BusinessOutlinedIcon />, path: '/president/club' },
+        ],
+      },
+      {
+        title: 'CLUB OPERATIONS',
+        items: [
+          {
+            label: 'Member Roster',
+            icon: <PeopleAltOutlinedIcon />,
+            path: '/president/members',
+            badge: pendingJoinRequestsCount > 0 ? pendingJoinRequestsCount : null,
+            badgeColor: '#EF4444',
+          },
+          { label: 'Manage Events', icon: <EventOutlinedIcon />, path: '/president/events' },
+          { label: 'Broadcasts', icon: <CampaignOutlinedIcon />, path: '/president/announcements' },
+          ...(myClubId
+            ? [{ label: 'Club Chat', icon: <ForumOutlinedIcon />, path: `/clubs/${myClubId}/chat` }]
+            : []),
+        ],
+      },
+      {
+        title: 'CAMPUS',
+        items: [
+          { label: 'Browse Clubs', icon: <GroupsOutlinedIcon />, path: '/clubs' },
+          { label: 'Campus Events', icon: <EventOutlinedIcon />, path: '/events' },
+          { label: 'Notice Wall', icon: <CampaignOutlinedIcon />, path: '/announcements' },
+        ],
+      },
+      {
+        title: 'ACCOUNT',
+        items: [
+          { label: 'My Profile', icon: <PersonOutlinedIcon />, path: '/profile' },
+        ],
+      },
+    ];
+  } else if (isSecretary) {
+    sections = [
+      {
+        title: 'OVERVIEW',
+        items: [
+          { label: 'Dashboard', icon: <DashboardOutlinedIcon />, path: '/secretary/dashboard' },
+          { label: 'My Club Hub', icon: <BusinessOutlinedIcon />, path: '/secretary/club' },
+        ],
+      },
+      {
+        title: 'CLUB OPERATIONS',
+        items: [
+          {
+            label: 'Member Roster',
+            icon: <PeopleAltOutlinedIcon />,
+            path: '/secretary/members',
+            badge: pendingJoinRequestsCount > 0 ? pendingJoinRequestsCount : null,
+            badgeColor: '#EF4444',
+          },
+          { label: 'Manage Events', icon: <EventOutlinedIcon />, path: '/secretary/events' },
+          { label: 'Broadcasts', icon: <CampaignOutlinedIcon />, path: '/secretary/announcements' },
+          ...(myClubId
+            ? [{ label: 'Club Chat', icon: <ForumOutlinedIcon />, path: `/clubs/${myClubId}/chat` }]
+            : []),
+        ],
+      },
+      {
+        title: 'CAMPUS',
+        items: [
+          { label: 'Browse Clubs', icon: <GroupsOutlinedIcon />, path: '/clubs' },
+          { label: 'Campus Events', icon: <EventOutlinedIcon />, path: '/events' },
+          { label: 'Notice Wall', icon: <CampaignOutlinedIcon />, path: '/announcements' },
+        ],
+      },
+      {
+        title: 'ACCOUNT',
+        items: [
+          { label: 'My Profile', icon: <PersonOutlinedIcon />, path: '/profile' },
+        ],
+      },
+    ];
+  } else {
+    // Regular Member: Keep existing navigation structure (DO NOT add Chat to main sidebar)
+    sections = [
+      {
+        title: 'OVERVIEW',
+        items: [
+          { label: 'Dashboard', icon: <DashboardOutlinedIcon />, path: '/dashboard' },
+        ],
+      },
+      {
+        title: 'CAMPUS LIFE',
+        items: [
+          { label: 'Student Clubs', icon: <GroupsOutlinedIcon />, path: '/clubs' },
+          { label: 'Events & Workshops', icon: <EventOutlinedIcon />, path: '/events' },
+          { label: 'Announcements', icon: <CampaignOutlinedIcon />, path: '/announcements' },
+        ],
+      },
+      {
+        title: 'ACCOUNT',
+        items: [
+          { label: 'My Profile', icon: <PersonOutlinedIcon />, path: '/profile' },
+        ],
+      },
+    ];
   }
+
+  const initial = user?.username?.charAt(0)?.toUpperCase() || '?';
+  const roleInfo =
+    ROLE_LABELS[isPresident ? 'president' : isSecretary ? 'secretary' : systemRole] ||
+    ROLE_LABELS.member;
 
   const handleNav = (path) => {
     navigate(path);
@@ -246,6 +288,21 @@ const SidebarContent = ({ onItemClick }) => {
                           fontFamily: "'Plus Jakarta Sans', sans-serif",
                         }}
                       />
+                      {item.badge && (
+                        <Chip
+                          label={item.badge}
+                          size="small"
+                          sx={{
+                            height: 20,
+                            minWidth: 20,
+                            fontSize: '0.68rem',
+                            fontWeight: 800,
+                            backgroundColor: item.badgeColor || '#EF4444',
+                            color: '#FFFFFF',
+                            mr: isActive ? 1.5 : 0,
+                          }}
+                        />
+                      )}
                       {isActive && (
                         <Box
                           sx={{
@@ -336,7 +393,7 @@ const SidebarContent = ({ onItemClick }) => {
                   {roleInfo.label}
                 </Typography>
               </Box>
-              {clubName && (
+              {myClubName && (
                 <Typography
                   sx={{
                     fontSize: '0.66rem',
@@ -348,7 +405,7 @@ const SidebarContent = ({ onItemClick }) => {
                     mt: 0.2,
                   }}
                 >
-                  {clubName}
+                  {myClubName}
                 </Typography>
               )}
             </Box>

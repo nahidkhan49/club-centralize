@@ -184,6 +184,25 @@ def join_event(
     event = db.query(Event).filter(Event.id == event_id).first()
     if not event:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
+    
+    # Block registration on concluded or inactive events
+    now = datetime.now()
+    event_end = event.end_time or event.start_time
+    if event_end:
+        if event_end.tzinfo is not None:
+            from datetime import timezone
+            now = datetime.now(timezone.utc)
+        if event_end < now or not event.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="This event has concluded. Registration is closed."
+            )
+    elif not event.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This event is no longer active. Registration is closed."
+        )
+
     if current_user in event.participants:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Already joined this event")
     event.participants.append(current_user)

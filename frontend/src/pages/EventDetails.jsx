@@ -337,6 +337,20 @@ const EventDetails = () => {
                     Cancel
                   </Button>
                 </Box>
+              ) : !isUpcoming ? (
+                <Chip
+                  label="Event Concluded — Registration Closed"
+                  sx={{
+                    backgroundColor: '#F1F5F9',
+                    color: '#64748B',
+                    fontWeight: 800,
+                    borderRadius: '12px',
+                    height: 42,
+                    px: 2,
+                    fontSize: '0.86rem',
+                    border: '1px solid #E2E8F0',
+                  }}
+                />
               ) : (
                 <Button
                   variant="primary"

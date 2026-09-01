@@ -58,13 +58,13 @@ const SecretaryMembers = () => {
   const [success, setSuccess] = useState('');
   const [search, setSearch] = useState('');
 
-  const loadData = async () => {
+  const loadData = async (silent = false) => {
     if (!myClubId) {
       setLoading(false);
       return;
     }
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const [membersData, requestsData] = await Promise.all([
         fetchClubMembers(myClubId),
         fetchClubRequests(myClubId),
@@ -72,14 +72,18 @@ const SecretaryMembers = () => {
       setMembers(membersData || []);
       setRequests(requestsData || []);
     } catch (err) {
-      setError('Failed to load member and request data.');
+      if (!silent) setError('Failed to load member and request data.');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
   useEffect(() => {
     loadData();
+    const timer = setInterval(() => {
+      loadData(true);
+    }, 6000);
+    return () => clearInterval(timer);
   }, [myClubId]);
 
   const handleApprove = async (requestId) => {
@@ -88,7 +92,7 @@ const SecretaryMembers = () => {
       setError('');
       await approveClubRequest(myClubId, requestId);
       setSuccess('Join request approved successfully! User is now an active member.');
-      await loadData();
+      await loadData(true);
     } catch (err) {
       setError(err?.response?.data?.detail || 'Failed to approve request.');
     } finally {
@@ -102,7 +106,7 @@ const SecretaryMembers = () => {
       setError('');
       await rejectClubRequest(myClubId, requestId);
       setSuccess('Join request has been rejected.');
-      await loadData();
+      await loadData(true);
     } catch (err) {
       setError(err?.response?.data?.detail || 'Failed to reject request.');
     } finally {

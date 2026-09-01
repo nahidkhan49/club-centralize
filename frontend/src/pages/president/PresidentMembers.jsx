@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -19,7 +20,6 @@ import {
   Badge,
   Chip,
   Stack,
-  Checkbox,
   Menu,
   MenuItem,
   IconButton,
@@ -31,14 +31,13 @@ import {
 import SearchIcon from '@mui/icons-material/Search';
 import AddIcon from '@mui/icons-material/Add';
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
-import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutlined';
 import HighlightOffIcon from '@mui/icons-material/HighlightOff';
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 import PeopleAltOutlinedIcon from '@mui/icons-material/PeopleAltOutlined';
 import HowToRegOutlinedIcon from '@mui/icons-material/HowToRegOutlined';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import ForumIcon from '@mui/icons-material/Forum';
 
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -52,16 +51,10 @@ import {
 import { getImageUrl } from '../../api/axiosInstance';
 import RoleChip from '../../components/RoleChip';
 import Button from '../../components/Button';
-
-const ROLE_COLOR_MAP = {
-  president: { bg: '#FEF3C7', color: '#B45309' },
-  vice_president: { bg: '#EEF2FF', color: '#4F2BCB' },
-  secretary: { bg: '#F3F0FF', color: '#7C3AED' },
-  treasurer: { bg: '#E6F4EA', color: '#15803D' },
-  member: { bg: '#F1F5F9', color: '#475569' },
-};
+import EmptyState from '../../components/EmptyState';
 
 const PresidentMembers = () => {
+  const navigate = useNavigate();
   const { presidentOfClubs } = useAuth();
   const myClubId = presidentOfClubs?.[0]?.club_id;
   const myClubName = presidentOfClubs?.[0]?.club_name || 'My Club';
@@ -74,13 +67,12 @@ const PresidentMembers = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [search, setSearch] = useState('');
-  const [selectedUsers, setSelectedUsers] = useState([]);
 
-  // Options dropdown menu state
+  // Dropdown menu state
   const [menuAnchor, setMenuAnchor] = useState(null);
   const [selectedMember, setSelectedMember] = useState(null);
 
-  // Role dialog & submission states
+  // Role dialog state
   const [roleDialogOpen, setRoleDialogOpen] = useState(false);
   const [newRole, setNewRole] = useState('member');
   const [submittingRole, setSubmittingRole] = useState(false);
@@ -156,10 +148,11 @@ const PresidentMembers = () => {
   const handleRemoveMemberClick = async (member) => {
     if (!member) return;
     if (member.user_id === Number(localStorage.getItem('user_id'))) {
-      alert("You cannot remove yourself from the club roster.");
+      alert('You cannot remove yourself from the club roster.');
       return;
     }
-    if (!window.confirm(`Are you sure you want to remove ${member.username} from this club?`)) return;
+    if (!window.confirm(`Are you sure you want to remove ${member.username} from this club?`))
+      return;
     setError('');
     try {
       await removeClubMember(myClubId, member.user_id);
@@ -170,23 +163,6 @@ const PresidentMembers = () => {
     }
   };
 
-
-  const handleSelectAll = (e) => {
-    if (e.target.checked) {
-      setSelectedUsers(members.map((m) => m.user_id));
-    } else {
-      setSelectedUsers([]);
-    }
-  };
-
-  const handleSelectOne = (userId) => {
-    if (selectedUsers.includes(userId)) {
-      setSelectedUsers(selectedUsers.filter((id) => id !== userId));
-    } else {
-      setSelectedUsers([...selectedUsers, userId]);
-    }
-  };
-
   const handleOpenMenu = (event, member) => {
     setMenuAnchor(event.currentTarget);
     setSelectedMember(member);
@@ -194,7 +170,31 @@ const PresidentMembers = () => {
 
   const handleCloseMenu = () => {
     setMenuAnchor(null);
-    setSelectedMember(null);
+  };
+
+  const exportCSV = () => {
+    if (members.length === 0) {
+      alert('No members to export.');
+      return;
+    }
+    const headers = ['User ID', 'Username', 'Email', 'Role', 'Department'];
+    const rows = members.map((m) => [
+      m.user_id,
+      m.username || '',
+      m.email || '',
+      m.role || 'member',
+      m.department || '',
+    ]);
+    const csvContent =
+      'data:text/csv;charset=utf-8,' +
+      [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `${myClubName}_members.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const pendingRequestsCount = requests.filter((r) => r.status === 'PENDING').length;
@@ -220,64 +220,79 @@ const PresidentMembers = () => {
   }
 
   return (
-    <Box sx={{ maxWidth: 1150, mx: 'auto', pb: 6, width: '100%' }}>
-      {/* Top Header & Tabs */}
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3} flexWrap="wrap" gap={2}>
+    <Box sx={{ maxWidth: 1320, mx: 'auto', width: '100%', pb: 6 }}>
+      {/* Top Header */}
+      <Box
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        mb={3.5}
+        flexWrap="wrap"
+        gap={2}
+      >
         <Box>
-          <Typography variant="h5" sx={{ fontWeight: 800, color: '#20202A' }}>
-            Member Roster
+          <Typography
+            variant="h4"
+            sx={{
+              fontWeight: 900,
+              color: '#20202A',
+              fontSize: { xs: '1.5rem', sm: '1.85rem' },
+              fontFamily: "'Plus Jakarta Sans', sans-serif",
+              letterSpacing: '-0.02em',
+            }}
+          >
+            Member Directory & Requests
           </Typography>
-          <Typography variant="body2" sx={{ color: '#777788' }}>
-            Club: <strong>{myClubName}</strong> — View roster and review prospective member join requests.
+          <Typography variant="body2" sx={{ color: '#5E5D6E', mt: 0.5, fontWeight: 500 }}>
+            Club: <strong>{myClubName}</strong> — Manage member roster and review applicant join requests.
           </Typography>
         </Box>
 
-        <Stack direction="row" spacing={1.5} flexWrap="wrap" gap={1}>
+        <Stack direction="row" spacing={1.5} flexWrap="wrap">
           <Button
             variant="primary"
-            startIcon={<AddIcon />}
-            onClick={() => alert('Invite member link copied to clipboard!')}
-            sx={{ backgroundColor: '#4F2BCB' }}
+            startIcon={<ForumIcon />}
+            onClick={() => navigate(`/clubs/${myClubId}/chat`)}
+            sx={{ px: 2.2 }}
           >
-            Add Member
+            Officer Chat
           </Button>
           <Button
             variant="ghost"
             startIcon={<FileDownloadOutlinedIcon />}
-            onClick={() => alert('Exporting member roster to CSV...')}
-            sx={{ color: '#4F2BCB', borderColor: '#D4CCF7' }}
+            onClick={exportCSV}
           >
-            Export
-          </Button>
-          <Button
-            variant="ghost"
-            startIcon={<EmailOutlinedIcon />}
-            onClick={() => alert('Opening bulk email broadcast composer...')}
-            sx={{ color: '#4F2BCB', borderColor: '#D4CCF7' }}
-          >
-            Send Message
+            Export CSV
           </Button>
         </Stack>
       </Box>
 
-      {error && <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }} onClose={() => setError('')}>{error}</Alert>}
-      {success && <Alert severity="success" sx={{ mb: 2, borderRadius: 2 }} onClose={() => setSuccess('')}>{success}</Alert>}
+      {error && (
+        <Alert severity="error" sx={{ mb: 2.5, borderRadius: '12px' }} onClose={() => setError('')}>
+          {error}
+        </Alert>
+      )}
+      {success && (
+        <Alert severity="success" sx={{ mb: 2.5, borderRadius: '12px' }} onClose={() => setSuccess('')}>
+          {success}
+        </Alert>
+      )}
 
-      {/* Tabs for Active Members vs Pending Requests */}
-      <Paper elevation={0} sx={{ borderRadius: '16px', border: '1px solid #E9E7F2', mb: 3, backgroundColor: '#FFFFFF' }}>
+      {/* Tabs */}
+      <Box sx={{ borderBottom: '1px solid #E9E7F2', mb: 3 }}>
         <Tabs
           value={tabIndex}
           onChange={(e, val) => setTabIndex(val)}
           sx={{
-            px: 2,
             '& .MuiTab-root': {
               textTransform: 'none',
-              fontWeight: 700,
+              fontWeight: 800,
               fontSize: '0.95rem',
-              color: '#777788',
+              color: '#8E90A2',
+              fontFamily: "'Plus Jakarta Sans', sans-serif",
               '&.Mui-selected': { color: '#4F2BCB' },
             },
-            '& .MuiTabs-indicator': { backgroundColor: '#4F2BCB', height: 3 },
+            '& .MuiTabs-indicator': { backgroundColor: '#4F2BCB', height: 3, borderRadius: '3px' },
           }}
         >
           <Tab
@@ -287,370 +302,348 @@ const PresidentMembers = () => {
           />
           <Tab
             icon={
-              <Badge badgeContent={pendingRequestsCount} color="warning">
+              <Badge
+                badgeContent={pendingRequestsCount}
+                color="error"
+                sx={{ '& .MuiBadge-badge': { fontSize: '0.68rem', height: 18, minWidth: 18 } }}
+              >
                 <HowToRegOutlinedIcon fontSize="small" />
               </Badge>
             }
             iconPosition="start"
-            label={`Join Requests (${requests.length})`}
+            label={`Join Requests (${pendingRequestsCount})`}
           />
         </Tabs>
-      </Paper>
-
-      {/* Search Input Bar */}
-      <Box mb={3}>
-        <TextField
-          placeholder="Search by name, role, or email..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          size="small"
-          fullWidth
-          sx={{
-            backgroundColor: '#FFFFFF',
-            borderRadius: '12px',
-            '& .MuiOutlinedInput-root': { borderRadius: '12px', borderColor: '#E9E7F2' },
-          }}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon sx={{ color: '#9DA0AE' }} />
-              </InputAdornment>
-            ),
-          }}
-        />
       </Box>
 
-      {/* Tab 0: Active Members Table (Matching Mockup Quadrant 4) */}
-      {tabIndex === 0 && (
-        <TableContainer
-          component={Paper}
-          elevation={0}
-          sx={{
-            borderRadius: '20px',
-            border: '1px solid #E9E7F2',
+      {/* Search Input */}
+      <TextField
+        fullWidth
+        placeholder={
+          tabIndex === 0
+            ? 'Search active members by name or email...'
+            : 'Search join requests by applicant name or email...'
+        }
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        sx={{
+          mb: 3.5,
+          '& .MuiOutlinedInput-root': {
+            borderRadius: '16px',
             backgroundColor: '#FFFFFF',
-            overflow: 'hidden',
-          }}
-        >
-          <Table>
-            <TableHead sx={{ backgroundColor: '#FBFBFE' }}>
-              <TableRow>
-                <TableCell padding="checkbox">
-                  <Checkbox
-                    checked={members.length > 0 && selectedUsers.length === members.length}
-                    indeterminate={selectedUsers.length > 0 && selectedUsers.length < members.length}
-                    onChange={handleSelectAll}
-                    sx={{ color: '#C4C4D4', '&.Mui-checked': { color: '#4F2BCB' } }}
-                  />
-                </TableCell>
-                <TableCell sx={{ fontWeight: 800, color: '#444455', fontSize: '0.85rem' }}>Name</TableCell>
-                <TableCell sx={{ fontWeight: 800, color: '#444455', fontSize: '0.85rem' }}>Role</TableCell>
-                <TableCell sx={{ fontWeight: 800, color: '#444455', fontSize: '0.85rem' }}>Email / Contact</TableCell>
-                <TableCell sx={{ fontWeight: 800, color: '#444455', fontSize: '0.85rem' }}>Status</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 800, color: '#444455', fontSize: '0.85rem' }}>Options</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {filteredMembers.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} align="center" sx={{ py: 6, color: '#9DA0AE' }}>
-                    No members found matching your search.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredMembers.map((member) => {
-                  const isSelected = selectedUsers.includes(member.user_id);
-                  const roleConfig = ROLE_COLOR_MAP[member.role] || ROLE_COLOR_MAP.member;
+          },
+        }}
+        InputProps={{
+          startAdornment: (
+            <InputAdornment position="start">
+              <SearchIcon sx={{ color: '#8E90A2' }} />
+            </InputAdornment>
+          ),
+        }}
+      />
 
-                  return (
+      {/* Tab 0: Active Members Table */}
+      {tabIndex === 0 && (
+        <>
+          {filteredMembers.length === 0 ? (
+            <EmptyState icon={<PeopleAltOutlinedIcon />} title="No members found" />
+          ) : (
+            <TableContainer
+              component={Paper}
+              elevation={0}
+              sx={{
+                borderRadius: '22px',
+                border: '1px solid #E9E7F2',
+                boxShadow: '0 2px 8px rgba(79, 43, 203, 0.03)',
+                overflow: 'hidden',
+              }}
+            >
+              <Table>
+                <TableHead>
+                  <TableRow sx={{ backgroundColor: '#F8F7FD' }}>
+                    <TableCell sx={{ fontWeight: 800, color: '#20202A', py: 2 }}>Member Name</TableCell>
+                    <TableCell sx={{ fontWeight: 800, color: '#20202A', py: 2 }}>Email Address</TableCell>
+                    <TableCell sx={{ fontWeight: 800, color: '#20202A', py: 2 }}>Club Role</TableCell>
+                    <TableCell sx={{ fontWeight: 800, color: '#20202A', py: 2 }}>Department</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 800, color: '#20202A', py: 2 }}>Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {filteredMembers.map((member) => (
                     <TableRow
                       key={member.user_id}
-                      hover
-                      selected={isSelected}
-                      sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+                      sx={{
+                        '&:hover': { backgroundColor: '#FAF9FF' },
+                        transition: 'background-color 0.15s ease',
+                      }}
                     >
-                      <TableCell padding="checkbox">
-                        <Checkbox
-                          checked={isSelected}
-                          onChange={() => handleSelectOne(member.user_id)}
-                          sx={{ color: '#C4C4D4', '&.Mui-checked': { color: '#4F2BCB' } }}
-                        />
-                      </TableCell>
-
-                      <TableCell>
-                        <Box display="flex" alignItems="center" gap={1.5}>
+                      <TableCell sx={{ py: 2 }}>
+                        <Box display="flex" alignItems="center" gap={1.8}>
                           <Avatar
                             src={getImageUrl(member.avatar_url)}
                             sx={{
                               width: 38,
                               height: 38,
-                              backgroundColor: '#EAE6FD',
+                              backgroundColor: '#EDE9FE',
                               color: '#4F2BCB',
-                              fontWeight: 800,
+                              fontWeight: 900,
                               fontSize: '0.95rem',
                             }}
                           >
-                            {member.username?.charAt(0).toUpperCase()}
+                            {(member.username || 'M').charAt(0).toUpperCase()}
                           </Avatar>
-                          <Box>
-                            <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#20202A' }}>
-                              {member.username}
-                            </Typography>
-                          </Box>
-                        </Box>
-                      </TableCell>
-
-                      <TableCell>
-                        <Chip
-                          label={member.role.replace('_', ' ').toUpperCase()}
-                          size="small"
-                          sx={{
-                            backgroundColor: roleConfig.bg,
-                            color: roleConfig.color,
-                            fontWeight: 800,
-                            fontSize: '0.72rem',
-                            borderRadius: '8px',
-                            height: 24,
-                          }}
-                        />
-                      </TableCell>
-
-                      <TableCell>
-                        <Typography variant="body2" sx={{ color: '#6E6D7A' }}>
-                          {member.email}
-                        </Typography>
-                      </TableCell>
-
-                      <TableCell>
-                        <Chip
-                          label="Open"
-                          size="small"
-                          sx={{
-                            backgroundColor: '#D1FAE5',
-                            color: '#059669',
-                            fontWeight: 800,
-                            fontSize: '0.72rem',
-                            borderRadius: '8px',
-                            height: 24,
-                          }}
-                        />
-                      </TableCell>
-
-                      <TableCell align="right">
-                        <Button
-                          variant="ghost"
-                          size="small"
-                          endIcon={<KeyboardArrowDownIcon />}
-                          onClick={(e) => handleOpenMenu(e, member)}
-                          sx={{ color: '#4F2BCB', borderColor: '#E9E7F2', fontSize: '0.78rem', py: 0.4 }}
-                        >
-                          Options
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      )}
-
-      {/* Tab 1: Membership Join Requests Review Table */}
-      {tabIndex === 1 && (
-        <TableContainer
-          component={Paper}
-          elevation={0}
-          sx={{
-            borderRadius: '20px',
-            border: '1px solid #E9E7F2',
-            backgroundColor: '#FFFFFF',
-            overflow: 'hidden',
-          }}
-        >
-          <Table>
-            <TableHead sx={{ backgroundColor: '#FBFBFE' }}>
-              <TableRow>
-                <TableCell sx={{ fontWeight: 800, color: '#444455' }}>Applicant</TableCell>
-                <TableCell sx={{ fontWeight: 800, color: '#444455' }}>Email</TableCell>
-                <TableCell sx={{ fontWeight: 800, color: '#444455' }}>Status</TableCell>
-                <TableCell sx={{ fontWeight: 800, color: '#444455' }}>Requested At</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 800, color: '#444455' }}>Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {filteredRequests.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={5} align="center" sx={{ py: 6, color: '#9DA0AE' }}>
-                    No membership requests found.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredRequests.map((req) => {
-                  const isPending = req.status === 'PENDING';
-                  const isApproved = req.status === 'APPROVED';
-                  const isRejected = req.status === 'REJECTED';
-
-                  return (
-                    <TableRow key={req.id} hover>
-                      <TableCell>
-                        <Box display="flex" alignItems="center" gap={1.5}>
-                          <Avatar
-                            src={getImageUrl(req.avatar_url)}
+                          <Typography
+                            variant="subtitle2"
                             sx={{
-                              width: 38,
-                              height: 38,
-                              backgroundColor: '#F3F0FF',
-                              color: '#4F2BCB',
                               fontWeight: 800,
+                              color: '#20202A',
+                              fontFamily: "'Plus Jakarta Sans', sans-serif",
                             }}
                           >
-                            {req.username?.charAt(0).toUpperCase()}
-                          </Avatar>
-                          <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#20202A' }}>
-                            {req.username}
+                            {member.username}
                           </Typography>
                         </Box>
                       </TableCell>
-
-                      <TableCell>
-                        <Typography variant="body2" sx={{ color: '#6E6D7A' }}>
-                          {req.user_email}
+                      <TableCell sx={{ py: 2 }}>
+                        <Typography variant="body2" sx={{ color: '#5E5D6E', fontWeight: 500 }}>
+                          {member.email || '—'}
                         </Typography>
                       </TableCell>
+                      <TableCell sx={{ py: 2 }}>
+                        <RoleChip role={member.role || 'member'} />
+                      </TableCell>
+                      <TableCell sx={{ py: 2 }}>
+                        <Typography variant="body2" sx={{ color: '#5E5D6E', fontWeight: 600 }}>
+                          {member.department || 'General'}
+                        </Typography>
+                      </TableCell>
+                      <TableCell align="right" sx={{ py: 2 }}>
+                        <IconButton
+                          size="small"
+                          onClick={(e) => handleOpenMenu(e, member)}
+                          sx={{ color: '#5E5D6E' }}
+                        >
+                          <MoreVertIcon fontSize="small" />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
+        </>
+      )}
 
-                      <TableCell>
+      {/* Tab 1: Join Requests Table */}
+      {tabIndex === 1 && (
+        <>
+          {filteredRequests.length === 0 ? (
+            <EmptyState
+              icon={<HowToRegOutlinedIcon />}
+              title="No pending join requests"
+              message="Prospective club applicants will appear here for review."
+            />
+          ) : (
+            <TableContainer
+              component={Paper}
+              elevation={0}
+              sx={{
+                borderRadius: '22px',
+                border: '1px solid #E9E7F2',
+                boxShadow: '0 2px 8px rgba(79, 43, 203, 0.03)',
+                overflow: 'hidden',
+              }}
+            >
+              <Table>
+                <TableHead>
+                  <TableRow sx={{ backgroundColor: '#F8F7FD' }}>
+                    <TableCell sx={{ fontWeight: 800, color: '#20202A', py: 2 }}>Applicant</TableCell>
+                    <TableCell sx={{ fontWeight: 800, color: '#20202A', py: 2 }}>Email Address</TableCell>
+                    <TableCell sx={{ fontWeight: 800, color: '#20202A', py: 2 }}>Request Status</TableCell>
+                    <TableCell sx={{ fontWeight: 800, color: '#20202A', py: 2 }}>Applied Date</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 800, color: '#20202A', py: 2 }}>Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {filteredRequests.map((req) => (
+                    <TableRow key={req.id} sx={{ '&:hover': { backgroundColor: '#FAF9FF' } }}>
+                      <TableCell sx={{ py: 2 }}>
+                        <Box display="flex" alignItems="center" gap={1.8}>
+                          <Avatar
+                            sx={{
+                              width: 38,
+                              height: 38,
+                              backgroundColor: '#EDE9FE',
+                              color: '#4F2BCB',
+                              fontWeight: 900,
+                            }}
+                          >
+                            {(req.username || req.user_email || 'U').charAt(0).toUpperCase()}
+                          </Avatar>
+                          <Typography
+                            variant="subtitle2"
+                            sx={{
+                              fontWeight: 800,
+                              color: '#20202A',
+                              fontFamily: "'Plus Jakarta Sans', sans-serif",
+                            }}
+                          >
+                            {req.username || `User #${req.user_id}`}
+                          </Typography>
+                        </Box>
+                      </TableCell>
+                      <TableCell sx={{ py: 2 }}>
+                        <Typography variant="body2" sx={{ color: '#5E5D6E', fontWeight: 500 }}>
+                          {req.user_email || '—'}
+                        </Typography>
+                      </TableCell>
+                      <TableCell sx={{ py: 2 }}>
                         <Chip
                           label={req.status}
                           size="small"
                           sx={{
-                            backgroundColor: isPending ? '#FEF3C7' : isApproved ? '#D1FAE5' : '#FEE2E2',
-                            color: isPending ? '#B45309' : isApproved ? '#059669' : '#DC2626',
+                            backgroundColor:
+                              req.status === 'APPROVED'
+                                ? '#D1FAE5'
+                                : req.status === 'REJECTED'
+                                ? '#FEE2E2'
+                                : '#FEF3C7',
+                            color:
+                              req.status === 'APPROVED'
+                                ? '#059669'
+                                : req.status === 'REJECTED'
+                                ? '#DC2626'
+                                : '#B45309',
                             fontWeight: 800,
                             fontSize: '0.72rem',
-                            borderRadius: '8px',
+                            borderRadius: '6px',
                           }}
                         />
                       </TableCell>
-
-                      <TableCell>
-                        <Typography variant="caption" sx={{ color: '#777788' }}>
-                          {req.created_at ? new Date(req.created_at).toLocaleDateString() : 'Recent'}
+                      <TableCell sx={{ py: 2 }}>
+                        <Typography variant="caption" sx={{ color: '#8E90A2', fontWeight: 600 }}>
+                          {req.created_at
+                            ? new Date(req.created_at).toLocaleDateString(undefined, {
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric',
+                              })
+                            : 'Recent'}
                         </Typography>
                       </TableCell>
-
-                      <TableCell align="right">
-                        {isPending ? (
+                      <TableCell align="right" sx={{ py: 2 }}>
+                        {req.status === 'PENDING' ? (
                           <Stack direction="row" spacing={1} justifyContent="flex-end">
                             <Button
                               variant="primary"
                               size="small"
-                              startIcon={<CheckCircleOutlineIcon />}
+                              startIcon={<CheckCircleOutlineIcon sx={{ fontSize: 16 }} />}
                               onClick={() => handleApprove(req.id)}
-                              disabled={actionLoading === req.id}
-                              sx={{ backgroundColor: '#059669', fontSize: '0.78rem', py: 0.5 }}
+                              loading={actionLoading === req.id}
+                              sx={{ py: 0.6, px: 1.5, fontSize: '0.76rem' }}
                             >
                               Approve
                             </Button>
                             <Button
-                              variant="ghost"
+                              variant="danger"
                               size="small"
-                              startIcon={<HighlightOffIcon />}
+                              startIcon={<HighlightOffIcon sx={{ fontSize: 16 }} />}
                               onClick={() => handleReject(req.id)}
-                              disabled={actionLoading === req.id}
-                              sx={{ color: '#DC2626', borderColor: '#FECACA', fontSize: '0.78rem', py: 0.5 }}
+                              loading={actionLoading === req.id}
+                              sx={{ py: 0.6, px: 1.5, fontSize: '0.76rem' }}
                             >
                               Reject
                             </Button>
                           </Stack>
                         ) : (
-                          <Typography variant="caption" sx={{ color: '#9DA0AE', fontStyle: 'italic' }}>
-                            Reviewed
+                          <Typography variant="caption" sx={{ color: '#8E90A2' }}>
+                            Decided
                           </Typography>
                         )}
                       </TableCell>
                     </TableRow>
-                  );
-                })
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
+        </>
       )}
 
-      {/* Options Dropdown Menu */}
+      {/* Dropdown Menu */}
       <Menu
         anchorEl={menuAnchor}
         open={Boolean(menuAnchor)}
         onClose={handleCloseMenu}
-        PaperProps={{
-          elevation: 3,
-          sx: { borderRadius: '12px', minWidth: 160, mt: 1 },
-        }}
+        PaperProps={{ sx: { borderRadius: '16px', boxShadow: '0 8px 24px rgba(0,0,0,0.1)' } }}
       >
-        <MenuItem onClick={() => {
-          if (selectedMember?.email) {
-            window.location.href = `mailto:${selectedMember.email}`;
-          }
-          handleCloseMenu();
-        }}>
-          Send Email
+        <MenuItem
+          onClick={() => {
+            if (selectedMember) {
+              setNewRole(selectedMember.role || 'member');
+              setRoleDialogOpen(true);
+            }
+            handleCloseMenu();
+          }}
+        >
+          Change Member Role
         </MenuItem>
-        <MenuItem onClick={() => {
-          setNewRole(selectedMember?.role || 'member');
-          setRoleDialogOpen(true);
-          setMenuAnchor(null);
-        }} sx={{ color: '#4F2BCB' }}>
-          Change Role
+        <MenuItem
+          onClick={() => {
+            navigate(`/clubs/${myClubId}/chat`);
+            handleCloseMenu();
+          }}
+        >
+          Send Officer Message
         </MenuItem>
-        <MenuItem onClick={() => {
-          handleRemoveMemberClick(selectedMember);
-          handleCloseMenu();
-        }} sx={{ color: '#EF4444' }}>
+        <MenuItem
+          onClick={() => {
+            handleRemoveMemberClick(selectedMember);
+            handleCloseMenu();
+          }}
+          sx={{ color: '#EF4444' }}
+        >
           Remove from Club
         </MenuItem>
       </Menu>
 
-      {/* Change Role Dialog */}
+      {/* Role Change Dialog */}
       <Dialog
         open={roleDialogOpen}
         onClose={() => setRoleDialogOpen(false)}
         maxWidth="xs"
         fullWidth
-        PaperProps={{ sx: { borderRadius: '20px' } }}
+        PaperProps={{ sx: { borderRadius: '24px', p: 1 } }}
       >
-        <DialogTitle sx={{ fontWeight: 800, color: '#20202A' }}>
-          Change Role: {selectedMember?.username}
+        <DialogTitle
+          sx={{ fontWeight: 900, color: '#20202A', fontFamily: "'Plus Jakarta Sans', sans-serif" }}
+        >
+          Update Member Role
         </DialogTitle>
         <DialogContent dividers>
           <Box pt={1}>
             <TextField
               select
-              label="Select Member Role"
               fullWidth
+              label="Select Club Role"
               value={newRole}
               onChange={(e) => setNewRole(e.target.value)}
-              helperText="Assign a new role to this member. Note: Assigning President will transfer your President status."
             >
               <MenuItem value="member">Member</MenuItem>
               <MenuItem value="vice_president">Vice President</MenuItem>
-              <MenuItem value="secretary">Secretary</MenuItem>
               <MenuItem value="treasurer">Treasurer</MenuItem>
+              <MenuItem value="secretary">Secretary</MenuItem>
               <MenuItem value="president">President</MenuItem>
             </TextField>
           </Box>
         </DialogContent>
-        <DialogActions sx={{ p: 2.5 }}>
-          <Button variant="ghost" onClick={() => setRoleDialogOpen(false)} disabled={submittingRole}>
+        <DialogActions sx={{ p: 2.5, gap: 1 }}>
+          <Button variant="ghost" onClick={() => setRoleDialogOpen(false)}>
             Cancel
           </Button>
-          <Button
-            variant="primary"
-            onClick={handleUpdateRole}
-            disabled={submittingRole}
-            sx={{ backgroundColor: '#4F2BCB' }}
-          >
-            {submittingRole ? 'Saving...' : 'Update Role'}
+          <Button variant="primary" onClick={handleUpdateRole} loading={submittingRole}>
+            Save Role
           </Button>
         </DialogActions>
       </Dialog>

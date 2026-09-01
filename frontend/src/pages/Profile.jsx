@@ -12,10 +12,11 @@ import {
   DialogContent,
   DialogActions,
   TextField,
-  Button as MuiButton,
   Chip,
   IconButton,
   Stack,
+  Alert,
+  CircularProgress,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined';
@@ -26,12 +27,14 @@ import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined';
 import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
 import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
 import LogoutOutlinedIcon from '@mui/icons-material/LogoutOutlined';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+
 import { AuthContext } from '../context/AuthContext';
 import { getImageUrl } from '../api/axiosInstance';
 import Button from '../components/Button';
 
 export default function Profile() {
-  const { user, updateUserAvatar, updateUserProfile, logout } = useContext(AuthContext);
+  const { user, systemRole, updateUserAvatar, updateUserProfile, logout } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -43,7 +46,7 @@ export default function Profile() {
     fullName: user?.fullName || '',
     username: user?.username || '',
     email: user?.email || '',
-    role: user?.is_superuser ? 'Site Administrator' : 'President',
+    role: systemRole === 'admin' ? 'Site Administrator' : (systemRole || 'Member').toUpperCase(),
     department: user?.department || '',
     contact: user?.contact || '',
     bio: user?.bio || '',
@@ -51,10 +54,10 @@ export default function Profile() {
 
   const [editOpen, setEditOpen] = useState(false);
   const [photoDialogOpen, setPhotoDialogOpen] = useState(false);
-  const [photoUrlInput, setPhotoUrlInput] = useState(user?.avatarUrl || '');
+  const [photoUrlInput, setPhotoUrlInput] = useState(user?.avatarUrl || user?.avatar_url || '');
   const [tempData, setTempData] = useState({ ...profileData });
   const [photoUploading, setPhotoUploading] = useState(false);
-  
+
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -65,7 +68,7 @@ export default function Profile() {
         fullName: user.fullName || '',
         username: user.username || '',
         email: user.email || '',
-        role: user.is_superuser ? 'Site Administrator' : 'President',
+        role: systemRole === 'admin' ? 'Site Administrator' : (systemRole || 'Member').toUpperCase(),
         department: user.department || '',
         contact: user.contact || '',
         bio: user.bio || '',
@@ -73,9 +76,9 @@ export default function Profile() {
       setProfileData(data);
       setTempData(data);
     }
-  }, [user]);
+  }, [user, systemRole]);
 
-  const initial = (profileData.username || 'N').charAt(0).toUpperCase();
+  const initial = (profileData.username || 'U').charAt(0).toUpperCase();
 
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
@@ -87,7 +90,6 @@ export default function Profile() {
         setPhotoUrlInput(res.url);
       } catch (err) {
         console.error('Failed to upload avatar', err);
-        // Fallback to data url if offline
         const reader = new FileReader();
         reader.onloadend = () => {
           setPhotoUrlInput(reader.result);
@@ -105,6 +107,7 @@ export default function Profile() {
       await api.patch('/users/me', { avatar_url: photoUrlInput });
       updateUserAvatar(photoUrlInput);
       setPhotoDialogOpen(false);
+      setSuccess('Profile avatar updated successfully!');
     } catch (err) {
       console.error('Failed to update avatar on backend', err);
       updateUserAvatar(photoUrlInput);
@@ -119,6 +122,7 @@ export default function Profile() {
       setPhotoUrlInput('');
       updateUserAvatar(null);
       setPhotoDialogOpen(false);
+      setSuccess('Avatar removed.');
     } catch (err) {
       setPhotoUrlInput('');
       updateUserAvatar(null);
@@ -143,7 +147,7 @@ export default function Profile() {
       };
       const res = await api.patch('/users/me', payload);
       updateUserProfile(res.data);
-      setSuccess('Profile updated successfully!');
+      setSuccess('Profile details saved successfully!');
       setEditOpen(false);
     } catch (err) {
       console.error('Failed to update profile', err);
@@ -154,8 +158,8 @@ export default function Profile() {
   };
 
   return (
-    <Box sx={{ maxWidth: 1000, mx: 'auto', py: 2 }}>
-      {/* Header */}
+    <Box sx={{ maxWidth: 1100, mx: 'auto', pb: 6, width: '100%' }}>
+      {/* Top Header */}
       <Box
         sx={{
           display: 'flex',
@@ -163,410 +167,479 @@ export default function Profile() {
           justifyContent: 'space-between',
           alignItems: { xs: 'flex-start', sm: 'center' },
           gap: 2,
-          mb: 4,
+          mb: 3.5,
         }}
       >
         <Box>
-          <Typography variant="h4" sx={{ fontWeight: 800, color: '#20202A', fontSize: '1.8rem' }}>
-            My Profile
+          <Typography
+            variant="h4"
+            sx={{
+              fontWeight: 900,
+              color: '#20202A',
+              fontSize: { xs: '1.5rem', sm: '1.85rem' },
+              fontFamily: "'Plus Jakarta Sans', sans-serif",
+              letterSpacing: '-0.02em',
+            }}
+          >
+            My Profile Account
           </Typography>
-          <Typography variant="body2" sx={{ color: '#777788', mt: 0.5 }}>
-            View and manage your profile information & avatar photo.
+          <Typography variant="body2" sx={{ color: '#5E5D6E', mt: 0.5, fontWeight: 500 }}>
+            Manage your personal profile, credentials, and avatar photo.
           </Typography>
         </Box>
 
         <Stack direction="row" spacing={1.5}>
           <Button
-            variant="ghost"
+            variant="primary"
             onClick={() => {
               setTempData({ ...profileData });
               setEditOpen(true);
             }}
             startIcon={<EditIcon />}
-            sx={{
-              borderColor: '#E9E7F2',
-              color: '#4F2BCB',
-              borderRadius: '10px',
-              fontWeight: 700,
-              px: 2.5,
-              py: 1,
-              '&:hover': { backgroundColor: '#F3F0FF', borderColor: '#4F2BCB' },
-            }}
+            sx={{ px: 2.5 }}
           >
             Edit Profile
           </Button>
 
           <Button
-            variant="ghost"
+            variant="danger"
             onClick={handleLogout}
             startIcon={<LogoutOutlinedIcon />}
-            sx={{
-              borderColor: '#FEE2E2',
-              color: '#DC2626',
-              backgroundColor: '#FEF2F2',
-              borderRadius: '10px',
-              fontWeight: 700,
-              px: 2.5,
-              py: 1,
-              '&:hover': { backgroundColor: '#FEE2E2', borderColor: '#DC2626' },
-            }}
+            sx={{ px: 2.5 }}
           >
             Logout
           </Button>
         </Stack>
       </Box>
 
+      {error && (
+        <Alert severity="error" sx={{ mb: 3, borderRadius: '12px' }} onClose={() => setError('')}>
+          {error}
+        </Alert>
+      )}
+      {success && (
+        <Alert severity="success" sx={{ mb: 3, borderRadius: '12px' }} onClose={() => setSuccess('')}>
+          {success}
+        </Alert>
+      )}
+
       {/* Main Profile Header Card */}
       <Paper
         elevation={0}
         sx={{
           p: { xs: 3, sm: 4 },
-          borderRadius: '20px',
+          borderRadius: '24px',
           border: '1px solid #E9E7F2',
           backgroundColor: '#FFFFFF',
-          mb: 4,
+          mb: 3.5,
+          boxShadow: '0 4px 20px rgba(79, 43, 203, 0.04)',
         }}
       >
-        <Box display="flex" flexDirection={{ xs: 'column', sm: 'row' }} alignItems="center" gap={3}>
+        <Box
+          display="flex"
+          flexDirection={{ xs: 'column', sm: 'row' }}
+          alignItems="center"
+          gap={3}
+        >
           {/* Avatar with Camera Icon Overlay */}
           <Box sx={{ position: 'relative' }}>
             <Avatar
               src={getImageUrl(user?.avatarUrl || user?.avatar_url)}
               sx={{
-                width: 96,
-                height: 96,
-                backgroundColor: '#E0DBFF',
+                width: 100,
+                height: 100,
+                borderRadius: '24px',
+                backgroundColor: '#EDE9FE',
                 color: '#4F2BCB',
-                fontWeight: 800,
-                fontSize: '2.4rem',
-                border: '3px solid #F3F0FF',
-                boxShadow: '0 4px 12px rgba(79, 43, 203, 0.15)',
+                fontWeight: 900,
+                fontSize: '2.5rem',
+                border: '3.5px solid #FFFFFF',
+                boxShadow: '0 8px 24px rgba(79, 43, 203, 0.15)',
               }}
             >
-              {user?.avatarUrl || user?.avatar_url ? null : initial}
+              {initial}
             </Avatar>
             <IconButton
               onClick={() => {
-                setPhotoUrlInput(user?.avatarUrl || '');
+                setPhotoUrlInput(user?.avatarUrl || user?.avatar_url || '');
                 setPhotoDialogOpen(true);
               }}
+              size="small"
               sx={{
                 position: 'absolute',
-                bottom: 0,
-                right: 0,
+                bottom: -4,
+                right: -4,
                 backgroundColor: '#4F2BCB',
                 color: '#FFFFFF',
-                width: 32,
-                height: 32,
+                boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
                 '&:hover': { backgroundColor: '#39209A' },
-                boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
               }}
-              size="small"
             >
-              <PhotoCameraIcon sx={{ fontSize: 18 }} />
+              <PhotoCameraIcon sx={{ fontSize: 16 }} />
             </IconButton>
           </Box>
 
-          <Box sx={{ textAlign: { xs: 'center', sm: 'left' } }}>
-            <Typography variant="h5" sx={{ fontWeight: 800, color: '#20202A', mb: 0.5 }}>
-              {profileData.fullName}
-            </Typography>
-
-            <Box display="flex" flexWrap="wrap" justifyContent={{ xs: 'center', sm: 'flex-start' }} gap={1} alignItems="center">
+          <Box sx={{ textAlign: { xs: 'center', sm: 'left' }, flex: 1 }}>
+            <Box display="flex" alignItems="center" gap={1.5} flexWrap="wrap" justifyContent={{ xs: 'center', sm: 'flex-start' }} mb={0.8}>
+              <Typography
+                variant="h5"
+                sx={{
+                  fontWeight: 900,
+                  color: '#20202A',
+                  fontFamily: "'Plus Jakarta Sans', sans-serif",
+                }}
+              >
+                {profileData.fullName || profileData.username}
+              </Typography>
               <Chip
                 label={profileData.role}
                 size="small"
                 sx={{
-                  fontWeight: 700,
-                  fontSize: '0.75rem',
                   backgroundColor: '#F3F0FF',
                   color: '#4F2BCB',
-                  borderRadius: '12px',
+                  fontWeight: 800,
+                  fontSize: '0.74rem',
+                  borderRadius: '8px',
+                  border: '1px solid #D4CCF7',
                 }}
               />
-              <Typography variant="body2" sx={{ color: '#777788' }}>
-                • {profileData.department}
-              </Typography>
             </Box>
 
-            <MuiButton
-              onClick={() => {
-                setPhotoUrlInput(user?.avatarUrl || '');
-                setPhotoDialogOpen(true);
-              }}
-              size="small"
-              startIcon={<PhotoCameraIcon />}
-              sx={{ mt: 1.5, textTransform: 'none', color: '#4F2BCB', fontWeight: 600, fontSize: '0.82rem' }}
-            >
-              {user?.avatarUrl ? 'Change Profile Photo' : 'Upload Profile Photo'}
-            </MuiButton>
+            <Typography variant="body2" sx={{ color: '#5E5D6E', mb: 1.5, fontWeight: 500 }}>
+              @{profileData.username} • {profileData.email}
+            </Typography>
+
+            {profileData.bio && (
+              <Typography
+                variant="body2"
+                sx={{ color: '#5E5D6E', maxWidth: 650, lineHeight: 1.6, fontSize: '0.88rem' }}
+              >
+                {profileData.bio}
+              </Typography>
+            )}
           </Box>
         </Box>
       </Paper>
 
-      {/* Profile Details Card */}
-      <Paper
-        elevation={0}
-        sx={{
-          p: { xs: 3, sm: 4 },
-          borderRadius: '20px',
-          border: '1px solid #E9E7F2',
-          backgroundColor: '#FFFFFF',
-        }}
-      >
-        <Typography variant="h6" sx={{ fontWeight: 700, color: '#20202A', mb: 3, fontSize: '1.15rem' }}>
-          Profile Information
-        </Typography>
+      {/* Profile Details Matrix */}
+      <Grid container spacing={3}>
+        <Grid item xs={12} md={6}>
+          <Paper
+            elevation={0}
+            sx={{
+              p: 3.5,
+              borderRadius: '22px',
+              border: '1px solid #E9E7F2',
+              backgroundColor: '#FFFFFF',
+              height: '100%',
+              boxShadow: '0 2px 8px rgba(79, 43, 203, 0.03)',
+            }}
+          >
+            <Typography
+              variant="subtitle1"
+              sx={{
+                fontWeight: 900,
+                color: '#20202A',
+                mb: 2.5,
+                fontFamily: "'Plus Jakarta Sans', sans-serif",
+              }}
+            >
+              Personal Details
+            </Typography>
 
-        <Grid container spacing={3.5}>
-          <Grid item xs={12} sm={6}>
-            <Box display="flex" alignItems="center" gap={1.5} mb={1}>
-              <PersonOutlinedIcon sx={{ color: '#4F2BCB', fontSize: 20 }} />
-              <Typography variant="caption" sx={{ color: '#777788', fontWeight: 600, textTransform: 'uppercase' }}>
-                Full Name
-              </Typography>
-            </Box>
-            <Typography variant="body1" sx={{ fontWeight: 700, color: '#20202A', pl: 4 }}>
-              {profileData.fullName}
-            </Typography>
-          </Grid>
+            <Stack spacing={2.5}>
+              <Box display="flex" alignItems="center" gap={1.8}>
+                <Box
+                  sx={{
+                    width: 38,
+                    height: 38,
+                    borderRadius: '10px',
+                    backgroundColor: '#F3F0FF',
+                    color: '#4F2BCB',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <PersonOutlinedIcon sx={{ fontSize: 20 }} />
+                </Box>
+                <Box>
+                  <Typography variant="caption" sx={{ color: '#8E90A2', fontWeight: 800, textTransform: 'uppercase', fontSize: '0.68rem' }}>
+                    Full Name
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 700, color: '#20202A' }}>
+                    {profileData.fullName || 'Not provided'}
+                  </Typography>
+                </Box>
+              </Box>
 
-          <Grid item xs={12} sm={6}>
-            <Box display="flex" alignItems="center" gap={1.5} mb={1}>
-              <BadgeOutlinedIcon sx={{ color: '#4F2BCB', fontSize: 20 }} />
-              <Typography variant="caption" sx={{ color: '#777788', fontWeight: 600, textTransform: 'uppercase' }}>
-                Username
-              </Typography>
-            </Box>
-            <Typography variant="body1" sx={{ fontWeight: 700, color: '#20202A', pl: 4 }}>
-              @{profileData.username}
-            </Typography>
-          </Grid>
+              <Box display="flex" alignItems="center" gap={1.8}>
+                <Box
+                  sx={{
+                    width: 38,
+                    height: 38,
+                    borderRadius: '10px',
+                    backgroundColor: '#F3F0FF',
+                    color: '#4F2BCB',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <BadgeOutlinedIcon sx={{ fontSize: 20 }} />
+                </Box>
+                <Box>
+                  <Typography variant="caption" sx={{ color: '#8E90A2', fontWeight: 800, textTransform: 'uppercase', fontSize: '0.68rem' }}>
+                    Username
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 700, color: '#20202A' }}>
+                    @{profileData.username}
+                  </Typography>
+                </Box>
+              </Box>
 
-          <Grid item xs={12} sm={6}>
-            <Box display="flex" alignItems="center" gap={1.5} mb={1}>
-              <EmailOutlinedIcon sx={{ color: '#4F2BCB', fontSize: 20 }} />
-              <Typography variant="caption" sx={{ color: '#777788', fontWeight: 600, textTransform: 'uppercase' }}>
-                Email Address
-              </Typography>
-            </Box>
-            <Typography variant="body1" sx={{ fontWeight: 700, color: '#20202A', pl: 4 }}>
-              {profileData.email}
-            </Typography>
-          </Grid>
-
-          <Grid item xs={12} sm={6}>
-            <Box display="flex" alignItems="center" gap={1.5} mb={1}>
-              <SchoolOutlinedIcon sx={{ color: '#4F2BCB', fontSize: 20 }} />
-              <Typography variant="caption" sx={{ color: '#777788', fontWeight: 600, textTransform: 'uppercase' }}>
-                Department
-              </Typography>
-            </Box>
-            <Typography variant="body1" sx={{ fontWeight: 700, color: '#20202A', pl: 4 }}>
-              {profileData.department}
-            </Typography>
-          </Grid>
-
-          <Grid item xs={12} sm={6}>
-            <Box display="flex" alignItems="center" gap={1.5} mb={1}>
-              <PhoneOutlinedIcon sx={{ color: '#4F2BCB', fontSize: 20 }} />
-              <Typography variant="caption" sx={{ color: '#777788', fontWeight: 600, textTransform: 'uppercase' }}>
-                Contact
-              </Typography>
-            </Box>
-            <Typography variant="body1" sx={{ fontWeight: 700, color: '#20202A', pl: 4 }}>
-              {profileData.contact}
-            </Typography>
-          </Grid>
-
-          <Grid item xs={12}>
-            <Divider sx={{ my: 1, borderColor: '#E9E7F2' }} />
-            <Typography variant="caption" sx={{ color: '#777788', fontWeight: 600, textTransform: 'uppercase', display: 'block', mb: 1 }}>
-              Bio
-            </Typography>
-            <Typography variant="body1" sx={{ color: '#525266', lineHeight: 1.6 }}>
-              {profileData.bio}
-            </Typography>
-          </Grid>
+              <Box display="flex" alignItems="center" gap={1.8}>
+                <Box
+                  sx={{
+                    width: 38,
+                    height: 38,
+                    borderRadius: '10px',
+                    backgroundColor: '#F3F0FF',
+                    color: '#4F2BCB',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <EmailOutlinedIcon sx={{ fontSize: 20 }} />
+                </Box>
+                <Box>
+                  <Typography variant="caption" sx={{ color: '#8E90A2', fontWeight: 800, textTransform: 'uppercase', fontSize: '0.68rem' }}>
+                    Email Address
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 700, color: '#20202A' }}>
+                    {profileData.email}
+                  </Typography>
+                </Box>
+              </Box>
+            </Stack>
+          </Paper>
         </Grid>
-      </Paper>
 
-      {/* Upload / Change Photo Modal */}
-      <Dialog
-        open={photoDialogOpen}
-        onClose={() => setPhotoDialogOpen(false)}
-        PaperProps={{ sx: { borderRadius: '20px', p: 1, maxWidth: 440, width: '100%' } }}
-      >
-        <DialogTitle sx={{ fontWeight: 700, color: '#20202A' }}>
-          Update Profile Photo
-        </DialogTitle>
-        <DialogContent>
-          <Box display="flex" flexDirection="column" alignItems="center" my={2}>
-            <Avatar
-              src={photoUrlInput}
+        <Grid item xs={12} md={6}>
+          <Paper
+            elevation={0}
+            sx={{
+              p: 3.5,
+              borderRadius: '22px',
+              border: '1px solid #E9E7F2',
+              backgroundColor: '#FFFFFF',
+              height: '100%',
+              boxShadow: '0 2px 8px rgba(79, 43, 203, 0.03)',
+            }}
+          >
+            <Typography
+              variant="subtitle1"
               sx={{
-                width: 100,
-                height: 100,
-                mb: 2,
-                backgroundColor: '#E0DBFF',
-                color: '#4F2BCB',
-                fontSize: '2.5rem',
-                fontWeight: 800,
+                fontWeight: 900,
+                color: '#20202A',
+                mb: 2.5,
+                fontFamily: "'Plus Jakarta Sans', sans-serif",
               }}
             >
-              {photoUrlInput ? null : initial}
-            </Avatar>
-
-            <MuiButton
-              variant="outlined"
-              component="label"
-              startIcon={<PhotoCameraIcon />}
-              sx={{
-                borderRadius: '10px',
-                borderColor: '#4F2BCB',
-                color: '#4F2BCB',
-                textTransform: 'none',
-                fontWeight: 600,
-                mb: 2,
-              }}
-            >
-              Choose Image File
-              <input type="file" hidden accept="image/*" onChange={handleFileUpload} />
-            </MuiButton>
-
-            <Typography variant="caption" sx={{ color: '#777788', mb: 2 }}>
-              Or enter an image URL directly:
+              Academic & Contact Info
             </Typography>
 
-            <TextField
-              fullWidth
-              size="small"
-              placeholder="https://example.com/my-photo.jpg"
-              value={photoUrlInput}
-              onChange={(e) => setPhotoUrlInput(e.target.value)}
-              sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px', backgroundColor: '#F3F6FC' } }}
-            />
-          </Box>
-        </DialogContent>
-        <DialogActions sx={{ p: 2, justifyContent: 'space-between' }}>
-          {user?.avatarUrl ? (
-            <MuiButton
-              onClick={handleRemovePhoto}
-              color="error"
-              startIcon={<DeleteOutlinedIcon />}
-              sx={{ textTransform: 'none', fontWeight: 600 }}
-            >
-              Remove Photo
-            </MuiButton>
-          ) : (
-            <div />
-          )}
+            <Stack spacing={2.5}>
+              <Box display="flex" alignItems="center" gap={1.8}>
+                <Box
+                  sx={{
+                    width: 38,
+                    height: 38,
+                    borderRadius: '10px',
+                    backgroundColor: '#EDE9FE',
+                    color: '#4F2BCB',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <SchoolOutlinedIcon sx={{ fontSize: 20 }} />
+                </Box>
+                <Box>
+                  <Typography variant="caption" sx={{ color: '#8E90A2', fontWeight: 800, textTransform: 'uppercase', fontSize: '0.68rem' }}>
+                    Department / Faculty
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 700, color: '#20202A' }}>
+                    {profileData.department || 'Computer Science & Engineering'}
+                  </Typography>
+                </Box>
+              </Box>
 
-          <Box display="flex" gap={1}>
-            <MuiButton onClick={() => setPhotoDialogOpen(false)} sx={{ color: '#777788', textTransform: 'none' }}>
-              Cancel
-            </MuiButton>
-            <MuiButton
-              onClick={handleSavePhoto}
-              sx={{
-                backgroundColor: '#4F2BCB',
-                color: '#FFFFFF',
-                px: 3,
-                py: 0.8,
-                borderRadius: '10px',
-                fontWeight: 700,
-                textTransform: 'none',
-                '&:hover': { backgroundColor: '#39209A' },
-              }}
-            >
-              Save Photo
-            </MuiButton>
-          </Box>
-        </DialogActions>
-      </Dialog>
+              <Box display="flex" alignItems="center" gap={1.8}>
+                <Box
+                  sx={{
+                    width: 38,
+                    height: 38,
+                    borderRadius: '10px',
+                    backgroundColor: '#EDE9FE',
+                    color: '#4F2BCB',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <PhoneOutlinedIcon sx={{ fontSize: 20 }} />
+                </Box>
+                <Box>
+                  <Typography variant="caption" sx={{ color: '#8E90A2', fontWeight: 800, textTransform: 'uppercase', fontSize: '0.68rem' }}>
+                    Phone Number
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 700, color: '#20202A' }}>
+                    {profileData.contact || '+1 (555) 019-2834'}
+                  </Typography>
+                </Box>
+              </Box>
+            </Stack>
+          </Paper>
+        </Grid>
+      </Grid>
 
-      {/* Edit Profile Information Modal */}
+      {/* Edit Profile Dialog */}
       <Dialog
         open={editOpen}
         onClose={() => setEditOpen(false)}
-        PaperProps={{ sx: { borderRadius: '20px', p: 1, maxWidth: 500, width: '100%' } }}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: '24px', p: 1 } }}
       >
-        <DialogTitle sx={{ fontWeight: 700, color: '#20202A' }}>
+        <DialogTitle sx={{ fontWeight: 900, color: '#20202A', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
           Edit Profile Information
         </DialogTitle>
         <Box component="form" onSubmit={handleSaveProfile}>
-          <DialogContent display="flex" flexDirection="column" gap={2}>
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="body2" sx={{ fontWeight: 600, color: '#20202A', mb: 0.8 }}>
-                Full Name
-              </Typography>
+          <DialogContent dividers>
+            <Stack spacing={2.2} pt={1}>
               <TextField
+                label="Full Name"
                 fullWidth
                 value={tempData.fullName}
                 onChange={(e) => setTempData({ ...tempData, fullName: e.target.value })}
-                sx={{ '& .MuiOutlinedInput-root': { backgroundColor: '#F3F6FC', borderRadius: '10px' } }}
               />
-            </Box>
-
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="body2" sx={{ fontWeight: 600, color: '#20202A', mb: 0.8 }}>
-                Department
-              </Typography>
               <TextField
+                label="Username *"
+                fullWidth
+                required
+                value={tempData.username}
+                onChange={(e) => setTempData({ ...tempData, username: e.target.value })}
+              />
+              <TextField
+                label="Email Address *"
+                type="email"
+                fullWidth
+                required
+                value={tempData.email}
+                onChange={(e) => setTempData({ ...tempData, email: e.target.value })}
+              />
+              <TextField
+                label="Department / Major"
                 fullWidth
                 value={tempData.department}
                 onChange={(e) => setTempData({ ...tempData, department: e.target.value })}
-                sx={{ '& .MuiOutlinedInput-root': { backgroundColor: '#F3F6FC', borderRadius: '10px' } }}
               />
-            </Box>
-
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="body2" sx={{ fontWeight: 600, color: '#20202A', mb: 0.8 }}>
-                Contact Number
-              </Typography>
               <TextField
+                label="Contact Number"
                 fullWidth
                 value={tempData.contact}
                 onChange={(e) => setTempData({ ...tempData, contact: e.target.value })}
-                sx={{ '& .MuiOutlinedInput-root': { backgroundColor: '#F3F6FC', borderRadius: '10px' } }}
               />
-            </Box>
-
-            <Box sx={{ mb: 1 }}>
-              <Typography variant="body2" sx={{ fontWeight: 600, color: '#20202A', mb: 0.8 }}>
-                Bio
-              </Typography>
               <TextField
-                fullWidth
+                label="Bio / Introduction"
                 multiline
                 rows={3}
+                fullWidth
                 value={tempData.bio}
                 onChange={(e) => setTempData({ ...tempData, bio: e.target.value })}
-                sx={{ '& .MuiOutlinedInput-root': { backgroundColor: '#F3F6FC', borderRadius: '10px' } }}
               />
-            </Box>
+            </Stack>
           </DialogContent>
-          <DialogActions sx={{ p: 2, gap: 1 }}>
-            <MuiButton onClick={() => setEditOpen(false)} sx={{ color: '#777788', textTransform: 'none' }}>
+          <DialogActions sx={{ p: 2.5, gap: 1 }}>
+            <Button variant="ghost" onClick={() => setEditOpen(false)} disabled={saving}>
               Cancel
-            </MuiButton>
-            <MuiButton
-              type="submit"
-              sx={{
-                backgroundColor: '#4F2BCB',
-                color: '#FFFFFF',
-                px: 3,
-                py: 1,
-                borderRadius: '10px',
-                fontWeight: 700,
-                textTransform: 'none',
-                '&:hover': { backgroundColor: '#39209A' },
-              }}
-            >
-              Save Changes
-            </MuiButton>
+            </Button>
+            <Button variant="primary" type="submit" loading={saving}>
+              Save Profile
+            </Button>
           </DialogActions>
         </Box>
+      </Dialog>
+
+      {/* Photo Upload Dialog */}
+      <Dialog
+        open={photoDialogOpen}
+        onClose={() => setPhotoDialogOpen(false)}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: '24px', p: 1 } }}
+      >
+        <DialogTitle sx={{ fontWeight: 900, color: '#20202A', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+          Update Profile Picture
+        </DialogTitle>
+        <DialogContent dividers>
+          <Box display="flex" flexDirection="column" alignItems="center" gap={2.5} py={2}>
+            <Avatar
+              src={getImageUrl(photoUrlInput)}
+              sx={{
+                width: 90,
+                height: 90,
+                backgroundColor: '#EDE9FE',
+                color: '#4F2BCB',
+                fontWeight: 800,
+                fontSize: '2rem',
+                border: '3px solid #F3F0FF',
+              }}
+            >
+              {initial}
+            </Avatar>
+
+            <Button
+              variant="subtle"
+              component="label"
+              startIcon={<CloudUploadIcon />}
+              loading={photoUploading}
+              sx={{ borderRadius: '12px' }}
+            >
+              Upload Image File
+              <input type="file" hidden accept="image/*" onChange={handleFileUpload} />
+            </Button>
+
+            <TextField
+              label="Or Image URL"
+              size="small"
+              fullWidth
+              value={photoUrlInput}
+              onChange={(e) => setPhotoUrlInput(e.target.value)}
+              placeholder="https://..."
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ p: 2.5, justifyContent: 'space-between' }}>
+          <Button
+            variant="danger"
+            size="small"
+            onClick={handleRemovePhoto}
+            startIcon={<DeleteOutlinedIcon />}
+          >
+            Remove
+          </Button>
+          <Stack direction="row" spacing={1}>
+            <Button variant="ghost" onClick={() => setPhotoDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="primary" onClick={handleSavePhoto}>
+              Save Photo
+            </Button>
+          </Stack>
+        </DialogActions>
       </Dialog>
     </Box>
   );

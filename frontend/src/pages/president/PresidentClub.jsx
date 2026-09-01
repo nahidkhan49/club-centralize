@@ -19,6 +19,7 @@ import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined';
 import MeetingRoomOutlinedIcon from '@mui/icons-material/MeetingRoomOutlined';
 import AccessTimeOutlinedIcon from '@mui/icons-material/AccessTimeOutlined';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 
 import { useAuth } from '../../context/AuthContext';
 import api, { getImageUrl, getClubLogoUrl } from '../../api/axiosInstance';
@@ -30,7 +31,7 @@ const ROLE_CONFIGS = {
   president: { label: 'President', bg: '#FEF3C7', color: '#B45309' },
   vice_president: { label: 'Vice President', bg: '#EEF2FF', color: '#4F2BCB' },
   secretary: { label: 'Secretary', bg: '#F3F0FF', color: '#7C3AED' },
-  treasurer: { label: 'Treasurer', bg: '#E6F4EA', color: '#15803D' },
+  treasurer: { label: 'Treasurer', bg: '#D1FAE5', color: '#059669' },
   member: { label: 'Member', bg: '#F1F5F9', color: '#475569' },
 };
 
@@ -122,39 +123,55 @@ const PresidentClub = () => {
   const leadershipMembers = members.filter((m) => leadershipRoles.includes(m.role));
 
   return (
-    <Box sx={{ maxWidth: 1150, mx: 'auto', pb: 6, width: '100%' }}>
-      {/* Header Info */}
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3} flexWrap="wrap" gap={2}>
+    <Box sx={{ maxWidth: 1320, mx: 'auto', pb: 6, width: '100%' }}>
+      {/* Header Bar */}
+      <Box
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        mb={3.5}
+        flexWrap="wrap"
+        gap={2}
+      >
         <Box>
-          <Typography variant="h5" sx={{ fontWeight: 800, color: '#20202A' }}>
-            My Club Details
+          <Typography
+            variant="h4"
+            sx={{
+              fontWeight: 900,
+              color: '#20202A',
+              fontSize: { xs: '1.5rem', sm: '1.85rem' },
+              fontFamily: "'Plus Jakarta Sans', sans-serif",
+              letterSpacing: '-0.02em',
+            }}
+          >
+            Organization Profile & Media
           </Typography>
-          <Typography variant="body2" sx={{ color: '#777788' }}>
-            Club: <strong>{myClubName}</strong> — Full organization branding, leadership, and public view.
+          <Typography variant="body2" sx={{ color: '#5E5D6E', mt: 0.5, fontWeight: 500 }}>
+            Club: <strong>{myClubName}</strong> — Manage public profile, branding cover, gallery, and meeting logistics.
           </Typography>
         </Box>
-        <Stack direction="row" spacing={1.5} flexWrap="wrap" gap={1}>
+        <Stack direction="row" spacing={1.5} flexWrap="wrap">
           <Button
             variant="ghost"
+            startIcon={<OpenInNewIcon />}
             onClick={() => navigate(`/clubs/${myClubId}`)}
-            sx={{ color: '#4F2BCB', borderColor: '#E9E7F2', fontSize: '0.85rem' }}
           >
-            Open Public View
+            Public Page
           </Button>
           <Button
             variant="primary"
             startIcon={<EditOutlinedIcon />}
             onClick={() => setEditModalOpen(true)}
-            sx={{ backgroundColor: '#4F2BCB', fontSize: '0.85rem' }}
+            sx={{ px: 2.5 }}
           >
             Edit Club & Media
           </Button>
         </Stack>
       </Box>
 
-      {error && <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>{error}</Alert>}
+      {error && <Alert severity="error" sx={{ mb: 3, borderRadius: '12px' }}>{error}</Alert>}
 
-      {/* 1. HERO COVER BANNER (Zero Overflow & Integrated Crisp Header) */}
+      {/* Hero Cover Banner */}
       <Paper
         elevation={0}
         sx={{
@@ -162,7 +179,7 @@ const PresidentClub = () => {
           overflow: 'hidden',
           border: '1px solid #E9E7F2',
           mb: 4,
-          boxShadow: '0 8px 30px rgba(79, 43, 203, 0.08)',
+          boxShadow: '0 8px 32px rgba(79, 43, 203, 0.08)',
           position: 'relative',
           height: { xs: 260, sm: 300, md: 340 },
           backgroundImage: `linear-gradient(180deg, rgba(15, 10, 40, 0.2) 0%, rgba(15, 10, 40, 0.88) 100%), url(${coverUrl})`,
@@ -175,7 +192,6 @@ const PresidentClub = () => {
           boxSizing: 'border-box',
         }}
       >
-        {/* Top Chips */}
         <Box display="flex" justifyContent="flex-end" gap={1}>
           {club?.category && (
             <Chip
@@ -186,26 +202,12 @@ const PresidentClub = () => {
                 fontWeight: 800,
                 fontSize: '0.82rem',
                 backdropFilter: 'blur(8px)',
+                borderRadius: '8px',
               }}
             />
           )}
-          <Chip
-            icon={<EditOutlinedIcon style={{ fontSize: 16, color: '#4F2BCB' }} />}
-            label="Edit Media"
-            clickable
-            onClick={() => setEditModalOpen(true)}
-            sx={{
-              backgroundColor: 'rgba(255, 255, 255, 0.95)',
-              color: '#4F2BCB',
-              fontWeight: 800,
-              fontSize: '0.82rem',
-              backdropFilter: 'blur(8px)',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-            }}
-          />
         </Box>
 
-        {/* Bottom Integrated Club Info & Logo Overlay (Never Cuts Off) */}
         <Box
           sx={{
             display: 'flex',
@@ -223,13 +225,13 @@ const PresidentClub = () => {
               sx={{
                 width: { xs: 72, sm: 96 },
                 height: { xs: 72, sm: 96 },
-                borderRadius: '20px',
+                borderRadius: '22px',
                 backgroundColor: '#FFFFFF',
                 color: '#4F2BCB',
                 fontWeight: 900,
                 fontSize: '2.5rem',
-                border: '3px solid #FFFFFF',
-                boxShadow: '0 10px 25px rgba(0, 0, 0, 0.3)',
+                border: '3.5px solid #FFFFFF',
+                boxShadow: '0 12px 28px rgba(0, 0, 0, 0.3)',
                 flexShrink: 0,
               }}
             >
@@ -244,31 +246,32 @@ const PresidentClub = () => {
                   color: '#FFFFFF',
                   fontSize: { xs: '1.5rem', sm: '2.1rem' },
                   letterSpacing: '-0.02em',
-                  textShadow: '0 2px 8px rgba(0, 0, 0, 0.6)',
-                  mb: 0.5,
+                  fontFamily: "'Plus Jakarta Sans', sans-serif",
+                  textShadow: '0 2px 10px rgba(0, 0, 0, 0.5)',
+                  mb: 0.8,
                 }}
               >
                 {club?.name}
               </Typography>
 
-              <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap">
+              <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap" gap={0.5}>
                 <Box display="flex" alignItems="center" gap={0.6}>
                   <GroupsOutlinedIcon sx={{ fontSize: 18, color: '#E0DBFF' }} />
-                  <Typography variant="body2" sx={{ color: '#F3F0FF', fontWeight: 600 }}>
+                  <Typography variant="body2" sx={{ color: '#F3F0FF', fontWeight: 700 }}>
                     {members.length} Members
                   </Typography>
                 </Box>
                 <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)' }}>•</Typography>
                 <Box display="flex" alignItems="center" gap={0.6}>
                   <EventIcon sx={{ fontSize: 18, color: '#E0DBFF' }} />
-                  <Typography variant="body2" sx={{ color: '#F3F0FF', fontWeight: 600 }}>
-                    {stats?.event_count || 0} Events
+                  <Typography variant="body2" sx={{ color: '#F3F0FF', fontWeight: 700 }}>
+                    {stats?.event_count ?? 0} Events
                   </Typography>
                 </Box>
                 {club?.meeting_location && (
                   <>
                     <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)' }}>•</Typography>
-                    <Typography variant="body2" sx={{ color: '#F3F0FF', fontWeight: 600 }}>
+                    <Typography variant="body2" sx={{ color: '#F3F0FF', fontWeight: 700 }}>
                       📍 {club.meeting_location}
                     </Typography>
                   </>
@@ -276,56 +279,50 @@ const PresidentClub = () => {
               </Stack>
             </Box>
           </Box>
-
-          <Box sx={{ alignSelf: { xs: 'flex-start', sm: 'flex-end' } }}>
-            <Chip
-              label="President Workspace Active"
-              sx={{
-                backgroundColor: 'rgba(254, 243, 199, 0.95)',
-                color: '#B45309',
-                fontWeight: 800,
-                fontSize: '0.82rem',
-                backdropFilter: 'blur(8px)',
-                py: 2,
-                px: 1,
-              }}
-            />
-          </Box>
         </Box>
       </Paper>
 
-      {/* 2. MAIN GRID (ABOUT US, LEADERSHIP TEAM, GALLERY, CONTACT) */}
+      {/* Grid: About Us, Leadership, Gallery, Contact */}
       <Grid container spacing={3.5}>
-        {/* Left Column: About Us & Leadership Team */}
         <Grid item xs={12} md={7} lg={8}>
-          {/* About Us */}
           <Paper
             elevation={0}
             sx={{
               p: { xs: 3, sm: 3.5 },
-              borderRadius: '20px',
+              borderRadius: '22px',
               border: '1px solid #E9E7F2',
               backgroundColor: '#FFFFFF',
               mb: 3.5,
+              boxShadow: '0 2px 8px rgba(79, 43, 203, 0.03)',
             }}
           >
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={1.5}>
-              <Typography variant="h6" sx={{ fontWeight: 800, color: '#20202A' }}>
-                About Us
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={1.8}>
+              <Typography
+                variant="h6"
+                sx={{
+                  fontWeight: 900,
+                  color: '#20202A',
+                  fontFamily: "'Plus Jakarta Sans', sans-serif",
+                }}
+              >
+                About the Organization
               </Typography>
               <Button
                 variant="ghost"
                 size="small"
                 startIcon={<EditOutlinedIcon />}
                 onClick={() => setEditModalOpen(true)}
-                sx={{ fontSize: '0.78rem', color: '#4F2BCB' }}
+                sx={{ fontSize: '0.78rem' }}
               >
                 Edit
               </Button>
             </Box>
-            <Typography variant="body1" sx={{ color: '#555565', lineHeight: 1.8, fontSize: '0.96rem' }}>
+            <Typography
+              variant="body1"
+              sx={{ color: '#5E5D6E', lineHeight: 1.8, fontSize: '0.94rem' }}
+            >
               {club?.description ||
-                'Welcome to our club! We are dedicated to creating meaningful student experiences through workshops, competitions, skill-building sessions, and campus events.'}
+                'Welcome to our club! We are dedicated to bringing students together through engaging workshops, competitions, skill-building events, and community initiatives.'}
             </Typography>
           </Paper>
 
@@ -334,29 +331,42 @@ const PresidentClub = () => {
             elevation={0}
             sx={{
               p: { xs: 3, sm: 3.5 },
-              borderRadius: '20px',
+              borderRadius: '22px',
               border: '1px solid #E9E7F2',
               backgroundColor: '#FFFFFF',
+              boxShadow: '0 2px 8px rgba(79, 43, 203, 0.03)',
             }}
           >
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={2.5}>
               <Box>
-                <Typography variant="h6" sx={{ fontWeight: 800, color: '#20202A' }}>
+                <Typography
+                  variant="h6"
+                  sx={{
+                    fontWeight: 900,
+                    color: '#20202A',
+                    fontFamily: "'Plus Jakarta Sans', sans-serif",
+                  }}
+                >
                   Leadership Team
                 </Typography>
                 <Typography variant="body2" sx={{ color: '#777788' }}>
-                  Elected officers leading club operations.
+                  Elected officers leading club activities and operations.
                 </Typography>
               </Box>
               <Chip
                 label={`${leadershipMembers.length} Officers`}
                 size="small"
-                sx={{ backgroundColor: '#F3F0FF', color: '#4F2BCB', fontWeight: 700 }}
+                sx={{
+                  backgroundColor: '#F3F0FF',
+                  color: '#4F2BCB',
+                  fontWeight: 800,
+                  borderRadius: '8px',
+                }}
               />
             </Box>
 
             {leadershipMembers.length === 0 ? (
-              <Typography variant="body2" sx={{ color: '#9DA0AE', py: 2 }}>
+              <Typography variant="body2" sx={{ color: '#8E90A2', py: 2 }}>
                 No leadership roles assigned yet.
               </Typography>
             ) : (
@@ -364,42 +374,38 @@ const PresidentClub = () => {
                 {leadershipMembers.map((officer) => {
                   const roleConfig = ROLE_CONFIGS[officer.role] || ROLE_CONFIGS.member;
                   return (
-                    <Grid item xs={12} sm={4} key={officer.user_id}>
+                    <Grid item xs={12} sm={6} key={officer.user_id}>
                       <Box
                         sx={{
-                          p: 2.5,
+                          p: 2,
                           borderRadius: '16px',
-                          border: '1px solid #F0EFF8',
-                          backgroundColor: '#FBFBFE',
+                          border: '1px solid #F1EFF8',
+                          backgroundColor: '#F8F7FD',
                           display: 'flex',
-                          flexDirection: 'column',
                           alignItems: 'center',
-                          textAlign: 'center',
-                          gap: 1,
+                          gap: 1.5,
                           transition: 'all 0.2s ease',
                           '&:hover': {
                             backgroundColor: '#FFFFFF',
                             boxShadow: '0 4px 15px rgba(79, 43, 203, 0.08)',
-                            borderColor: '#4F2BCB',
+                            borderColor: '#D4CCF7',
                           },
                         }}
                       >
                         <Avatar
                           src={getImageUrl(officer.avatar_url)}
                           sx={{
-                            width: 54,
-                            height: 54,
-                            backgroundColor: '#EAEAFF',
+                            width: 46,
+                            height: 46,
+                            backgroundColor: '#EDE9FE',
                             color: '#4F2BCB',
                             fontWeight: 800,
-                            fontSize: '1.2rem',
-                            border: '2px solid #FFFFFF',
-                            boxShadow: '0 4px 10px rgba(0,0,0,0.06)',
+                            fontSize: '1.1rem',
                           }}
                         >
                           {officer.username?.charAt(0).toUpperCase()}
                         </Avatar>
-                        <Box sx={{ minWidth: 0, width: '100%' }}>
+                        <Box sx={{ minWidth: 0, flex: 1 }}>
                           <Typography
                             variant="subtitle2"
                             sx={{
@@ -408,6 +414,7 @@ const PresidentClub = () => {
                               whiteSpace: 'nowrap',
                               overflow: 'hidden',
                               textOverflow: 'ellipsis',
+                              fontFamily: "'Plus Jakarta Sans', sans-serif",
                             }}
                           >
                             {officer.username}
@@ -417,12 +424,13 @@ const PresidentClub = () => {
                             size="small"
                             sx={{
                               fontSize: '0.68rem',
-                              fontWeight: 700,
+                              fontWeight: 800,
                               backgroundColor: roleConfig.bg,
                               color: roleConfig.color,
-                              height: 20,
+                              height: 22,
                               px: 0.5,
-                              mt: 0.5,
+                              mt: 0.3,
+                              borderRadius: '6px',
                             }}
                           />
                         </Box>
@@ -435,24 +443,31 @@ const PresidentClub = () => {
           </Paper>
         </Grid>
 
-        {/* Right Column: Gallery & Contact */}
+        {/* Sidebar Gallery & Contact */}
         <Grid item xs={12} md={5} lg={4}>
-          {/* Gallery */}
           <Paper
             elevation={0}
             sx={{
               p: 3,
-              borderRadius: '20px',
+              borderRadius: '22px',
               border: '1px solid #E9E7F2',
               backgroundColor: '#FFFFFF',
               mb: 3.5,
+              boxShadow: '0 2px 8px rgba(79, 43, 203, 0.03)',
             }}
           >
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
               <Box display="flex" alignItems="center" gap={1}>
-                <CollectionsOutlinedIcon sx={{ color: '#4F2BCB', fontSize: 20 }} />
-                <Typography variant="h6" sx={{ fontWeight: 800, color: '#20202A' }}>
-                  Gallery
+                <CollectionsOutlinedIcon sx={{ color: '#4F2BCB', fontSize: 22 }} />
+                <Typography
+                  variant="h6"
+                  sx={{
+                    fontWeight: 900,
+                    color: '#20202A',
+                    fontFamily: "'Plus Jakarta Sans', sans-serif",
+                  }}
+                >
+                  Gallery Photos
                 </Typography>
               </Box>
               <Button
@@ -460,7 +475,7 @@ const PresidentClub = () => {
                 size="small"
                 startIcon={<EditOutlinedIcon />}
                 onClick={() => setEditModalOpen(true)}
-                sx={{ fontSize: '0.78rem', color: '#4F2BCB' }}
+                sx={{ fontSize: '0.78rem' }}
               >
                 Manage
               </Button>
@@ -472,8 +487,8 @@ const PresidentClub = () => {
                   <Tooltip title={item.title || 'Photo'}>
                     <Box
                       sx={{
-                        height: 100,
-                        borderRadius: '12px',
+                        height: 105,
+                        borderRadius: '14px',
                         overflow: 'hidden',
                         position: 'relative',
                         cursor: 'pointer',
@@ -498,39 +513,47 @@ const PresidentClub = () => {
             </Grid>
           </Paper>
 
-          {/* Contact Details */}
+          {/* Contact & Venue */}
           <Paper
             elevation={0}
             sx={{
               p: 3,
-              borderRadius: '20px',
+              borderRadius: '22px',
               border: '1px solid #E9E7F2',
               backgroundColor: '#FFFFFF',
+              boxShadow: '0 2px 8px rgba(79, 43, 203, 0.03)',
             }}
           >
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={2.5}>
-              <Typography variant="h6" sx={{ fontWeight: 800, color: '#20202A' }}>
-                Contact
+              <Typography
+                variant="h6"
+                sx={{
+                  fontWeight: 900,
+                  color: '#20202A',
+                  fontFamily: "'Plus Jakarta Sans', sans-serif",
+                }}
+              >
+                Contact & Details
               </Typography>
               <Button
                 variant="ghost"
                 size="small"
                 startIcon={<EditOutlinedIcon />}
                 onClick={() => setEditModalOpen(true)}
-                sx={{ fontSize: '0.78rem', color: '#4F2BCB' }}
+                sx={{ fontSize: '0.78rem' }}
               >
                 Edit
               </Button>
             </Box>
 
-            <Stack spacing={2}>
+            <Stack spacing={2.2}>
               <Box display="flex" alignItems="flex-start" gap={1.5}>
                 <EmailOutlinedIcon sx={{ color: '#4F2BCB', fontSize: 20, mt: 0.2 }} />
                 <Box>
-                  <Typography variant="caption" sx={{ color: '#777788', fontWeight: 700, textTransform: 'uppercase' }}>
+                  <Typography variant="caption" sx={{ color: '#8E90A2', fontWeight: 800, textTransform: 'uppercase', fontSize: '0.68rem' }}>
                     Email Address
                   </Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 600, color: '#20202A' }}>
+                  <Typography variant="body2" sx={{ fontWeight: 700, color: '#20202A' }}>
                     {club?.contact_email || 'contact@clubcentralize.edu'}
                   </Typography>
                 </Box>
@@ -539,11 +562,11 @@ const PresidentClub = () => {
               <Box display="flex" alignItems="flex-start" gap={1.5}>
                 <MeetingRoomOutlinedIcon sx={{ color: '#4F2BCB', fontSize: 20, mt: 0.2 }} />
                 <Box>
-                  <Typography variant="caption" sx={{ color: '#777788', fontWeight: 700, textTransform: 'uppercase' }}>
-                    Meeting Location
+                  <Typography variant="caption" sx={{ color: '#8E90A2', fontWeight: 800, textTransform: 'uppercase', fontSize: '0.68rem' }}>
+                    Meeting Venue
                   </Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 600, color: '#20202A' }}>
-                    {club?.meeting_location || 'Student Center, Room 304'}
+                  <Typography variant="body2" sx={{ fontWeight: 700, color: '#20202A' }}>
+                    {club?.meeting_location || 'Student Activity Center'}
                   </Typography>
                 </Box>
               </Box>
@@ -551,10 +574,10 @@ const PresidentClub = () => {
               <Box display="flex" alignItems="flex-start" gap={1.5}>
                 <AccessTimeOutlinedIcon sx={{ color: '#4F2BCB', fontSize: 20, mt: 0.2 }} />
                 <Box>
-                  <Typography variant="caption" sx={{ color: '#777788', fontWeight: 700, textTransform: 'uppercase' }}>
+                  <Typography variant="caption" sx={{ color: '#8E90A2', fontWeight: 800, textTransform: 'uppercase', fontSize: '0.68rem' }}>
                     Regular Meetings
                   </Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 600, color: '#20202A' }}>
+                  <Typography variant="body2" sx={{ fontWeight: 700, color: '#20202A' }}>
                     {club?.meeting_time || 'Every Thursday at 4:30 PM'}
                   </Typography>
                 </Box>

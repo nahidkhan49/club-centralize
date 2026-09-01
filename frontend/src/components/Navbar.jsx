@@ -1,5 +1,5 @@
 import React, { useContext, useState, useEffect } from 'react';
-import api from '../api/axiosInstance';
+import api, { getImageUrl } from '../api/axiosInstance';
 import {
   AppBar,
   Toolbar,
@@ -12,15 +12,22 @@ import {
   Badge,
   Tooltip,
   Chip,
+  InputBase,
+  Divider,
 } from '@mui/material';
-import { NotificationsNone, ShieldOutlined, Menu as MenuIcon } from '@mui/icons-material';
+import {
+  NotificationsNoneOutlined,
+  ShieldOutlined,
+  Menu as MenuIcon,
+  Search as SearchIcon,
+  PersonOutlineOutlined,
+  LogoutOutlined,
+} from '@mui/icons-material';
 import AndroidIcon from '@mui/icons-material/Android';
-import CloudDownloadOutlinedIcon from '@mui/icons-material/CloudDownloadOutlined';
 import BrandingWatermarkOutlinedIcon from '@mui/icons-material/BrandingWatermarkOutlined';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { useSiteSettings } from '../context/SiteSettingsContext';
-import { getImageUrl } from '../api/axiosInstance';
 import AdminBrandingModal from './AdminBrandingModal';
 
 export default function Navbar({ onDrawerToggle }) {
@@ -40,11 +47,13 @@ export default function Navbar({ onDrawerToggle }) {
   const [notiAnchorEl, setNotiAnchorEl] = useState(null);
   const notiOpen = Boolean(notiAnchorEl);
 
+  const [headerSearch, setHeaderSearch] = useState('');
+
   const fetchNotifications = async () => {
     try {
       const [listRes, countRes] = await Promise.all([
         api.get('/notifications/'),
-        api.get('/notifications/unread-count')
+        api.get('/notifications/unread-count'),
       ]);
       setNotifications(listRes.data || []);
       setUnreadCount(countRes.data?.unread_count || 0);
@@ -56,7 +65,7 @@ export default function Navbar({ onDrawerToggle }) {
   useEffect(() => {
     if (user) {
       fetchNotifications();
-      const interval = setInterval(fetchNotifications, 5000);
+      const interval = setInterval(fetchNotifications, 6000);
       return () => clearInterval(interval);
     }
   }, [user]);
@@ -73,10 +82,10 @@ export default function Navbar({ onDrawerToggle }) {
     try {
       if (!noti.is_read) {
         await api.post(`/notifications/${noti.id}/read`);
-        setNotifications(prev =>
-          prev.map(n => n.id === noti.id ? { ...n, is_read: true } : n)
+        setNotifications((prev) =>
+          prev.map((n) => (n.id === noti.id ? { ...n, is_read: true } : n))
         );
-        setUnreadCount(prev => Math.max(0, prev - 1));
+        setUnreadCount((prev) => Math.max(0, prev - 1));
       }
       handleNotiClose();
       if (noti.link) {
@@ -90,7 +99,7 @@ export default function Navbar({ onDrawerToggle }) {
   const handleMarkAllRead = async () => {
     try {
       await api.post('/notifications/read-all');
-      setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
       setUnreadCount(0);
     } catch (err) {
       console.error('Error marking all notifications as read:', err);
@@ -98,6 +107,7 @@ export default function Navbar({ onDrawerToggle }) {
   };
 
   function formatRelativeTime(dateString) {
+    if (!dateString) return 'Recent';
     const now = new Date();
     const date = new Date(dateString);
     const diffMs = now - date;
@@ -130,6 +140,13 @@ export default function Navbar({ onDrawerToggle }) {
     navigate('/profile');
   };
 
+  const handleSearchSubmit = (e) => {
+    if (e.key === 'Enter' && headerSearch.trim()) {
+      navigate(`/events?search=${encodeURIComponent(headerSearch.trim())}`);
+      setHeaderSearch('');
+    }
+  };
+
   const handleDownloadApk = () => {
     if (apkUrl) {
       const link = document.createElement('a');
@@ -153,10 +170,19 @@ export default function Navbar({ onDrawerToggle }) {
           backgroundColor: '#4F2BCB',
           color: '#FFFFFF',
           height: 64,
-          borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.12)',
+          boxShadow: '0 4px 20px rgba(79, 43, 203, 0.15)',
         }}
       >
-        <Toolbar sx={{ height: 64, px: { xs: 1.5, sm: 3 }, display: 'flex', justifyContent: 'space-between' }}>
+        <Toolbar
+          sx={{
+            height: 64,
+            px: { xs: 1.5, sm: 2.5, md: 3.5 },
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
           {/* Left: Mobile Toggle + Brand Logo & Name */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 1.5 } }}>
             <IconButton
@@ -168,48 +194,110 @@ export default function Navbar({ onDrawerToggle }) {
                 display: { xs: 'inline-flex', md: 'none' },
                 mr: { xs: 0.5, sm: 1 },
                 p: 1,
+                borderRadius: '10px',
+                '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.15)' },
               }}
             >
               <MenuIcon sx={{ fontSize: 24 }} />
             </IconButton>
 
             <Box
-              sx={{ display: 'flex', alignItems: 'center', gap: 1.5, cursor: 'pointer' }}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1.5,
+                cursor: 'pointer',
+                userSelect: 'none',
+              }}
               onClick={() => navigate('/dashboard')}
             >
               <Avatar
                 src={siteLogo}
                 sx={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: '10px',
-                  backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                  border: '1.5px solid rgba(255, 255, 255, 0.4)',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                  width: 38,
+                  height: 38,
+                  borderRadius: '12px',
+                  backgroundColor: 'rgba(255, 255, 255, 0.18)',
+                  border: '1.5px solid rgba(255, 255, 255, 0.35)',
+                  boxShadow: '0 2px 10px rgba(0,0,0,0.18)',
                   flexShrink: 0,
                 }}
               >
-                <ShieldOutlined sx={{ color: '#FFFFFF', fontSize: 20 }} />
+                <ShieldOutlined sx={{ color: '#FFFFFF', fontSize: 22 }} />
               </Avatar>
-              <Typography
-                variant="h6"
-                component="div"
-                sx={{
-                  fontWeight: 800,
-                  color: '#FFFFFF',
-                  letterSpacing: '-0.02em',
-                  fontSize: { xs: '1rem', sm: '1.15rem' },
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {siteName}
-              </Typography>
+              <Box>
+                <Typography
+                  variant="h6"
+                  component="div"
+                  sx={{
+                    fontFamily: "'Plus Jakarta Sans', sans-serif",
+                    fontWeight: 900,
+                    color: '#FFFFFF',
+                    letterSpacing: '-0.02em',
+                    fontSize: { xs: '1.05rem', sm: '1.2rem' },
+                    lineHeight: 1.2,
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {siteName}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: 'rgba(255, 255, 255, 0.75)',
+                    fontSize: '0.65rem',
+                    fontWeight: 600,
+                    letterSpacing: '0.04em',
+                    textTransform: 'uppercase',
+                    display: { xs: 'none', sm: 'block' },
+                  }}
+                >
+                  Campus Life Hub
+                </Typography>
+              </Box>
             </Box>
           </Box>
 
-          {/* Right actions: Download App Button + Notifications + Profile Avatar */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            {/* APK Download Button in Main Bar */}
+          {/* Center: Search Bar (Desktop) */}
+          <Box
+            sx={{
+              display: { xs: 'none', md: 'flex' },
+              alignItems: 'center',
+              backgroundColor: 'rgba(255, 255, 255, 0.14)',
+              border: '1px solid rgba(255, 255, 255, 0.22)',
+              borderRadius: '12px',
+              px: 2,
+              py: 0.6,
+              width: { md: 280, lg: 360 },
+              transition: 'all 0.2s ease',
+              '&:focus-within': {
+                backgroundColor: 'rgba(255, 255, 255, 0.22)',
+                borderColor: 'rgba(255, 255, 255, 0.45)',
+                boxShadow: '0 0 0 3px rgba(255, 255, 255, 0.15)',
+              },
+            }}
+          >
+            <SearchIcon sx={{ color: 'rgba(255, 255, 255, 0.75)', fontSize: 20, mr: 1 }} />
+            <InputBase
+              placeholder="Search events, clubs, announcements..."
+              value={headerSearch}
+              onChange={(e) => setHeaderSearch(e.target.value)}
+              onKeyDown={handleSearchSubmit}
+              sx={{
+                color: '#FFFFFF',
+                fontSize: '0.86rem',
+                width: '100%',
+                '& input::placeholder': {
+                  color: 'rgba(255, 255, 255, 0.7)',
+                  opacity: 1,
+                },
+              }}
+            />
+          </Box>
+
+          {/* Right Actions: Get App Chip + Notification Bell + User Profile */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 1.8 } }}>
+            {/* APK Download Button */}
             <Tooltip title="Download Android Mobile App (.APK)">
               <Chip
                 icon={<AndroidIcon style={{ color: '#FFFFFF', fontSize: 18 }} />}
@@ -217,67 +305,106 @@ export default function Navbar({ onDrawerToggle }) {
                 clickable
                 onClick={handleDownloadApk}
                 sx={{
+                  display: { xs: 'none', sm: 'inline-flex' },
                   backgroundColor: 'rgba(255, 255, 255, 0.18)',
                   color: '#FFFFFF',
                   fontWeight: 800,
-                  fontSize: '0.8rem',
+                  fontSize: '0.78rem',
                   borderRadius: '10px',
                   border: '1px solid rgba(255, 255, 255, 0.3)',
-                  transition: 'all 0.2s',
+                  transition: 'all 0.2s ease',
                   '&:hover': {
-                    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+                    backgroundColor: 'rgba(255, 255, 255, 0.28)',
+                    transform: 'translateY(-1px)',
                   },
                 }}
               />
             </Tooltip>
 
+            {/* Notification Bell */}
             <IconButton
               onClick={handleNotiOpen}
-              sx={{ color: '#FFFFFF', opacity: 0.9, '&:hover': { opacity: 1, backgroundColor: 'rgba(255, 255, 255, 0.1)' } }}
+              aria-label="notifications"
+              sx={{
+                color: '#FFFFFF',
+                backgroundColor: 'rgba(255, 255, 255, 0.12)',
+                borderRadius: '10px',
+                p: 1,
+                transition: 'all 0.2s ease',
+                '&:hover': {
+                  backgroundColor: 'rgba(255, 255, 255, 0.22)',
+                },
+              }}
             >
-              <Badge badgeContent={unreadCount} color="error" max={99}>
-                <NotificationsNone sx={{ fontSize: 22 }} />
+              <Badge
+                badgeContent={unreadCount}
+                color="error"
+                max={99}
+                sx={{
+                  '& .MuiBadge-badge': {
+                    fontWeight: 800,
+                    fontSize: '0.7rem',
+                    boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
+                  },
+                }}
+              >
+                <NotificationsNoneOutlined sx={{ fontSize: 22 }} />
               </Badge>
             </IconButton>
 
+            {/* Notification Menu Dropdown */}
             <Menu
               anchorEl={notiAnchorEl}
               open={notiOpen}
               onClose={handleNotiClose}
               onClick={handleNotiClose}
               PaperProps={{
-                elevation: 3,
+                elevation: 4,
                 sx: {
                   mt: 1.5,
-                  width: { xs: 280, sm: 360 },
-                  maxHeight: 480,
-                  borderRadius: 2,
+                  width: { xs: 300, sm: 380 },
+                  maxHeight: 500,
+                  borderRadius: '18px',
                   border: '1px solid #E9E7F2',
+                  boxShadow: '0 16px 36px rgba(79, 43, 203, 0.14)',
                   overflow: 'hidden',
                   display: 'flex',
                   flexDirection: 'column',
-                  '&:before': {
-                    content: '""',
-                    display: 'block',
-                    position: 'absolute',
-                    top: 0,
-                    right: 18,
-                    width: 10,
-                    height: 10,
-                    bgcolor: 'background.paper',
-                    transform: 'translateY(-50%) rotate(45deg)',
-                    zIndex: 0,
-                  },
                 },
               }}
               transformOrigin={{ horizontal: 'right', vertical: 'top' }}
               anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
             >
               {/* Header */}
-              <Box sx={{ px: 2, py: 1.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#F8F7FD', borderBottom: '1px solid #E9E7F2' }}>
-                <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#20202A' }}>
-                  Notifications
-                </Typography>
+              <Box
+                sx={{
+                  px: 2.5,
+                  py: 1.8,
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  backgroundColor: '#F8F7FD',
+                  borderBottom: '1px solid #E9E7F2',
+                }}
+              >
+                <Box display="flex" alignItems="center" gap={1}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#20202A' }}>
+                    Notifications
+                  </Typography>
+                  {unreadCount > 0 && (
+                    <Chip
+                      label={unreadCount}
+                      size="small"
+                      sx={{
+                        height: 20,
+                        fontSize: '0.7rem',
+                        fontWeight: 800,
+                        backgroundColor: '#FEE2E2',
+                        color: '#DC2626',
+                      }}
+                    />
+                  )}
+                </Box>
                 {unreadCount > 0 && (
                   <Chip
                     label="Mark all read"
@@ -290,10 +417,10 @@ export default function Navbar({ onDrawerToggle }) {
                     sx={{
                       fontSize: '0.72rem',
                       fontWeight: 700,
-                      backgroundColor: '#ECEAFF',
+                      backgroundColor: '#F3F0FF',
                       color: '#4F2BCB',
-                      border: '1px solid #C7B8FF',
-                      '&:hover': { backgroundColor: '#D5CFFF' }
+                      border: '1px solid #D4CCF7',
+                      '&:hover': { backgroundColor: '#E0DBFF' },
                     }}
                   />
                 )}
@@ -303,7 +430,8 @@ export default function Navbar({ onDrawerToggle }) {
               <Box sx={{ overflowY: 'auto', flex: 1, maxHeight: 380 }}>
                 {notifications.length === 0 ? (
                   <Box sx={{ py: 6, px: 2, textAlign: 'center' }}>
-                    <Typography variant="body2" sx={{ color: '#9DA0AE', fontWeight: 500 }}>
+                    <NotificationsNoneOutlined sx={{ fontSize: 36, color: '#9DA0AE', mb: 1 }} />
+                    <Typography variant="body2" sx={{ color: '#8E90A2', fontWeight: 600 }}>
                       No notifications yet
                     </Typography>
                   </Box>
@@ -313,40 +441,38 @@ export default function Navbar({ onDrawerToggle }) {
                       key={noti.id}
                       onClick={() => handleNotificationClick(noti)}
                       sx={{
-                        px: 2,
-                        py: 1.5,
+                        px: 2.5,
+                        py: 1.6,
                         display: 'flex',
                         gap: 1.5,
                         alignItems: 'flex-start',
                         cursor: 'pointer',
-                        borderBottom: '1px solid #F0EEFA',
+                        borderBottom: '1px solid #F4F2FA',
                         backgroundColor: noti.is_read ? 'transparent' : 'rgba(79, 43, 203, 0.04)',
-                        transition: 'background-color 0.2s',
+                        transition: 'background-color 0.15s ease',
                         '&:hover': {
-                          backgroundColor: 'rgba(79, 43, 203, 0.08)'
-                        }
+                          backgroundColor: 'rgba(79, 43, 203, 0.08)',
+                        },
                       }}
                     >
                       {/* Active Dot */}
-                      {!noti.is_read && (
-                        <Box
-                          sx={{
-                            width: 8,
-                            height: 8,
-                            borderRadius: '50%',
-                            backgroundColor: '#4F2BCB',
-                            mt: 0.8,
-                            flexShrink: 0
-                          }}
-                        />
-                      )}
-                      <Box sx={{ flex: 1 }}>
+                      <Box
+                        sx={{
+                          width: 8,
+                          height: 8,
+                          borderRadius: '50%',
+                          backgroundColor: noti.is_read ? 'transparent' : '#4F2BCB',
+                          mt: 0.8,
+                          flexShrink: 0,
+                        }}
+                      />
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
                         <Typography
                           variant="body2"
                           sx={{
                             fontWeight: noti.is_read ? 600 : 800,
                             color: '#20202A',
-                            fontSize: '0.85rem'
+                            fontSize: '0.86rem',
                           }}
                         >
                           {noti.title}
@@ -354,10 +480,10 @@ export default function Navbar({ onDrawerToggle }) {
                         <Typography
                           variant="body2"
                           sx={{
-                            color: '#6E6D7A',
+                            color: '#5E5D6E',
                             fontSize: '0.8rem',
                             mt: 0.3,
-                            lineHeight: 1.4
+                            lineHeight: 1.4,
                           }}
                         >
                           {noti.content}
@@ -365,11 +491,11 @@ export default function Navbar({ onDrawerToggle }) {
                         <Typography
                           variant="caption"
                           sx={{
-                            color: '#9DA0AE',
+                            color: '#8E90A2',
                             fontSize: '0.72rem',
                             fontWeight: 600,
                             mt: 0.5,
-                            display: 'block'
+                            display: 'block',
                           }}
                         >
                           {formatRelativeTime(noti.created_at)}
@@ -381,58 +507,67 @@ export default function Navbar({ onDrawerToggle }) {
               </Box>
             </Menu>
 
-            <IconButton onClick={handleMenuOpen} sx={{ p: 0.5 }}>
+            {/* Profile Avatar Trigger */}
+            <IconButton
+              onClick={handleMenuOpen}
+              sx={{
+                p: 0.5,
+                borderRadius: '12px',
+                transition: 'all 0.2s ease',
+                '&:hover': {
+                  backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                },
+              }}
+            >
               <Avatar
                 src={getImageUrl(user?.avatar_url || user?.avatarUrl)}
                 sx={{
-                  width: 36,
-                  height: 36,
-                  backgroundColor: '#E0DBFF',
+                  width: 38,
+                  height: 38,
+                  backgroundColor: '#EDE9FE',
                   color: '#4F2BCB',
-                  fontWeight: 700,
+                  fontWeight: 800,
                   fontSize: '0.95rem',
-                  border: '2px solid rgba(255, 255, 255, 0.8)',
+                  border: '2px solid rgba(255, 255, 255, 0.85)',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
                 }}
               >
                 {user?.avatar_url || user?.avatarUrl ? null : initial}
               </Avatar>
             </IconButton>
 
+            {/* Profile Dropdown Menu */}
             <Menu
               anchorEl={anchorEl}
               open={open}
               onClose={handleMenuClose}
               onClick={handleMenuClose}
               PaperProps={{
-                elevation: 3,
+                elevation: 4,
                 sx: {
                   mt: 1.5,
-                  minWidth: 200,
-                  borderRadius: 2,
+                  minWidth: 220,
+                  borderRadius: '18px',
                   border: '1px solid #E9E7F2',
-                  overflow: 'visible',
-                  '&:before': {
-                    content: '""',
-                    display: 'block',
-                    position: 'absolute',
-                    top: 0,
-                    right: 18,
-                    width: 10,
-                    height: 10,
-                    bgcolor: 'background.paper',
-                    transform: 'translateY(-50%) rotate(45deg)',
-                    zIndex: 0,
-                  },
+                  boxShadow: '0 16px 36px rgba(79, 43, 203, 0.14)',
+                  p: 1,
                 },
               }}
               transformOrigin={{ horizontal: 'right', vertical: 'top' }}
               anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
             >
-              <Box sx={{ px: 2, py: 1 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#20202A' }}>
+              <Box sx={{ px: 2, py: 1.5, borderBottom: '1px solid #F1EFF8', mb: 0.5 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#20202A' }}>
                   {username}
                 </Typography>
-                <Typography variant="caption" sx={{ color: '#6E6D7A' }}>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: '#4F2BCB',
+                    fontWeight: 700,
+                    textTransform: 'capitalize',
+                  }}
+                >
                   {user?.role || systemRole || 'Member'}
                 </Typography>
               </Box>
@@ -443,17 +578,55 @@ export default function Navbar({ onDrawerToggle }) {
                     handleMenuClose();
                     setBrandingOpen(true);
                   }}
-                  sx={{ fontSize: '0.9rem', py: 1, gap: 1 }}
+                  sx={{
+                    fontSize: '0.88rem',
+                    py: 1.2,
+                    px: 2,
+                    borderRadius: '10px',
+                    gap: 1.2,
+                    fontWeight: 600,
+                    color: '#20202A',
+                    '&:hover': { backgroundColor: '#F3F0FF', color: '#4F2BCB' },
+                  }}
                 >
                   <BrandingWatermarkOutlinedIcon fontSize="small" sx={{ color: '#4F2BCB' }} />
                   Site & APK Settings
                 </MenuItem>
               )}
 
-              <MenuItem onClick={handleProfile} sx={{ fontSize: '0.9rem', py: 1 }}>
+              <MenuItem
+                onClick={handleProfile}
+                sx={{
+                  fontSize: '0.88rem',
+                  py: 1.2,
+                  px: 2,
+                  borderRadius: '10px',
+                  gap: 1.2,
+                  fontWeight: 600,
+                  color: '#20202A',
+                  '&:hover': { backgroundColor: '#F3F0FF', color: '#4F2BCB' },
+                }}
+              >
+                <PersonOutlineOutlined fontSize="small" sx={{ color: '#5E5D6E' }} />
                 My Profile
               </MenuItem>
-              <MenuItem onClick={handleLogout} sx={{ fontSize: '0.9rem', py: 1, color: '#EF4444' }}>
+
+              <Divider sx={{ my: 0.5, borderColor: '#F1EFF8' }} />
+
+              <MenuItem
+                onClick={handleLogout}
+                sx={{
+                  fontSize: '0.88rem',
+                  py: 1.2,
+                  px: 2,
+                  borderRadius: '10px',
+                  gap: 1.2,
+                  fontWeight: 700,
+                  color: '#EF4444',
+                  '&:hover': { backgroundColor: '#FEE2E2' },
+                }}
+              >
+                <LogoutOutlined fontSize="small" />
                 Logout
               </MenuItem>
             </Menu>
@@ -461,7 +634,7 @@ export default function Navbar({ onDrawerToggle }) {
         </Toolbar>
       </AppBar>
 
-      {/* Admin Branding Modal Trigger */}
+      {/* Admin Branding Modal */}
       {isAdmin && (
         <AdminBrandingModal
           open={brandingOpen}

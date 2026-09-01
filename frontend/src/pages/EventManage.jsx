@@ -11,12 +11,6 @@ import {
   Chip,
   Stack,
   Divider,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   IconButton,
   Tooltip,
   Dialog,
@@ -31,14 +25,11 @@ import {
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
-import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import EditIcon from '@mui/icons-material/Edit';
 import GroupIcon from '@mui/icons-material/Group';
 import DownloadIcon from '@mui/icons-material/Download';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined';
-import PersonAddOutlinedIcon from '@mui/icons-material/PersonAddOutlined';
-import MailOutlinedIcon from '@mui/icons-material/MailOutlined';
 import AddTaskIcon from '@mui/icons-material/AddTask';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import CheckCircleOutlinedIcon from '@mui/icons-material/CheckCircleOutlined';
@@ -47,27 +38,45 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import FlagIcon from '@mui/icons-material/Flag';
 
 import { useAuth } from '../context/AuthContext';
-import { getEvent, fetchEventParticipants, fetchEventTasks, createEventTask, updateEventTask, deleteEventTask } from '../api/eventApi';
+import {
+  getEvent,
+  fetchEventParticipants,
+  fetchEventTasks,
+  createEventTask,
+  updateEventTask,
+  deleteEventTask,
+} from '../api/eventApi';
 import api, { getImageUrl } from '../api/axiosInstance';
 import Button from '../components/Button';
 
 const DEFAULT_POSTER = 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=1200&q=80';
 
 const STATUS_CONFIG = {
-  pending: { label: 'Pending', color: '#F59E0B', bg: '#FEF3C7', icon: <HourglassEmptyIcon sx={{ fontSize: 14 }} /> },
-  in_progress: { label: 'In Progress', color: '#3B82F6', bg: '#DBEAFE', icon: <PlayArrowIcon sx={{ fontSize: 14 }} /> },
-  completed: { label: 'Completed', color: '#10B981', bg: '#D1FAE5', icon: <CheckCircleOutlinedIcon sx={{ fontSize: 14 }} /> },
-  cancelled: { label: 'Cancelled', color: '#EF4444', bg: '#FEE2E2', icon: null },
+  pending: { label: 'Pending', color: '#B45309', bg: '#FEF3C7', icon: <HourglassEmptyIcon sx={{ fontSize: 13 }} /> },
+  in_progress: { label: 'In Progress', color: '#1D4ED8', bg: '#DBEAFE', icon: <PlayArrowIcon sx={{ fontSize: 13 }} /> },
+  completed: { label: 'Completed', color: '#059669', bg: '#D1FAE5', icon: <CheckCircleOutlinedIcon sx={{ fontSize: 13 }} /> },
+  cancelled: { label: 'Cancelled', color: '#DC2626', bg: '#FEE2E2', icon: null },
 };
 
 const PRIORITY_CONFIG = {
-  low: { label: 'Low', color: '#6B7280', bg: '#F3F4F6' },
-  medium: { label: 'Medium', color: '#F59E0B', bg: '#FEF3C7' },
-  high: { label: 'High', color: '#EF4444', bg: '#FEE2E2' },
-  urgent: { label: 'Urgent', color: '#DC2626', bg: '#FEE2E2' },
+  low: { label: 'Low', color: '#475569', bg: '#F1F5F9' },
+  medium: { label: 'Medium', color: '#B45309', bg: '#FEF3C7' },
+  high: { label: 'High', color: '#DC2626', bg: '#FEE2E2' },
+  urgent: { label: 'Urgent', color: '#991B1B', bg: '#FEE2E2' },
 };
 
-const CATEGORIES = ['General', 'Logistics', 'Marketing', 'Technical', 'Finance', 'Content', 'Communication', 'Decoration', 'Photography', 'Food & Catering'];
+const CATEGORIES = [
+  'General',
+  'Logistics',
+  'Marketing',
+  'Technical',
+  'Finance',
+  'Content',
+  'Communication',
+  'Decoration',
+  'Photography',
+  'Food & Catering',
+];
 
 const EventManage = () => {
   const { clubId, eventId } = useParams();
@@ -99,8 +108,8 @@ const EventManage = () => {
   });
   const [submitting, setSubmitting] = useState(false);
 
-  // Determine if current user is a leader (president/secretary/admin)
-  const isLeader = systemRole === 'admin' || systemRole === 'president' || systemRole === 'secretary';
+  const isLeader =
+    systemRole === 'admin' || systemRole === 'president' || systemRole === 'secretary';
 
   const loadData = async () => {
     try {
@@ -115,10 +124,11 @@ const EventManage = () => {
         console.warn('Could not fetch single event', e);
       }
 
-      const participantsData = await fetchEventParticipants(eventId).catch(() => []);
+      const [participantsData, tasksData] = await Promise.all([
+        fetchEventParticipants(eventId).catch(() => []),
+        fetchEventTasks(eventId).catch(() => []),
+      ]);
       setParticipants(participantsData || []);
-
-      const tasksData = await fetchEventTasks(eventId).catch(() => []);
       setTasks(tasksData || []);
 
       const targetClubId = eventData?.club_id || clubId || myClubId;
@@ -128,7 +138,9 @@ const EventManage = () => {
           if (Array.isArray(membersRes.data) && membersRes.data.length > 0) {
             setTeamMembers(membersRes.data);
           }
-        } catch (e) { /* No members */ }
+        } catch (e) {
+          /* No members */
+        }
       }
     } catch (err) {
       console.error('Failed to load event management details', err);
@@ -141,10 +153,17 @@ const EventManage = () => {
     loadData();
   }, [eventId]);
 
-  // ===== Task CRUD =====
   const openCreateTask = () => {
     setEditingTask(null);
-    setTaskForm({ title: '', description: '', assigned_to: '', priority: 'medium', category: '', status: 'pending', due_date: '' });
+    setTaskForm({
+      title: '',
+      description: '',
+      assigned_to: '',
+      priority: 'medium',
+      category: '',
+      status: 'pending',
+      due_date: '',
+    });
     setTaskModalOpen(true);
   };
 
@@ -172,7 +191,7 @@ const EventManage = () => {
     try {
       const payload = {
         ...taskForm,
-        assigned_to: taskForm.assigned_to || null,
+        assigned_to: taskForm.assigned_to ? Number(taskForm.assigned_to) : null,
         due_date: taskForm.due_date || null,
         category: taskForm.category || null,
       };
@@ -197,7 +216,7 @@ const EventManage = () => {
     if (!window.confirm('Are you sure you want to delete this task?')) return;
     try {
       await deleteEventTask(eventId, taskId);
-      setSuccess('Task deleted.');
+      setSuccess('Task deleted successfully.');
       loadData();
     } catch (err) {
       setError(err?.response?.data?.detail || 'Failed to delete task.');
@@ -213,7 +232,6 @@ const EventManage = () => {
     }
   };
 
-  // ===== CSV Export =====
   const exportCSV = () => {
     if (participants.length === 0) {
       alert('No registrations to export.');
@@ -221,7 +239,9 @@ const EventManage = () => {
     }
     const headers = ['ID', 'Username', 'Email'];
     const rows = participants.map((p) => [p.id, p.username || '', p.email || '']);
-    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
+    const csvContent =
+      'data:text/csv;charset=utf-8,' +
+      [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
@@ -257,24 +277,36 @@ const EventManage = () => {
       ? '/admin/events'
       : '/events';
 
-  // Filter tasks based on tab
   const getFilteredTasks = () => {
     switch (activeTab) {
-      case 0: return tasks; // All
-      case 1: return tasks.filter((t) => t.assigned_to === currentUserId); // My Tasks
-      case 2: return tasks.filter((t) => t.status === 'pending'); // Pending
-      case 3: return tasks.filter((t) => t.status === 'in_progress'); // In Progress
-      case 4: return tasks.filter((t) => t.status === 'completed'); // Completed
-      default: return tasks;
+      case 0:
+        return tasks;
+      case 1:
+        return tasks.filter((t) => t.assigned_to === currentUserId);
+      case 2:
+        return tasks.filter((t) => t.status === 'pending');
+      case 3:
+        return tasks.filter((t) => t.status === 'in_progress');
+      case 4:
+        return tasks.filter((t) => t.status === 'completed');
+      default:
+        return tasks;
     }
   };
 
   const filteredTasks = getFilteredTasks();
 
   return (
-    <Box sx={{ maxWidth: 1300, mx: 'auto', pb: 6, width: '100%' }}>
-      {/* Back & Actions Header */}
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2.5} flexWrap="wrap" gap={1.5}>
+    <Box sx={{ maxWidth: 1320, mx: 'auto', width: '100%', pb: 6 }}>
+      {/* Back & Actions Header matching Image 4 */}
+      <Box
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        mb={3}
+        flexWrap="wrap"
+        gap={1.5}
+      >
         <Box
           onClick={() => navigate(backPath)}
           sx={{
@@ -282,9 +314,10 @@ const EventManage = () => {
             alignItems: 'center',
             gap: 0.8,
             color: '#4F2BCB',
-            fontWeight: 700,
+            fontWeight: 800,
             fontSize: '0.92rem',
             cursor: 'pointer',
+            fontFamily: "'Plus Jakarta Sans', sans-serif",
             '&:hover': { textDecoration: 'underline' },
           }}
         >
@@ -297,7 +330,7 @@ const EventManage = () => {
               variant="primary"
               startIcon={<AddTaskIcon />}
               onClick={openCreateTask}
-              sx={{ backgroundColor: '#4F2BCB', fontSize: '0.85rem' }}
+              sx={{ px: 2.2 }}
             >
               Assign Task
             </Button>
@@ -305,8 +338,9 @@ const EventManage = () => {
           <Button
             variant="ghost"
             startIcon={<EditIcon />}
-            onClick={() => navigate(`/clubs/${event?.club_id || clubId || myClubId}/events/${eventId}/edit`)}
-            sx={{ color: '#4F2BCB', borderColor: '#D4CCF7', fontSize: '0.85rem' }}
+            onClick={() =>
+              navigate(`/clubs/${event?.club_id || clubId || myClubId}/events/${eventId}/edit`)
+            }
           >
             Edit Event
           </Button>
@@ -314,71 +348,95 @@ const EventManage = () => {
             variant="ghost"
             startIcon={<GroupIcon />}
             onClick={() => {
-              const regPath = systemRole === 'president'
-                ? `/president/events/${eventId}/registrations`
-                : systemRole === 'secretary'
-                ? `/secretary/events/${eventId}/registrations`
-                : `/events/${eventId}/registrations`;
+              const regPath =
+                systemRole === 'president'
+                  ? `/president/events/${eventId}/registrations`
+                  : systemRole === 'secretary'
+                  ? `/secretary/events/${eventId}/registrations`
+                  : `/events/${eventId}/registrations`;
               navigate(regPath);
             }}
-            sx={{ color: '#4F2BCB', borderColor: '#D4CCF7', fontSize: '0.85rem' }}
           >
-            Registrations
+            Registrations ({participants.length})
           </Button>
           <Button
             variant="ghost"
             startIcon={<DownloadIcon />}
             onClick={exportCSV}
-            sx={{ color: '#4F2BCB', borderColor: '#D4CCF7', fontSize: '0.85rem' }}
           >
             Export
           </Button>
         </Stack>
       </Box>
 
-      {error && <Alert severity="error" sx={{ mb: 2.5, borderRadius: 2 }} onClose={() => setError('')}>{error}</Alert>}
-      {success && <Alert severity="success" sx={{ mb: 2.5, borderRadius: 2 }} onClose={() => setSuccess('')}>{success}</Alert>}
+      {error && (
+        <Alert severity="error" sx={{ mb: 2.5, borderRadius: '12px' }} onClose={() => setError('')}>
+          {error}
+        </Alert>
+      )}
+      {success && (
+        <Alert severity="success" sx={{ mb: 2.5, borderRadius: '12px' }} onClose={() => setSuccess('')}>
+          {success}
+        </Alert>
+      )}
 
-      {/* ===== HERO BANNER ===== */}
+      {/* Hero Banner matching Reference Image 4 */}
       <Paper
         elevation={0}
         sx={{
-          borderRadius: '20px',
+          borderRadius: '24px',
           border: '1px solid #E9E7F2',
           backgroundColor: '#FFFFFF',
-          mb: 3,
+          mb: 3.5,
           overflow: 'hidden',
+          boxShadow: '0 4px 20px rgba(79, 43, 203, 0.04)',
         }}
       >
         <Box
           sx={{
             position: 'relative',
-            height: { xs: 140, sm: 180, md: 220 },
-            backgroundImage: `linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.55) 100%), url(${getImageUrl(event?.image_url) || DEFAULT_POSTER})`,
+            height: { xs: 160, sm: 200, md: 240 },
+            backgroundImage: `linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(15, 10, 35, 0.75) 100%), url(${
+              getImageUrl(event?.image_url) || DEFAULT_POSTER
+            })`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             display: 'flex',
             alignItems: 'flex-end',
-            p: { xs: 2, sm: 3 },
+            p: { xs: 2.5, sm: 3.5 },
           }}
         >
           <Box sx={{ color: '#FFFFFF', width: '100%' }}>
-            <Typography variant="h4" sx={{ fontWeight: 900, fontSize: { xs: '1.2rem', sm: '1.6rem' }, mb: 0.5, textShadow: '0 2px 8px rgba(0,0,0,0.3)' }}>
+            <Typography
+              variant="h3"
+              sx={{
+                fontWeight: 900,
+                fontSize: { xs: '1.4rem', sm: '1.9rem', md: '2.2rem' },
+                mb: 1,
+                fontFamily: "'Plus Jakarta Sans', sans-serif",
+                textShadow: '0 2px 10px rgba(0,0,0,0.4)',
+              }}
+            >
               {event?.title || 'Event'}
             </Typography>
-            <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
+            <Stack direction="row" spacing={2.5} alignItems="center" flexWrap="wrap">
               {eventDate && (
-                <Box display="flex" alignItems="center" gap={0.6}>
-                  <CalendarMonthIcon sx={{ fontSize: 15, opacity: 0.9 }} />
-                  <Typography variant="caption" sx={{ fontWeight: 600, opacity: 0.95 }}>
-                    {eventDate.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
+                <Box display="flex" alignItems="center" gap={0.8}>
+                  <CalendarMonthIcon sx={{ fontSize: 16, opacity: 0.95 }} />
+                  <Typography variant="caption" sx={{ fontWeight: 700, fontSize: '0.82rem' }}>
+                    {eventDate.toLocaleDateString(undefined, {
+                      weekday: 'short',
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                    })}
                   </Typography>
                 </Box>
               )}
               {event?.location && (
-                <Box display="flex" alignItems="center" gap={0.6}>
-                  <LocationOnIcon sx={{ fontSize: 15, opacity: 0.9 }} />
-                  <Typography variant="caption" sx={{ fontWeight: 600, opacity: 0.95 }}>
+                <Box display="flex" alignItems="center" gap={0.8}>
+                  <LocationOnIcon sx={{ fontSize: 16, opacity: 0.95 }} />
+                  <Typography variant="caption" sx={{ fontWeight: 700, fontSize: '0.82rem' }}>
                     {event.location}
                   </Typography>
                 </Box>
@@ -388,34 +446,100 @@ const EventManage = () => {
         </Box>
 
         {/* Stats Row */}
-        <Box sx={{ p: { xs: 1.5, sm: 2 }, display: 'flex', gap: 1.5, flexWrap: 'wrap', alignItems: 'center' }}>
-          <Chip label={event?.is_active ? 'Active' : 'Inactive'} size="small"
-            sx={{ backgroundColor: event?.is_active ? '#D1FAE5' : '#FEE2E2', color: event?.is_active ? '#059669' : '#DC2626', fontWeight: 800, fontSize: '0.72rem' }} />
-          <Chip label={`${participants.length} Registered`} size="small"
-            sx={{ backgroundColor: '#F3F0FF', color: '#4F2BCB', fontWeight: 800, fontSize: '0.72rem' }} />
-          <Chip label={`${totalTasks} Tasks`} size="small"
-            sx={{ backgroundColor: '#DBEAFE', color: '#2563EB', fontWeight: 800, fontSize: '0.72rem' }} />
-          <Chip label={`${progressPercent}% Complete`} size="small"
-            sx={{ backgroundColor: '#D1FAE5', color: '#059669', fontWeight: 800, fontSize: '0.72rem' }} />
+        <Box
+          sx={{
+            p: 2,
+            px: 3,
+            display: 'flex',
+            gap: 1.5,
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            backgroundColor: '#F8F7FD',
+          }}
+        >
+          <Chip
+            label={event?.is_active ? 'Active Event' : 'Inactive'}
+            size="small"
+            sx={{
+              backgroundColor: event?.is_active ? '#D1FAE5' : '#FEE2E2',
+              color: event?.is_active ? '#059669' : '#DC2626',
+              fontWeight: 800,
+              borderRadius: '8px',
+            }}
+          />
+          <Chip
+            label={`${participants.length} Registered`}
+            size="small"
+            sx={{
+              backgroundColor: '#F3F0FF',
+              color: '#4F2BCB',
+              fontWeight: 800,
+              borderRadius: '8px',
+              border: '1px solid #D4CCF7',
+            }}
+          />
+          <Chip
+            label={`${totalTasks} Total Tasks`}
+            size="small"
+            sx={{
+              backgroundColor: '#DBEAFE',
+              color: '#1D4ED8',
+              fontWeight: 800,
+              borderRadius: '8px',
+            }}
+          />
+          <Chip
+            label={`${progressPercent}% Tasks Completed`}
+            size="small"
+            sx={{
+              backgroundColor: '#D1FAE5',
+              color: '#059669',
+              fontWeight: 800,
+              borderRadius: '8px',
+            }}
+          />
         </Box>
       </Paper>
 
-      {/* ===== MAIN CONTENT ===== */}
-      <Grid container spacing={3}>
-        {/* LEFT: Task Management Workspace */}
+      {/* Main 2-Column Content matching Reference Image 4 */}
+      <Grid container spacing={3.5}>
+        {/* Left Column: Task Management Workspace */}
         <Grid item xs={12} md={8}>
-          <Paper elevation={0} sx={{ borderRadius: '20px', border: '1px solid #E9E7F2', backgroundColor: '#FFFFFF', overflow: 'hidden' }}>
-            {/* Task Progress Bar */}
-            <Box sx={{ px: 3, pt: 2.5, pb: 1.5 }}>
-              <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-                <Typography variant="subtitle1" sx={{ fontWeight: 900, color: '#20202A' }}>
-                  <AssignmentIcon sx={{ fontSize: 20, mr: 0.8, verticalAlign: 'text-bottom', color: '#4F2BCB' }} />
-                  Task Management
+          <Paper
+            elevation={0}
+            sx={{
+              borderRadius: '22px',
+              border: '1px solid #E9E7F2',
+              backgroundColor: '#FFFFFF',
+              overflow: 'hidden',
+              boxShadow: '0 2px 10px rgba(79, 43, 203, 0.03)',
+            }}
+          >
+            {/* Header & Progress */}
+            <Box sx={{ p: 3, pb: 2 }}>
+              <Box display="flex" justifyContent="space-between" alignItems="center" mb={1.8}>
+                <Typography
+                  variant="subtitle1"
+                  sx={{
+                    fontWeight: 900,
+                    color: '#20202A',
+                    fontFamily: "'Plus Jakarta Sans', sans-serif",
+                    fontSize: '1.1rem',
+                  }}
+                >
+                  <AssignmentIcon
+                    sx={{ fontSize: 22, mr: 1, verticalAlign: 'text-bottom', color: '#4F2BCB' }}
+                  />
+                  Task Management Workspace
                 </Typography>
                 {isLeader && (
-                  <Button variant="primary" size="small" startIcon={<AddTaskIcon sx={{ fontSize: 16 }} />}
+                  <Button
+                    variant="primary"
+                    size="small"
+                    startIcon={<AddTaskIcon sx={{ fontSize: 16 }} />}
                     onClick={openCreateTask}
-                    sx={{ backgroundColor: '#4F2BCB', fontSize: '0.78rem', py: 0.5, px: 2 }}>
+                    sx={{ py: 0.6, px: 1.8, borderRadius: '8px' }}
+                  >
                     New Task
                   </Button>
                 )}
@@ -423,11 +547,11 @@ const EventManage = () => {
 
               {totalTasks > 0 && (
                 <Box sx={{ mb: 1.5 }}>
-                  <Box display="flex" justifyContent="space-between" mb={0.5}>
-                    <Typography variant="caption" sx={{ color: '#777788', fontWeight: 700 }}>
+                  <Box display="flex" justifyContent="space-between" mb={0.8}>
+                    <Typography variant="caption" sx={{ color: '#5E5D6E', fontWeight: 700 }}>
                       Progress: {completedTasks}/{totalTasks} tasks completed
                     </Typography>
-                    <Typography variant="caption" sx={{ color: '#4F2BCB', fontWeight: 800 }}>
+                    <Typography variant="caption" sx={{ color: '#4F2BCB', fontWeight: 900 }}>
                       {progressPercent}%
                     </Typography>
                   </Box>
@@ -435,34 +559,55 @@ const EventManage = () => {
                     variant="determinate"
                     value={progressPercent}
                     sx={{
-                      height: 8,
-                      borderRadius: 4,
+                      height: 9,
+                      borderRadius: 5,
                       backgroundColor: '#F3F0FF',
                       '& .MuiLinearProgress-bar': {
-                        borderRadius: 4,
-                        background: 'linear-gradient(90deg, #4F2BCB, #7C5CE7)',
+                        borderRadius: 5,
+                        background: 'linear-gradient(90deg, #4F2BCB, #7C3AED)',
                       },
                     }}
                   />
-                  <Stack direction="row" spacing={2} mt={1}>
-                    <Typography variant="caption" sx={{ color: '#F59E0B', fontWeight: 700 }}>⏳ {pendingTasks} Pending</Typography>
-                    <Typography variant="caption" sx={{ color: '#3B82F6', fontWeight: 700 }}>🔄 {inProgressTasks} In Progress</Typography>
-                    <Typography variant="caption" sx={{ color: '#10B981', fontWeight: 700 }}>✅ {completedTasks} Completed</Typography>
+                  <Stack direction="row" spacing={2.5} mt={1.5}>
+                    <Typography variant="caption" sx={{ color: '#B45309', fontWeight: 800 }}>
+                      ⏳ {pendingTasks} Pending
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: '#1D4ED8', fontWeight: 800 }}>
+                      🔄 {inProgressTasks} In Progress
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: '#059669', fontWeight: 800 }}>
+                      ✅ {completedTasks} Completed
+                    </Typography>
                   </Stack>
                 </Box>
               )}
             </Box>
 
-            {/* Task Filter Tabs */}
-            <Box sx={{ borderBottom: '1px solid #F0EFF8', px: 2 }}>
-              <Tabs value={activeTab} onChange={(e, v) => setActiveTab(v)} variant="scrollable" scrollButtons="auto"
+            {/* Filter Tabs */}
+            <Box sx={{ borderBottom: '1px solid #F1EFF8', px: 2 }}>
+              <Tabs
+                value={activeTab}
+                onChange={(e, v) => setActiveTab(v)}
+                variant="scrollable"
+                scrollButtons="auto"
                 sx={{
-                  '& .MuiTab-root': { textTransform: 'none', fontWeight: 700, fontSize: '0.82rem', color: '#777788', minHeight: 42, py: 0.8,
-                    '&.Mui-selected': { color: '#4F2BCB' } },
-                  '& .MuiTabs-indicator': { backgroundColor: '#4F2BCB', height: 2.5 },
-                }}>
+                  '& .MuiTab-root': {
+                    textTransform: 'none',
+                    fontWeight: 800,
+                    fontSize: '0.84rem',
+                    color: '#8E90A2',
+                    minHeight: 44,
+                    py: 1,
+                    fontFamily: "'Plus Jakarta Sans', sans-serif",
+                    '&.Mui-selected': { color: '#4F2BCB' },
+                  },
+                  '& .MuiTabs-indicator': { backgroundColor: '#4F2BCB', height: 3, borderRadius: '3px' },
+                }}
+              >
                 <Tab label={`All (${totalTasks})`} />
-                <Tab label={`My Tasks (${tasks.filter((t) => t.assigned_to === currentUserId).length})`} />
+                <Tab
+                  label={`My Tasks (${tasks.filter((t) => t.assigned_to === currentUserId).length})`}
+                />
                 <Tab label={`Pending (${pendingTasks})`} />
                 <Tab label={`In Progress (${inProgressTasks})`} />
                 <Tab label={`Done (${completedTasks})`} />
@@ -470,19 +615,21 @@ const EventManage = () => {
             </Box>
 
             {/* Task List */}
-            <Box sx={{ p: 2 }}>
+            <Box sx={{ p: 2.5 }}>
               {filteredTasks.length === 0 ? (
-                <Box sx={{ py: 5, textAlign: 'center' }}>
-                  <AssignmentIcon sx={{ fontSize: 48, color: '#D4CCF7', mb: 1.5 }} />
-                  <Typography variant="body1" sx={{ fontWeight: 700, color: '#777788', mb: 0.5 }}>
-                    {activeTab === 0 ? 'No tasks yet' : 'No tasks in this category'}
+                <Box sx={{ py: 6, textAlign: 'center' }}>
+                  <AssignmentIcon sx={{ fontSize: 44, color: '#D4CCF7', mb: 1.5 }} />
+                  <Typography variant="body1" sx={{ fontWeight: 800, color: '#20202A', mb: 0.5 }}>
+                    {activeTab === 0 ? 'No tasks created yet' : 'No tasks in this category'}
                   </Typography>
-                  <Typography variant="caption" sx={{ color: '#9DA0AE' }}>
-                    {isLeader ? 'Click "New Task" to assign work to team members.' : 'No tasks have been assigned yet.'}
+                  <Typography variant="caption" sx={{ color: '#8E90A2' }}>
+                    {isLeader
+                      ? 'Click "New Task" to assign work items to team members.'
+                      : 'No tasks have been assigned to you for this event.'}
                   </Typography>
                 </Box>
               ) : (
-                <Stack spacing={1.5}>
+                <Stack spacing={1.8}>
                   {filteredTasks.map((task) => {
                     const statusConf = STATUS_CONFIG[task.status] || STATUS_CONFIG.pending;
                     const priorityConf = PRIORITY_CONFIG[task.priority] || PRIORITY_CONFIG.medium;
@@ -493,68 +640,137 @@ const EventManage = () => {
                         key={task.id}
                         elevation={0}
                         sx={{
-                          p: 2,
-                          borderRadius: '14px',
+                          p: 2.5,
+                          borderRadius: '16px',
                           border: `1px solid ${isMyTask ? '#D4CCF7' : '#E9E7F2'}`,
-                          backgroundColor: isMyTask ? '#FBFAFF' : '#FFFFFF',
-                          transition: 'all 0.2s',
-                          '&:hover': { borderColor: '#4F2BCB', boxShadow: '0 2px 12px rgba(79,43,203,0.08)' },
+                          backgroundColor: isMyTask ? '#FAF9FF' : '#FFFFFF',
+                          transition: 'all 0.2s ease',
+                          boxShadow: '0 2px 6px rgba(79, 43, 203, 0.02)',
+                          '&:hover': {
+                            borderColor: '#4F2BCB',
+                            boxShadow: '0 6px 18px rgba(79, 43, 203, 0.08)',
+                            transform: 'translateY(-1px)',
+                          },
                         }}
                       >
-                        <Box display="flex" justifyContent="space-between" alignItems="flex-start" gap={1.5}>
+                        <Box display="flex" justifyContent="space-between" alignItems="flex-start" gap={2}>
                           <Box sx={{ flex: 1 }}>
                             <Box display="flex" alignItems="center" gap={1} mb={0.8}>
-                              <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#20202A', fontSize: '0.9rem' }}>
+                              <Typography
+                                variant="subtitle2"
+                                sx={{
+                                  fontWeight: 800,
+                                  color: '#20202A',
+                                  fontSize: '0.96rem',
+                                  fontFamily: "'Plus Jakarta Sans', sans-serif",
+                                }}
+                              >
                                 {task.title}
                               </Typography>
                               {isMyTask && (
-                                <Chip label="Assigned to you" size="small"
-                                  sx={{ backgroundColor: '#F3F0FF', color: '#4F2BCB', fontWeight: 700, fontSize: '0.65rem', height: 20 }} />
+                                <Chip
+                                  label="Assigned to you"
+                                  size="small"
+                                  sx={{
+                                    backgroundColor: '#F3F0FF',
+                                    color: '#4F2BCB',
+                                    fontWeight: 800,
+                                    fontSize: '0.68rem',
+                                    height: 22,
+                                    border: '1px solid #D4CCF7',
+                                  }}
+                                />
                               )}
                             </Box>
 
                             {task.description && (
-                              <Typography variant="body2" sx={{ color: '#525266', mb: 1, lineHeight: 1.6, fontSize: '0.82rem' }}>
+                              <Typography
+                                variant="body2"
+                                sx={{
+                                  color: '#5E5D6E',
+                                  mb: 1.5,
+                                  lineHeight: 1.6,
+                                  fontSize: '0.84rem',
+                                }}
+                              >
                                 {task.description}
                               </Typography>
                             )}
 
-                            <Stack direction="row" spacing={1} flexWrap="wrap" alignItems="center">
+                            <Stack direction="row" spacing={1} flexWrap="wrap" alignItems="center" gap={0.5}>
                               {/* Status Chip */}
                               <Chip
                                 icon={statusConf.icon}
                                 label={statusConf.label}
                                 size="small"
-                                sx={{ backgroundColor: statusConf.bg, color: statusConf.color, fontWeight: 800, fontSize: '0.7rem', borderRadius: '8px' }}
+                                sx={{
+                                  backgroundColor: statusConf.bg,
+                                  color: statusConf.color,
+                                  fontWeight: 800,
+                                  fontSize: '0.72rem',
+                                  borderRadius: '8px',
+                                }}
                               />
                               {/* Priority */}
                               <Chip
-                                icon={<FlagIcon sx={{ fontSize: 12, color: `${priorityConf.color} !important` }} />}
+                                icon={
+                                  <FlagIcon
+                                    sx={{ fontSize: 12, color: `${priorityConf.color} !important` }}
+                                  />
+                                }
                                 label={priorityConf.label}
                                 size="small"
-                                sx={{ backgroundColor: priorityConf.bg, color: priorityConf.color, fontWeight: 700, fontSize: '0.7rem', borderRadius: '8px' }}
+                                sx={{
+                                  backgroundColor: priorityConf.bg,
+                                  color: priorityConf.color,
+                                  fontWeight: 800,
+                                  fontSize: '0.72rem',
+                                  borderRadius: '8px',
+                                }}
                               />
                               {/* Category */}
                               {task.category && (
-                                <Chip label={task.category} size="small"
-                                  sx={{ backgroundColor: '#F3F4F6', color: '#6B7280', fontWeight: 600, fontSize: '0.68rem', borderRadius: '8px' }} />
+                                <Chip
+                                  label={task.category}
+                                  size="small"
+                                  sx={{
+                                    backgroundColor: '#F1F5F9',
+                                    color: '#475569',
+                                    fontWeight: 700,
+                                    fontSize: '0.7rem',
+                                    borderRadius: '8px',
+                                  }}
+                                />
                               )}
-                              {/* Due date */}
+                              {/* Due Date */}
                               {task.due_date && (
-                                <Typography variant="caption" sx={{ color: '#9DA0AE', fontWeight: 600 }}>
+                                <Typography
+                                  variant="caption"
+                                  sx={{ color: '#8E90A2', fontWeight: 600, ml: 0.5 }}
+                                >
                                   📅 {new Date(task.due_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                                 </Typography>
                               )}
                               {/* Assignee */}
                               {task.assignee_name && (
-                                <Box display="flex" alignItems="center" gap={0.4}>
+                                <Box display="flex" alignItems="center" gap={0.5} sx={{ ml: 0.5 }}>
                                   <Avatar
                                     src={getImageUrl(task.assignee_avatar)}
-                                    sx={{ width: 18, height: 18, fontSize: '0.6rem', backgroundColor: '#EAEAFF', color: '#4F2BCB' }}
+                                    sx={{
+                                      width: 20,
+                                      height: 20,
+                                      fontSize: '0.62rem',
+                                      backgroundColor: '#F3F0FF',
+                                      color: '#4F2BCB',
+                                      fontWeight: 800,
+                                    }}
                                   >
                                     {task.assignee_name.charAt(0).toUpperCase()}
                                   </Avatar>
-                                  <Typography variant="caption" sx={{ color: '#525266', fontWeight: 600 }}>
+                                  <Typography
+                                    variant="caption"
+                                    sx={{ color: '#20202A', fontWeight: 700 }}
+                                  >
                                     {task.assignee_name}
                                   </Typography>
                                 </Box>
@@ -562,22 +778,37 @@ const EventManage = () => {
                             </Stack>
                           </Box>
 
-                          {/* Actions */}
-                          <Stack direction="row" spacing={0.5} alignItems="center" sx={{ flexShrink: 0 }}>
-                            {/* Quick status buttons */}
+                          {/* Quick Actions */}
+                          <Stack direction="row" spacing={0.8} alignItems="center" sx={{ flexShrink: 0 }}>
                             {(isLeader || isMyTask) && task.status !== 'completed' && (
                               <>
                                 {task.status === 'pending' && (
-                                  <Tooltip title="Start Task">
-                                    <IconButton size="small" onClick={() => handleQuickStatusChange(task, 'in_progress')}
-                                      sx={{ color: '#3B82F6', backgroundColor: '#EFF6FF', '&:hover': { backgroundColor: '#DBEAFE' } }}>
+                                  <Tooltip title="Start Working">
+                                    <IconButton
+                                      size="small"
+                                      onClick={() => handleQuickStatusChange(task, 'in_progress')}
+                                      sx={{
+                                        color: '#1D4ED8',
+                                        backgroundColor: '#EFF6FF',
+                                        borderRadius: '8px',
+                                        '&:hover': { backgroundColor: '#DBEAFE' },
+                                      }}
+                                    >
                                       <PlayArrowIcon sx={{ fontSize: 18 }} />
                                     </IconButton>
                                   </Tooltip>
                                 )}
-                                <Tooltip title="Mark Complete">
-                                  <IconButton size="small" onClick={() => handleQuickStatusChange(task, 'completed')}
-                                    sx={{ color: '#10B981', backgroundColor: '#ECFDF5', '&:hover': { backgroundColor: '#D1FAE5' } }}>
+                                <Tooltip title="Mark as Completed">
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => handleQuickStatusChange(task, 'completed')}
+                                    sx={{
+                                      color: '#059669',
+                                      backgroundColor: '#ECFDF5',
+                                      borderRadius: '8px',
+                                      '&:hover': { backgroundColor: '#D1FAE5' },
+                                    }}
+                                  >
                                     <CheckCircleOutlinedIcon sx={{ fontSize: 18 }} />
                                   </IconButton>
                                 </Tooltip>
@@ -586,14 +817,28 @@ const EventManage = () => {
                             {isLeader && (
                               <>
                                 <Tooltip title="Edit Task">
-                                  <IconButton size="small" onClick={() => openEditTask(task)}
-                                    sx={{ color: '#4F2BCB', '&:hover': { backgroundColor: '#F3F0FF' } }}>
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => openEditTask(task)}
+                                    sx={{
+                                      color: '#4F2BCB',
+                                      borderRadius: '8px',
+                                      '&:hover': { backgroundColor: '#F3F0FF' },
+                                    }}
+                                  >
                                     <EditIcon sx={{ fontSize: 16 }} />
                                   </IconButton>
                                 </Tooltip>
                                 <Tooltip title="Delete Task">
-                                  <IconButton size="small" onClick={() => handleDeleteTask(task.id)}
-                                    sx={{ color: '#EF4444', '&:hover': { backgroundColor: '#FEE2E2' } }}>
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => handleDeleteTask(task.id)}
+                                    sx={{
+                                      color: '#EF4444',
+                                      borderRadius: '8px',
+                                      '&:hover': { backgroundColor: '#FEE2E2' },
+                                    }}
+                                  >
                                     <DeleteOutlineIcon sx={{ fontSize: 16 }} />
                                   </IconButton>
                                 </Tooltip>
@@ -610,94 +855,276 @@ const EventManage = () => {
           </Paper>
         </Grid>
 
-        {/* RIGHT: Sidebar Info */}
+        {/* Right Column: Info Widgets matching Reference Image 4 */}
         <Grid item xs={12} md={4}>
           <Stack spacing={3}>
-            {/* Quick Stats */}
-            <Paper elevation={0} sx={{ p: 2.5, borderRadius: '20px', border: '1px solid #E9E7F2', backgroundColor: '#FFFFFF' }}>
-              <Typography variant="subtitle1" sx={{ fontWeight: 900, color: '#20202A', mb: 2 }}>
+            {/* Quick Stats Matrix */}
+            <Paper
+              elevation={0}
+              sx={{
+                p: 2.8,
+                borderRadius: '22px',
+                border: '1px solid #E9E7F2',
+                backgroundColor: '#FFFFFF',
+                boxShadow: '0 2px 8px rgba(79, 43, 203, 0.03)',
+              }}
+            >
+              <Typography
+                variant="subtitle1"
+                sx={{
+                  fontWeight: 900,
+                  color: '#20202A',
+                  mb: 2,
+                  fontFamily: "'Plus Jakarta Sans', sans-serif",
+                }}
+              >
                 Event Overview
               </Typography>
               <Grid container spacing={1.5}>
                 <Grid item xs={6}>
-                  <Box sx={{ p: 1.5, borderRadius: '12px', backgroundColor: '#F3F0FF', textAlign: 'center' }}>
-                    <Typography variant="h6" sx={{ fontWeight: 900, color: '#4F2BCB' }}>{participants.length}</Typography>
-                    <Typography variant="caption" sx={{ color: '#777788', fontWeight: 600, fontSize: '0.68rem' }}>Registered</Typography>
-                  </Box>
-                </Grid>
-                <Grid item xs={6}>
-                  <Box sx={{ p: 1.5, borderRadius: '12px', backgroundColor: '#DBEAFE', textAlign: 'center' }}>
-                    <Typography variant="h6" sx={{ fontWeight: 900, color: '#2563EB' }}>{totalTasks}</Typography>
-                    <Typography variant="caption" sx={{ color: '#777788', fontWeight: 600, fontSize: '0.68rem' }}>Total Tasks</Typography>
-                  </Box>
-                </Grid>
-                <Grid item xs={6}>
-                  <Box sx={{ p: 1.5, borderRadius: '12px', backgroundColor: '#D1FAE5', textAlign: 'center' }}>
-                    <Typography variant="h6" sx={{ fontWeight: 900, color: '#059669' }}>{completedTasks}</Typography>
-                    <Typography variant="caption" sx={{ color: '#777788', fontWeight: 600, fontSize: '0.68rem' }}>Completed</Typography>
-                  </Box>
-                </Grid>
-                <Grid item xs={6}>
-                  <Box sx={{ p: 1.5, borderRadius: '12px', backgroundColor: '#FEF3C7', textAlign: 'center' }}>
-                    <Typography variant="h6" sx={{ fontWeight: 900, color: '#D97706' }}>
-                      {eventDate ? (eventDate > new Date() ? Math.ceil((eventDate - new Date()) / (1000 * 60 * 60 * 24)) : 0) : '—'}
+                  <Box
+                    sx={{
+                      p: 1.8,
+                      borderRadius: '14px',
+                      backgroundColor: '#F3F0FF',
+                      textAlign: 'center',
+                    }}
+                  >
+                    <Typography variant="h5" sx={{ fontWeight: 900, color: '#4F2BCB' }}>
+                      {participants.length}
                     </Typography>
-                    <Typography variant="caption" sx={{ color: '#777788', fontWeight: 600, fontSize: '0.68rem' }}>Days Left</Typography>
+                    <Typography variant="caption" sx={{ color: '#5E5D6E', fontWeight: 700 }}>
+                      Registered
+                    </Typography>
+                  </Box>
+                </Grid>
+                <Grid item xs={6}>
+                  <Box
+                    sx={{
+                      p: 1.8,
+                      borderRadius: '14px',
+                      backgroundColor: '#DBEAFE',
+                      textAlign: 'center',
+                    }}
+                  >
+                    <Typography variant="h5" sx={{ fontWeight: 900, color: '#1D4ED8' }}>
+                      {totalTasks}
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: '#5E5D6E', fontWeight: 700 }}>
+                      Total Tasks
+                    </Typography>
+                  </Box>
+                </Grid>
+                <Grid item xs={6}>
+                  <Box
+                    sx={{
+                      p: 1.8,
+                      borderRadius: '14px',
+                      backgroundColor: '#D1FAE5',
+                      textAlign: 'center',
+                    }}
+                  >
+                    <Typography variant="h5" sx={{ fontWeight: 900, color: '#059669' }}>
+                      {completedTasks}
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: '#5E5D6E', fontWeight: 700 }}>
+                      Completed
+                    </Typography>
+                  </Box>
+                </Grid>
+                <Grid item xs={6}>
+                  <Box
+                    sx={{
+                      p: 1.8,
+                      borderRadius: '14px',
+                      backgroundColor: '#FEF3C7',
+                      textAlign: 'center',
+                    }}
+                  >
+                    <Typography variant="h5" sx={{ fontWeight: 900, color: '#B45309' }}>
+                      {eventDate
+                        ? eventDate > new Date()
+                          ? Math.ceil((eventDate - new Date()) / (1000 * 60 * 60 * 24))
+                          : 0
+                        : '—'}
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: '#5E5D6E', fontWeight: 700 }}>
+                      Days Left
+                    </Typography>
                   </Box>
                 </Grid>
               </Grid>
             </Paper>
 
             {/* Event Details */}
-            <Paper elevation={0} sx={{ p: 2.5, borderRadius: '20px', border: '1px solid #E9E7F2', backgroundColor: '#FFFFFF' }}>
-              <Typography variant="subtitle1" sx={{ fontWeight: 900, color: '#20202A', mb: 1.5 }}>
+            <Paper
+              elevation={0}
+              sx={{
+                p: 2.8,
+                borderRadius: '22px',
+                border: '1px solid #E9E7F2',
+                backgroundColor: '#FFFFFF',
+                boxShadow: '0 2px 8px rgba(79, 43, 203, 0.03)',
+              }}
+            >
+              <Typography
+                variant="subtitle1"
+                sx={{
+                  fontWeight: 900,
+                  color: '#20202A',
+                  mb: 1.8,
+                  fontFamily: "'Plus Jakarta Sans', sans-serif",
+                }}
+              >
                 Event Details
               </Typography>
-              <Stack spacing={1.2}>
+              <Stack spacing={1.5}>
                 <Box>
-                  <Typography variant="caption" sx={{ fontWeight: 700, color: '#9DA0AE', textTransform: 'uppercase', fontSize: '0.68rem' }}>Description</Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 500, color: '#525266', lineHeight: 1.6, whiteSpace: 'pre-line', fontSize: '0.82rem' }}>
-                    {event?.description || '—'}
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      fontWeight: 800,
+                      color: '#8E90A2',
+                      textTransform: 'uppercase',
+                      fontSize: '0.68rem',
+                      letterSpacing: '0.04em',
+                    }}
+                  >
+                    Description
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      fontWeight: 500,
+                      color: '#5E5D6E',
+                      lineHeight: 1.6,
+                      whiteSpace: 'pre-line',
+                      fontSize: '0.84rem',
+                      mt: 0.3,
+                    }}
+                  >
+                    {event?.description || 'No detailed description provided.'}
                   </Typography>
                 </Box>
-                <Divider />
+                <Divider sx={{ borderColor: '#F1EFF8' }} />
                 <Box>
-                  <Typography variant="caption" sx={{ fontWeight: 700, color: '#9DA0AE', textTransform: 'uppercase', fontSize: '0.68rem' }}>Location</Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 600, color: '#20202A' }}>{event?.location || '—'}</Typography>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      fontWeight: 800,
+                      color: '#8E90A2',
+                      textTransform: 'uppercase',
+                      fontSize: '0.68rem',
+                    }}
+                  >
+                    Location / Venue
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{ fontWeight: 700, color: '#20202A', mt: 0.3 }}
+                  >
+                    {event?.location || 'University Main Auditorium'}
+                  </Typography>
                 </Box>
-                <Divider />
+                <Divider sx={{ borderColor: '#F1EFF8' }} />
                 <Box>
-                  <Typography variant="caption" sx={{ fontWeight: 700, color: '#9DA0AE', textTransform: 'uppercase', fontSize: '0.68rem' }}>Date & Time</Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 600, color: '#20202A' }}>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      fontWeight: 800,
+                      color: '#8E90A2',
+                      textTransform: 'uppercase',
+                      fontSize: '0.68rem',
+                    }}
+                  >
+                    Date & Time
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{ fontWeight: 700, color: '#20202A', mt: 0.3 }}
+                  >
                     {eventDate ? eventDate.toLocaleString() : '—'}
-                    {eventEndDate ? ` — ${eventEndDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : ''}
+                    {eventEndDate
+                      ? ` — ${eventEndDate.toLocaleTimeString([], {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}`
+                      : ''}
                   </Typography>
                 </Box>
               </Stack>
             </Paper>
 
-            {/* Team Members */}
-            <Paper elevation={0} sx={{ p: 2.5, borderRadius: '20px', border: '1px solid #E9E7F2', backgroundColor: '#FFFFFF' }}>
-              <Typography variant="subtitle1" sx={{ fontWeight: 900, color: '#20202A', mb: 1.5 }}>
+            {/* Club Team Members */}
+            <Paper
+              elevation={0}
+              sx={{
+                p: 2.8,
+                borderRadius: '22px',
+                border: '1px solid #E9E7F2',
+                backgroundColor: '#FFFFFF',
+                boxShadow: '0 2px 8px rgba(79, 43, 203, 0.03)',
+              }}
+            >
+              <Typography
+                variant="subtitle1"
+                sx={{
+                  fontWeight: 900,
+                  color: '#20202A',
+                  mb: 1.8,
+                  fontFamily: "'Plus Jakarta Sans', sans-serif",
+                }}
+              >
                 Club Team ({teamMembers.length})
               </Typography>
               {teamMembers.length === 0 ? (
-                <Typography variant="body2" sx={{ color: '#9DA0AE', textAlign: 'center', py: 2 }}>
-                  No club members found.
+                <Typography variant="body2" sx={{ color: '#8E90A2', textAlign: 'center', py: 2 }}>
+                  No team members found.
                 </Typography>
               ) : (
-                <Stack spacing={1}>
-                  {teamMembers.map((m, idx) => (
-                    <Box key={m.user_id || idx} display="flex" alignItems="center" gap={1}>
-                      <Avatar sx={{ width: 30, height: 30, backgroundColor: '#F3F0FF', color: '#4F2BCB', fontWeight: 800, fontSize: '0.8rem' }}>
+                <Stack spacing={1.2}>
+                  {teamMembers.slice(0, 6).map((m, idx) => (
+                    <Box
+                      key={m.user_id || idx}
+                      display="flex"
+                      alignItems="center"
+                      gap={1.2}
+                      sx={{
+                        p: 1,
+                        borderRadius: '12px',
+                        backgroundColor: '#F8F7FD',
+                        border: '1px solid #F1EFF8',
+                      }}
+                    >
+                      <Avatar
+                        sx={{
+                          width: 32,
+                          height: 32,
+                          backgroundColor: '#F3F0FF',
+                          color: '#4F2BCB',
+                          fontWeight: 800,
+                          fontSize: '0.82rem',
+                        }}
+                      >
                         {(m.username || 'M').charAt(0).toUpperCase()}
                       </Avatar>
-                      <Box sx={{ flex: 1 }}>
-                        <Typography variant="caption" sx={{ fontWeight: 800, color: '#20202A', display: 'block', lineHeight: 1.2 }}>
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            fontWeight: 800,
+                            color: '#20202A',
+                            display: 'block',
+                            lineHeight: 1.2,
+                          }}
+                        >
                           {m.username || `Member #${m.user_id}`}
                         </Typography>
-                        <Typography variant="caption" sx={{ color: '#777788', fontSize: '0.68rem' }}>
-                          {m.role || 'Member'}
+                        <Typography
+                          variant="caption"
+                          sx={{ color: '#5E5D6E', fontSize: '0.7rem', textTransform: 'capitalize' }}
+                        >
+                          {m.role?.replace('_', ' ') || 'Member'}
                         </Typography>
                       </Box>
                     </Box>
@@ -706,45 +1133,97 @@ const EventManage = () => {
               )}
             </Paper>
 
-            {/* Recent Registrations */}
-            <Paper elevation={0} sx={{ p: 2.5, borderRadius: '20px', border: '1px solid #E9E7F2', backgroundColor: '#FFFFFF' }}>
-              <Box display="flex" justifyContent="space-between" alignItems="center" mb={1.5}>
-                <Typography variant="subtitle1" sx={{ fontWeight: 900, color: '#20202A' }}>
+            {/* Participants */}
+            <Paper
+              elevation={0}
+              sx={{
+                p: 2.8,
+                borderRadius: '22px',
+                border: '1px solid #E9E7F2',
+                backgroundColor: '#FFFFFF',
+                boxShadow: '0 2px 8px rgba(79, 43, 203, 0.03)',
+              }}
+            >
+              <Box display="flex" justifyContent="space-between" alignItems="center" mb={1.8}>
+                <Typography
+                  variant="subtitle1"
+                  sx={{
+                    fontWeight: 900,
+                    color: '#20202A',
+                    fontFamily: "'Plus Jakarta Sans', sans-serif",
+                  }}
+                >
                   Participants ({participants.length})
                 </Typography>
-                <Button variant="ghost" size="small"
+                <Button
+                  variant="ghost"
+                  size="small"
                   onClick={() => {
-                    const regPath = systemRole === 'president'
-                      ? `/president/events/${eventId}/registrations`
-                      : systemRole === 'secretary'
-                      ? `/secretary/events/${eventId}/registrations`
-                      : `/events/${eventId}/registrations`;
+                    const regPath =
+                      systemRole === 'president'
+                        ? `/president/events/${eventId}/registrations`
+                        : systemRole === 'secretary'
+                        ? `/secretary/events/${eventId}/registrations`
+                        : `/events/${eventId}/registrations`;
                     navigate(regPath);
                   }}
-                  sx={{ color: '#4F2BCB', fontSize: '0.72rem' }}>
+                  sx={{ color: '#4F2BCB', fontSize: '0.76rem' }}
+                >
                   View All
                 </Button>
               </Box>
               {participants.length === 0 ? (
-                <Typography variant="body2" sx={{ color: '#9DA0AE', textAlign: 'center', py: 2 }}>No registrations yet.</Typography>
+                <Typography variant="body2" sx={{ color: '#8E90A2', textAlign: 'center', py: 2 }}>
+                  No registrations yet.
+                </Typography>
               ) : (
                 <Stack spacing={1}>
-                  {participants.slice(0, 6).map((p) => (
-                    <Box key={p.id} display="flex" alignItems="center" gap={1}>
+                  {participants.slice(0, 5).map((p) => (
+                    <Box
+                      key={p.id}
+                      display="flex"
+                      alignItems="center"
+                      gap={1.2}
+                      sx={{
+                        p: 0.8,
+                        borderRadius: '10px',
+                        backgroundColor: '#FAF9FF',
+                      }}
+                    >
                       <Avatar
                         src={getImageUrl(p.avatar_url)}
-                        sx={{ width: 28, height: 28, backgroundColor: '#EAEAFF', color: '#4F2BCB', fontWeight: 800, fontSize: '0.75rem' }}
+                        sx={{
+                          width: 30,
+                          height: 30,
+                          backgroundColor: '#EDE9FE',
+                          color: '#4F2BCB',
+                          fontWeight: 800,
+                          fontSize: '0.78rem',
+                        }}
                       >
                         {(p.username || p.email || 'U').charAt(0).toUpperCase()}
                       </Avatar>
-                      <Typography variant="caption" sx={{ fontWeight: 700, color: '#20202A' }}>
+                      <Typography
+                        variant="caption"
+                        sx={{ fontWeight: 700, color: '#20202A' }}
+                      >
                         {p.username || p.email}
                       </Typography>
                     </Box>
                   ))}
-                  {participants.length > 6 && (
-                    <Typography variant="caption" sx={{ color: '#4F2BCB', fontWeight: 700, cursor: 'pointer', textAlign: 'center' }}>
-                      +{participants.length - 6} more
+                  {participants.length > 5 && (
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        color: '#4F2BCB',
+                        fontWeight: 800,
+                        cursor: 'pointer',
+                        textAlign: 'center',
+                        display: 'block',
+                        pt: 0.5,
+                      }}
+                    >
+                      +{participants.length - 5} more participants
                     </Typography>
                   )}
                 </Stack>
@@ -754,16 +1233,23 @@ const EventManage = () => {
         </Grid>
       </Grid>
 
-      {/* ===== TASK CREATE/EDIT MODAL ===== */}
+      {/* Task Create / Edit Dialog */}
       <Dialog
         open={taskModalOpen}
         onClose={() => setTaskModalOpen(false)}
         maxWidth="sm"
         fullWidth
-        PaperProps={{ sx: { borderRadius: '20px' } }}
+        PaperProps={{ sx: { borderRadius: '24px', p: 1 } }}
       >
-        <DialogTitle sx={{ fontWeight: 900, color: '#20202A', pb: 0.5 }}>
-          {editingTask ? 'Edit Task' : 'Create New Task'}
+        <DialogTitle
+          sx={{
+            fontWeight: 900,
+            color: '#20202A',
+            fontFamily: "'Plus Jakarta Sans', sans-serif",
+            pb: 1,
+          }}
+        >
+          {editingTask ? 'Edit Task' : 'Assign New Task'}
         </DialogTitle>
         <DialogContent dividers>
           <Stack spacing={2.5} pt={1}>
@@ -772,9 +1258,9 @@ const EventManage = () => {
               fullWidth
               value={taskForm.title}
               onChange={(e) => setTaskForm({ ...taskForm, title: e.target.value })}
-              placeholder="e.g. Design event banner"
-              InputProps={{ sx: { borderRadius: '12px' } }}
+              placeholder="e.g. Venue setup & sound system management"
             />
+
             <TextField
               label="Description"
               fullWidth
@@ -782,8 +1268,7 @@ const EventManage = () => {
               rows={3}
               value={taskForm.description}
               onChange={(e) => setTaskForm({ ...taskForm, description: e.target.value })}
-              placeholder="Describe what needs to be done..."
-              InputProps={{ sx: { borderRadius: '12px' } }}
+              placeholder="Detail the actionable steps required for this task..."
             />
 
             <Grid container spacing={2}>
@@ -794,18 +1279,18 @@ const EventManage = () => {
                   fullWidth
                   value={taskForm.assigned_to}
                   onChange={(e) => setTaskForm({ ...taskForm, assigned_to: e.target.value })}
-                  InputProps={{ sx: { borderRadius: '12px' } }}
                 >
                   <MenuItem value="">
                     <em>Unassigned</em>
                   </MenuItem>
                   {teamMembers.map((m) => (
                     <MenuItem key={m.user_id} value={m.user_id}>
-                      {m.username} ({m.role})
+                      {m.username || `User #${m.user_id}`} ({m.role || 'Member'})
                     </MenuItem>
                   ))}
                 </TextField>
               </Grid>
+
               <Grid item xs={12} sm={6}>
                 <TextField
                   select
@@ -813,7 +1298,6 @@ const EventManage = () => {
                   fullWidth
                   value={taskForm.priority}
                   onChange={(e) => setTaskForm({ ...taskForm, priority: e.target.value })}
-                  InputProps={{ sx: { borderRadius: '12px' } }}
                 >
                   <MenuItem value="low">🟢 Low</MenuItem>
                   <MenuItem value="medium">🟡 Medium</MenuItem>
@@ -827,20 +1311,22 @@ const EventManage = () => {
               <Grid item xs={12} sm={6}>
                 <TextField
                   select
-                  label="Category"
+                  label="Category / Department"
                   fullWidth
                   value={taskForm.category}
                   onChange={(e) => setTaskForm({ ...taskForm, category: e.target.value })}
-                  InputProps={{ sx: { borderRadius: '12px' } }}
                 >
                   <MenuItem value="">
-                    <em>None</em>
+                    <em>General</em>
                   </MenuItem>
-                  {CATEGORIES.map((c) => (
-                    <MenuItem key={c} value={c}>{c}</MenuItem>
+                  {CATEGORIES.map((cat) => (
+                    <MenuItem key={cat} value={cat}>
+                      {cat}
+                    </MenuItem>
                   ))}
                 </TextField>
               </Grid>
+
               <Grid item xs={12} sm={6}>
                 <TextField
                   select
@@ -848,7 +1334,6 @@ const EventManage = () => {
                   fullWidth
                   value={taskForm.status}
                   onChange={(e) => setTaskForm({ ...taskForm, status: e.target.value })}
-                  InputProps={{ sx: { borderRadius: '12px' } }}
                 >
                   <MenuItem value="pending">⏳ Pending</MenuItem>
                   <MenuItem value="in_progress">🔄 In Progress</MenuItem>
@@ -859,13 +1344,12 @@ const EventManage = () => {
             </Grid>
 
             <TextField
-              label="Due Date"
+              label="Due Date & Time"
               type="datetime-local"
               fullWidth
               value={taskForm.due_date}
               onChange={(e) => setTaskForm({ ...taskForm, due_date: e.target.value })}
               InputLabelProps={{ shrink: true }}
-              InputProps={{ sx: { borderRadius: '12px' } }}
             />
           </Stack>
         </DialogContent>
@@ -873,13 +1357,8 @@ const EventManage = () => {
           <Button variant="ghost" onClick={() => setTaskModalOpen(false)} disabled={submitting}>
             Cancel
           </Button>
-          <Button
-            variant="primary"
-            onClick={handleTaskSave}
-            disabled={submitting || !taskForm.title.trim()}
-            sx={{ backgroundColor: '#4F2BCB' }}
-          >
-            {submitting ? 'Saving...' : editingTask ? 'Update Task' : 'Create Task'}
+          <Button variant="primary" onClick={handleTaskSave} loading={submitting}>
+            {editingTask ? 'Save Changes' : 'Assign Task'}
           </Button>
         </DialogActions>
       </Dialog>

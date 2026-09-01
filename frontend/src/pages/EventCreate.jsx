@@ -1,20 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link as RouterLink } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
   Typography,
   Box,
   Alert,
   Paper,
   Grid,
-  CircularProgress,
   TextField,
   MenuItem,
-  Button as MuiButton,
   Stack,
-  Chip,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import EventAvailableIcon from '@mui/icons-material/EventAvailable';
 
 import { useAuth } from '../context/AuthContext';
 import { createEvent } from '../api/eventApi';
@@ -25,7 +21,7 @@ import Button from '../components/Button';
 const EventCreate = () => {
   const { clubId } = useParams();
   const navigate = useNavigate();
-  const { user, systemRole, presidentOfClubs, secretaryOfClubs } = useAuth();
+  const { systemRole, presidentOfClubs, secretaryOfClubs } = useAuth();
 
   const [clubs, setClubs] = useState([]);
   const [selectedClubId, setSelectedClubId] = useState(clubId ? String(clubId) : '');
@@ -130,9 +126,9 @@ const EventCreate = () => {
       : '/events';
 
   return (
-    <Box sx={{ maxWidth: 850, mx: 'auto', py: 2 }}>
+    <Box sx={{ maxWidth: 880, mx: 'auto', py: 2, pb: 6 }}>
       {/* Header */}
-      <Box sx={{ mb: 3 }}>
+      <Box sx={{ mb: 3.5 }}>
         <Box
           onClick={() => navigate(backPath)}
           sx={{
@@ -140,9 +136,10 @@ const EventCreate = () => {
             alignItems: 'center',
             gap: 0.8,
             color: '#4F2BCB',
-            fontWeight: 700,
+            fontWeight: 800,
             fontSize: '0.92rem',
             cursor: 'pointer',
+            fontFamily: "'Plus Jakarta Sans', sans-serif",
             mb: 2,
             '&:hover': { textDecoration: 'underline' },
           }}
@@ -150,16 +147,26 @@ const EventCreate = () => {
           <ArrowBackIcon sx={{ fontSize: 18 }} /> Back to Events
         </Box>
 
-        <Typography variant="h4" sx={{ fontWeight: 800, color: '#20202A', fontSize: '1.8rem', mb: 0.5 }}>
-          Create Club Event
+        <Typography
+          variant="h4"
+          sx={{
+            fontWeight: 900,
+            color: '#20202A',
+            fontSize: { xs: '1.5rem', sm: '1.85rem' },
+            fontFamily: "'Plus Jakarta Sans', sans-serif",
+            letterSpacing: '-0.02em',
+            mb: 0.5,
+          }}
+        >
+          Create New Event / Workshop
         </Typography>
-        <Typography variant="body2" sx={{ color: '#777788' }}>
-          Schedule a workshop, seminar, meetup, or hackathon for your club community.
+        <Typography variant="body2" sx={{ color: '#5E5D6E', fontWeight: 500 }}>
+          Schedule a seminar, workshop, meetup, or competition for your club community.
         </Typography>
       </Box>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }} onClose={() => setError(null)}>
+        <Alert severity="error" sx={{ mb: 3, borderRadius: '12px' }} onClose={() => setError(null)}>
           {error}
         </Alert>
       )}
@@ -167,18 +174,19 @@ const EventCreate = () => {
       <Paper
         elevation={0}
         sx={{
-          p: { xs: 3, sm: 4 },
-          borderRadius: '20px',
+          p: { xs: 3, sm: 4.5 },
+          borderRadius: '24px',
           border: '1px solid #E9E7F2',
           backgroundColor: '#FFFFFF',
+          boxShadow: '0 4px 20px rgba(79, 43, 203, 0.04)',
         }}
       >
         <Box component="form" onSubmit={handleSubmit} noValidate>
-          <Grid container spacing={3}>
+          <Stack spacing={3}>
             {/* Club Selection Dropdown */}
-            <Grid item xs={12}>
-              <Typography variant="body2" sx={{ fontWeight: 700, color: '#20202A', mb: 0.8 }}>
-                Club Organizing This Event *
+            <Box>
+              <Typography variant="body2" sx={{ fontWeight: 800, color: '#20202A', mb: 0.8 }}>
+                Host Club Organization *
               </Typography>
               <TextField
                 select
@@ -186,15 +194,6 @@ const EventCreate = () => {
                 value={selectedClubId}
                 onChange={(e) => setSelectedClubId(e.target.value)}
                 disabled={loadingClubs}
-                helperText="Select which club will host and manage this event."
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    backgroundColor: '#F3F6FC',
-                    borderRadius: '10px',
-                    '& fieldset': { borderColor: '#E9E7F2' },
-                    '&.Mui-focused fieldset': { borderColor: '#4F2BCB' },
-                  },
-                }}
               >
                 {clubs.map((c) => (
                   <MenuItem key={c.id} value={String(c.id)}>
@@ -202,20 +201,18 @@ const EventCreate = () => {
                   </MenuItem>
                 ))}
               </TextField>
-            </Grid>
+            </Box>
 
-            <Grid item xs={12}>
-              <ImageUpload
-                label="Event Photo / Promotional Banner"
-                value={form.image_url}
-                onChange={(url) => setForm({ ...form, image_url: url })}
-                aspect="banner"
-                helperText="Upload event promotional banner or photo (PNG, JPG, WEBP under 5MB)"
-              />
-            </Grid>
+            <ImageUpload
+              label="Event Photo / Promotional Banner"
+              value={form.image_url}
+              onChange={(url) => setForm({ ...form, image_url: url })}
+              aspect="banner"
+              helperText="Upload event promotional poster or cover photo (PNG, JPG, WEBP under 5MB)"
+            />
 
-            <Grid item xs={12}>
-              <Typography variant="body2" sx={{ fontWeight: 700, color: '#20202A', mb: 0.8 }}>
+            <Box>
+              <Typography variant="body2" sx={{ fontWeight: 800, color: '#20202A', mb: 0.8 }}>
                 Event Title *
               </Typography>
               <TextField
@@ -223,113 +220,75 @@ const EventCreate = () => {
                 name="title"
                 value={form.title}
                 onChange={handleChange}
-                placeholder="e.g. Annual Public Speaking Workshop 2026"
+                placeholder="e.g. Annual Machine Learning & AI Bootcamp 2026"
                 required
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    backgroundColor: '#F3F6FC',
-                    borderRadius: '10px',
-                    '& fieldset': { borderColor: '#E9E7F2' },
-                    '&.Mui-focused fieldset': { borderColor: '#4F2BCB' },
-                  },
-                }}
               />
+            </Box>
+
+            <Grid container spacing={2.5}>
+              <Grid item xs={12} sm={6}>
+                <Typography variant="body2" sx={{ fontWeight: 800, color: '#20202A', mb: 0.8 }}>
+                  Date & Start Time *
+                </Typography>
+                <TextField
+                  fullWidth
+                  name="date"
+                  type="datetime-local"
+                  value={form.date}
+                  onChange={handleChange}
+                  InputLabelProps={{ shrink: true }}
+                  required
+                />
+              </Grid>
+
+              <Grid item xs={12} sm={6}>
+                <Typography variant="body2" sx={{ fontWeight: 800, color: '#20202A', mb: 0.8 }}>
+                  Location / Venue *
+                </Typography>
+                <TextField
+                  fullWidth
+                  name="location"
+                  placeholder="e.g. Auditorium Hall B / Zoom Link"
+                  value={form.location}
+                  onChange={handleChange}
+                  required
+                />
+              </Grid>
             </Grid>
 
-            <Grid item xs={12} sm={6}>
-              <Typography variant="body2" sx={{ fontWeight: 700, color: '#20202A', mb: 0.8 }}>
-                Date & Start Time *
-              </Typography>
-              <TextField
-                fullWidth
-                name="date"
-                type="datetime-local"
-                value={form.date}
-                onChange={handleChange}
-                InputLabelProps={{ shrink: true }}
-                required
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    backgroundColor: '#F3F6FC',
-                    borderRadius: '10px',
-                    '& fieldset': { borderColor: '#E9E7F2' },
-                    '&.Mui-focused fieldset': { borderColor: '#4F2BCB' },
-                  },
-                }}
-              />
-            </Grid>
-
-            <Grid item xs={12} sm={6}>
-              <Typography variant="body2" sx={{ fontWeight: 700, color: '#20202A', mb: 0.8 }}>
-                Location / Venue *
-              </Typography>
-              <TextField
-                fullWidth
-                name="location"
-                value={form.location}
-                onChange={handleChange}
-                placeholder="e.g. Auditorium 101 / Campus Center"
-                required
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    backgroundColor: '#F3F6FC',
-                    borderRadius: '10px',
-                    '& fieldset': { borderColor: '#E9E7F2' },
-                    '&.Mui-focused fieldset': { borderColor: '#4F2BCB' },
-                  },
-                }}
-              />
-            </Grid>
-
-            <Grid item xs={12}>
-              <Typography variant="body2" sx={{ fontWeight: 700, color: '#20202A', mb: 0.8 }}>
-                Event Description & Goals
+            <Box>
+              <Typography variant="body2" sx={{ fontWeight: 800, color: '#20202A', mb: 0.8 }}>
+                Event Details & Schedule
               </Typography>
               <TextField
                 fullWidth
                 multiline
                 rows={4}
                 name="description"
+                placeholder="Detail what attendees will learn, prerequisites, guest speakers, etc..."
                 value={form.description}
                 onChange={handleChange}
-                placeholder="Details about speaker, agenda, prerequisites, workshop goals..."
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    backgroundColor: '#F3F6FC',
-                    borderRadius: '10px',
-                    '& fieldset': { borderColor: '#E9E7F2' },
-                    '&.Mui-focused fieldset': { borderColor: '#4F2BCB' },
-                  },
-                }}
               />
-            </Grid>
+            </Box>
 
-            <Grid item xs={12} sx={{ mt: 1, display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
-              <MuiButton
+            <Box display="flex" justifyContent="flex-end" gap={1.5} pt={2} borderTop="1px solid #F1EFF8">
+              <Button
+                variant="ghost"
                 onClick={() => navigate(backPath)}
                 disabled={loading}
-                sx={{ color: '#777788', textTransform: 'none', fontWeight: 600 }}
               >
                 Cancel
-              </MuiButton>
-              <MuiButton
+              </Button>
+              <Button
+                variant="primary"
                 type="submit"
-                disabled={loading}
-                sx={{
-                  backgroundColor: '#4F2BCB',
-                  color: '#FFFFFF',
-                  px: 4,
-                  py: 1.1,
-                  borderRadius: '10px',
-                  fontWeight: 700,
-                  textTransform: 'none',
-                  '&:hover': { backgroundColor: '#39209A' },
-                }}
+                loading={loading}
+                sx={{ px: 3.5 }}
               >
-                {loading ? <CircularProgress size={20} color="inherit" /> : 'Publish Event'}
-              </MuiButton>
-            </Grid>
-          </Grid>
+                Publish Event
+              </Button>
+            </Box>
+          </Stack>
         </Box>
       </Paper>
     </Box>

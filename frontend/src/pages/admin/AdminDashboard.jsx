@@ -7,16 +7,12 @@ import {
   Paper,
   CircularProgress,
   Avatar,
-  Chip,
-  Divider,
   Stack,
 } from '@mui/material';
 import PeopleAltOutlinedIcon from '@mui/icons-material/PeopleAltOutlined';
 import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined';
 import EventOutlinedIcon from '@mui/icons-material/EventOutlined';
 import CampaignOutlinedIcon from '@mui/icons-material/CampaignOutlined';
-import AdminPanelSettingsOutlinedIcon from '@mui/icons-material/AdminPanelSettingsOutlined';
-import GroupsOutlinedIcon from '@mui/icons-material/GroupsOutlined';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import BrandingWatermarkOutlinedIcon from '@mui/icons-material/BrandingWatermarkOutlined';
 
@@ -65,98 +61,56 @@ const AdminDashboard = () => {
   }
 
   return (
-    <Box sx={{ maxWidth: 1200, mx: 'auto', pb: 6 }}>
+    <Box sx={{ maxWidth: 1320, mx: 'auto', width: '100%', pb: 6 }}>
       {/* Admin Quick Settings Bar */}
       <Box display="flex" justifyContent="flex-end" mb={2}>
         <Button
           variant="ghost"
           startIcon={<BrandingWatermarkOutlinedIcon />}
           onClick={() => setBrandingModalOpen(true)}
-          sx={{ color: '#4F2BCB', borderColor: '#D4CCF7', fontSize: '0.85rem' }}
+          sx={{ color: '#4F2BCB', fontSize: '0.85rem' }}
         >
           Customize Site & Banner
         </Button>
       </Box>
 
-      {welcomeBannerEnabled ? (
-        <WelcomeBanner username={user?.username} roleLabel="Platform Admin" />
-      ) : (
-        /* Welcome Banner with Website Logo & Branding Controls */
-        <Box
-          sx={{
-            background: 'linear-gradient(135deg, #4F2BCB 0%, #6838EE 100%)',
-            borderRadius: '24px',
-            p: { xs: 3, sm: 4, md: 4.5 },
-            mb: 4,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            flexWrap: 'wrap',
-            gap: 2.5,
-            color: '#FFFFFF',
-            boxShadow: '0 10px 30px rgba(79, 43, 203, 0.25)',
-          }}
-        >
-          <Box sx={{ flex: 1, minWidth: 260 }}>
-            <Box display="flex" alignItems="center" gap={1} mb={0.8}>
-              <AdminPanelSettingsOutlinedIcon sx={{ fontSize: 20, opacity: 0.9 }} />
-              <Typography sx={{ fontWeight: 700, fontSize: '0.85rem', opacity: 0.9, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                Website Administrator
-              </Typography>
-            </Box>
-            <Typography variant="h4" sx={{ fontWeight: 900, fontSize: { xs: '1.6rem', sm: '2.1rem' }, mb: 0.8 }}>
-              Welcome to {siteName}, {user?.username}! 👋
-            </Typography>
-            <Typography sx={{ opacity: 0.9, fontSize: '0.95rem', fontWeight: 500 }}>
-              Platform overview — manage clubs, users, branding, events, and announcements.
-            </Typography>
-          </Box>
-
-          <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
-            <Button
-              variant="ghost"
-              startIcon={<BrandingWatermarkOutlinedIcon />}
-              onClick={() => setBrandingModalOpen(true)}
-              sx={{
-                backgroundColor: 'rgba(255, 255, 255, 0.15)',
-                color: '#FFFFFF',
-                borderColor: 'rgba(255, 255, 255, 0.4)',
-                fontWeight: 700,
-                fontSize: '0.85rem',
-                backdropFilter: 'blur(8px)',
-                '&:hover': { backgroundColor: '#FFFFFF', color: '#4F2BCB' },
-              }}
-            >
-              Edit Website Name & Logo
-            </Button>
-
-            <Avatar
-              src={siteLogo}
-              variant="rounded"
-              sx={{
-                width: { xs: 64, sm: 80 },
-                height: { xs: 64, sm: 80 },
-                borderRadius: '20px',
-                backgroundColor: '#FFFFFF',
-                color: '#4F2BCB',
-                fontWeight: 900,
-                fontSize: '2rem',
-                border: '3px solid rgba(255,255,255,0.6)',
-                boxShadow: '0 8px 25px rgba(0,0,0,0.2)',
-                flexShrink: 0,
-              }}
-            >
-              {siteName?.charAt(0).toUpperCase()}
-            </Avatar>
-          </Stack>
-        </Box>
-      )}
+      {/* Hero Welcome Banner */}
+      <WelcomeBanner
+        username={user?.username}
+        roleLabel="Platform Administrator"
+        action={
+          <Button
+            variant="ghost"
+            startIcon={<BrandingWatermarkOutlinedIcon />}
+            onClick={() => setBrandingModalOpen(true)}
+            sx={{
+              backgroundColor: 'rgba(255, 255, 255, 0.15)',
+              color: '#FFFFFF',
+              borderColor: 'rgba(255, 255, 255, 0.4)',
+              fontWeight: 800,
+              fontSize: '0.85rem',
+              backdropFilter: 'blur(8px)',
+              '&:hover': { backgroundColor: '#FFFFFF', color: '#4F2BCB' },
+            }}
+          >
+            Edit Branding & Logo
+          </Button>
+        }
+      />
 
       {/* Stats Grid */}
-      <Typography variant="h6" sx={{ fontWeight: 800, color: '#20202A', mb: 2.5 }}>
+      <Typography
+        variant="h6"
+        sx={{
+          fontWeight: 900,
+          color: '#20202A',
+          mb: 2.5,
+          fontFamily: "'Plus Jakarta Sans', sans-serif",
+        }}
+      >
         Platform Overview
       </Typography>
-      <Grid container spacing={2.5} mb={4}>
+      <Grid container spacing={3} mb={4}>
         <Grid item xs={12} sm={6} md={3}>
           <StatCard
             title="Total Clubs"
@@ -164,7 +118,7 @@ const AdminDashboard = () => {
             icon={<BusinessOutlinedIcon />}
             iconColor="#4F2BCB"
             iconBg="#F3F0FF"
-            subtitle="Registered campus clubs"
+            subtitle="Active university clubs"
             onClick={() => navigate('/admin/clubs')}
           />
         </Grid>
@@ -173,8 +127,8 @@ const AdminDashboard = () => {
             title="Total Users"
             value={stats?.total_users ?? 0}
             icon={<PeopleAltOutlinedIcon />}
-            iconColor="#0284C7"
-            iconBg="#E0F2FE"
+            iconColor="#1D4ED8"
+            iconBg="#DBEAFE"
             subtitle="Platform student accounts"
             onClick={() => navigate('/admin/users')}
           />
@@ -186,7 +140,7 @@ const AdminDashboard = () => {
             icon={<EventOutlinedIcon />}
             iconColor="#059669"
             iconBg="#D1FAE5"
-            subtitle="Workshops and seminars"
+            subtitle="Scheduled workshops & events"
             onClick={() => navigate('/admin/events')}
           />
         </Grid>
@@ -195,31 +149,39 @@ const AdminDashboard = () => {
             title="Announcements"
             value={stats?.total_announcements ?? 0}
             icon={<CampaignOutlinedIcon />}
-            iconColor="#D97706"
+            iconColor="#B45309"
             iconBg="#FEF3C7"
-            subtitle="Active broadcasts"
+            subtitle="Official broadcasts & notices"
             onClick={() => navigate('/admin/announcements')}
           />
         </Grid>
       </Grid>
 
-      {/* Recent Clubs Roster with Dynamic Logos */}
+      {/* University Clubs Grid */}
       <Paper
         elevation={0}
         sx={{
           p: 3.5,
-          borderRadius: '20px',
+          borderRadius: '24px',
           border: '1px solid #E9E7F2',
           backgroundColor: '#FFFFFF',
+          boxShadow: '0 2px 10px rgba(79, 43, 203, 0.03)',
         }}
       >
         <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
           <Box>
-            <Typography variant="h6" sx={{ fontWeight: 800, color: '#20202A' }}>
-              University Clubs
+            <Typography
+              variant="h6"
+              sx={{
+                fontWeight: 900,
+                color: '#20202A',
+                fontFamily: "'Plus Jakarta Sans', sans-serif",
+              }}
+            >
+              University Student Clubs
             </Typography>
-            <Typography variant="body2" sx={{ color: '#777788' }}>
-              Active student organizations on {siteName}.
+            <Typography variant="body2" sx={{ color: '#5E5D6E' }}>
+              Active student organizations registered on {siteName}.
             </Typography>
           </Box>
           <Button
@@ -227,7 +189,7 @@ const AdminDashboard = () => {
             size="small"
             endIcon={<ArrowForwardIcon />}
             onClick={() => navigate('/admin/clubs')}
-            sx={{ color: '#4F2BCB', fontWeight: 700 }}
+            sx={{ color: '#4F2BCB', fontWeight: 800 }}
           >
             Manage All Clubs
           </Button>
@@ -243,18 +205,19 @@ const AdminDashboard = () => {
                   onClick={() => navigate(`/clubs/${c.id}`)}
                   sx={{
                     p: 2.5,
-                    borderRadius: '16px',
+                    borderRadius: '18px',
                     border: '1px solid #E9E7F2',
-                    backgroundColor: '#FBFBFE',
+                    backgroundColor: '#FAF9FF',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
                     gap: 2,
-                    transition: 'all 0.2s',
+                    transition: 'all 0.2s cubic-bezier(0.2, 0, 0, 1)',
                     '&:hover': {
                       borderColor: '#4F2BCB',
                       transform: 'translateY(-2px)',
                       boxShadow: '0 8px 20px rgba(79, 43, 203, 0.08)',
+                      backgroundColor: '#FFFFFF',
                     },
                   }}
                 >
@@ -262,13 +225,13 @@ const AdminDashboard = () => {
                     src={logo}
                     variant="rounded"
                     sx={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: '12px',
+                      width: 50,
+                      height: 50,
+                      borderRadius: '14px',
                       backgroundColor: '#F3F0FF',
                       color: '#4F2BCB',
-                      fontWeight: 800,
-                      border: '1.5px solid #E2D9FF',
+                      fontWeight: 900,
+                      border: '1.5px solid #E0DBFF',
                     }}
                   >
                     {c.name.charAt(0).toUpperCase()}
@@ -282,11 +245,12 @@ const AdminDashboard = () => {
                         whiteSpace: 'nowrap',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
+                        fontFamily: "'Plus Jakarta Sans', sans-serif",
                       }}
                     >
                       {c.name}
                     </Typography>
-                    <Typography variant="caption" sx={{ color: '#777788', display: 'block' }}>
+                    <Typography variant="caption" sx={{ color: '#5E5D6E', display: 'block', fontWeight: 600 }}>
                       {c.category || 'General Club'}
                     </Typography>
                   </Box>

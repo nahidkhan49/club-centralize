@@ -16,6 +16,7 @@ import {
   Chip,
   Tabs,
   Tab,
+  Stack,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
@@ -24,10 +25,12 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import { getEvent, joinEvent, leaveEvent, deleteEvent, fetchEventParticipants } from '../api/eventApi';
 import api, { getImageUrl } from '../api/axiosInstance';
 import { useAuth } from '../context/AuthContext';
 import Button from '../components/Button';
+import EmptyState from '../components/EmptyState';
 
 const DEFAULT_EVENT_BANNER = 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=1200&q=80';
 
@@ -70,9 +73,10 @@ const EventDetails = () => {
   };
 
   const fetchClubMembers = async () => {
-    if (!clubId) return;
+    const targetClubId = clubId || event?.club_id;
+    if (!targetClubId) return;
     try {
-      const res = await api.get(`/clubs/${clubId}/members`);
+      const res = await api.get(`/clubs/${targetClubId}/members`);
       setClubMembers(res.data || []);
     } catch (err) {
       console.error('Failed to load club members', err);
@@ -82,8 +86,13 @@ const EventDetails = () => {
   useEffect(() => {
     fetchEventData();
     loadParticipants();
-    fetchClubMembers();
-  }, [eventId, clubId]);
+  }, [eventId]);
+
+  useEffect(() => {
+    if (clubId || event?.club_id) {
+      fetchClubMembers();
+    }
+  }, [clubId, event?.club_id]);
 
   const handleJoin = async () => {
     try {
@@ -98,6 +107,7 @@ const EventDetails = () => {
   };
 
   const handleLeave = async () => {
+    if (!window.confirm('Are you sure you want to cancel your event registration?')) return;
     try {
       setActionLoading(true);
       await leaveEvent(eventId);
@@ -113,7 +123,7 @@ const EventDetails = () => {
     try {
       setActionLoading(true);
       await deleteEvent(eventId);
-      navigate(`/clubs/${clubId}`);
+      navigate(clubId ? `/clubs/${clubId}` : '/events');
     } catch (err) {
       setError(err?.response?.data?.detail || 'Failed to delete event');
     } finally {
@@ -124,9 +134,13 @@ const EventDetails = () => {
 
   const currentUserId = Number(localStorage.getItem('user_id'));
   const isParticipant = participants.some((p) => p.id === currentUserId || p.user_id === currentUserId);
-  const isClubLeader = isAdmin || clubMembers.some(
-    (m) => m.user_id === currentUserId && (m.role === 'president' || m.role === 'secretary')
-  );
+  const isClubLeader =
+    isAdmin ||
+    systemRole === 'president' ||
+    systemRole === 'secretary' ||
+    clubMembers.some(
+      (m) => m.user_id === currentUserId && (m.role === 'president' || m.role === 'secretary')
+    );
 
   if (loading) {
     return (
@@ -138,78 +152,87 @@ const EventDetails = () => {
 
   if (error && !event) {
     return (
-      <Box sx={{ maxWidth: 900, mx: 'auto', py: 4 }}>
-        <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>{error}</Alert>
-        <Button variant="primary" onClick={() => navigate(`/clubs/${clubId}`)}>
-          Back to Club
+      <Box sx={{ maxWidth: 900, mx: 'auto', py: 4, width: '100%' }}>
+        <Alert severity="error" sx={{ mb: 2, borderRadius: '12px' }}>{error}</Alert>
+        <Button variant="primary" onClick={() => navigate(clubId ? `/clubs/${clubId}` : '/events')}>
+          Back
         </Button>
       </Box>
     );
   }
 
+  const eventDate = event?.start_time ? new Date(event.start_time) : null;
+  const isUpcoming = eventDate ? eventDate >= new Date() : true;
+
   return (
-    <Box sx={{ maxWidth: 1100, mx: 'auto', py: 2 }}>
-      {/* Top Navigation & Leader Actions */}
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+    <Box sx={{ maxWidth: 1200, mx: 'auto', pb: 6, width: '100%' }}>
+      {/* Top Header & Actions */}
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3} flexWrap="wrap" gap={1.5}>
         <Box
           component={RouterLink}
-          to={`/clubs/${clubId}`}
+          to={clubId ? `/clubs/${clubId}` : '/events'}
           sx={{
             display: 'inline-flex',
             alignItems: 'center',
             gap: 0.8,
             color: '#4F2BCB',
-            fontWeight: 600,
-            fontSize: '0.9rem',
+            fontWeight: 800,
+            fontSize: '0.92rem',
             textDecoration: 'none',
+            fontFamily: "'Plus Jakarta Sans', sans-serif",
             '&:hover': { textDecoration: 'underline' },
           }}
         >
-          <ArrowBackIcon sx={{ fontSize: 18 }} /> Back to Club
+          <ArrowBackIcon sx={{ fontSize: 18 }} /> Back to {clubId ? 'Club Hub' : 'Events'}
         </Box>
 
         {isClubLeader && (
-          <Box display="flex" gap={1.5}>
+          <Stack direction="row" spacing={1.5} flexWrap="wrap">
+            <Button
+              variant="primary"
+              startIcon={<SettingsOutlinedIcon />}
+              onClick={() =>
+                navigate(`/clubs/${event?.club_id || clubId || 1}/events/${eventId}/manage`)
+              }
+            >
+              Task Management
+            </Button>
             <Button
               variant="ghost"
-              component={RouterLink}
-              to={`/clubs/${clubId}/events/${eventId}/edit`}
               startIcon={<EditIcon />}
-              sx={{ color: '#4F2BCB' }}
+              onClick={() =>
+                navigate(`/clubs/${event?.club_id || clubId || 1}/events/${eventId}/edit`)
+              }
             >
               Edit Event
             </Button>
             <Button
-              variant="ghost"
-              onClick={() => setDeleteDialogOpen(true)}
+              variant="danger"
               startIcon={<DeleteIcon />}
-              sx={{
-                color: '#EF4444',
-                borderColor: '#FEE2E2',
-                '&:hover': { backgroundColor: '#FEF2F2' },
-              }}
+              onClick={() => setDeleteDialogOpen(true)}
             >
-              Delete Event
+              Delete
             </Button>
-          </Box>
+          </Stack>
         )}
       </Box>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }} onClose={() => setError(null)}>
+        <Alert severity="error" sx={{ mb: 3, borderRadius: '12px' }} onClose={() => setError(null)}>
           {error}
         </Alert>
       )}
 
-      {/* Main Header Area */}
+      {/* Main Poster & Details Paper */}
       <Paper
         elevation={0}
         sx={{
-          borderRadius: '20px',
+          borderRadius: '24px',
           border: '1px solid #E9E7F2',
           backgroundColor: '#FFFFFF',
           mb: 4,
           overflow: 'hidden',
+          boxShadow: '0 4px 20px rgba(79, 43, 203, 0.04)',
         }}
       >
         <Box
@@ -221,7 +244,7 @@ const EventDetails = () => {
           }}
           sx={{
             width: '100%',
-            height: { xs: 200, sm: 300, md: 360 },
+            height: { xs: 220, sm: 320, md: 380 },
             objectFit: 'cover',
             borderBottom: '1px solid #E9E7F2',
             display: 'block',
@@ -231,16 +254,26 @@ const EventDetails = () => {
         <Box sx={{ p: { xs: 3, sm: 4 } }}>
           <Grid container spacing={3} alignItems="center">
             <Grid item xs={12} md={8}>
-              <Typography variant="h4" sx={{ fontWeight: 800, color: '#20202A', fontSize: '1.8rem', mb: 2 }}>
+              <Typography
+                variant="h4"
+                sx={{
+                  fontWeight: 900,
+                  color: '#20202A',
+                  fontSize: { xs: '1.5rem', sm: '1.9rem' },
+                  letterSpacing: '-0.02em',
+                  fontFamily: "'Plus Jakarta Sans', sans-serif",
+                  mb: 1.5,
+                }}
+              >
                 {event?.title || event?.name}
               </Typography>
 
-              <Box display="flex" flexWrap="wrap" gap={3} alignItems="center">
-                {event?.start_time && (
-                  <Box display="flex" alignItems="center" gap={1}>
-                    <CalendarMonthIcon sx={{ fontSize: 20, color: '#4F2BCB' }} />
-                    <Typography variant="body2" sx={{ fontWeight: 600, color: '#20202A' }}>
-                      {new Date(event.start_time).toLocaleDateString(undefined, {
+              <Stack direction="row" spacing={2.5} flexWrap="wrap" alignItems="center" gap={1}>
+                {eventDate && (
+                  <Box display="flex" alignItems="center" gap={0.8}>
+                    <CalendarMonthIcon sx={{ fontSize: 18, color: '#4F2BCB' }} />
+                    <Typography variant="body2" sx={{ fontWeight: 700, color: '#20202A' }}>
+                      {eventDate.toLocaleDateString(undefined, {
                         weekday: 'short',
                         month: 'short',
                         day: 'numeric',
@@ -253,50 +286,71 @@ const EventDetails = () => {
                 )}
 
                 {event?.location && (
-                  <Box display="flex" alignItems="center" gap={1}>
-                    <LocationOnIcon sx={{ fontSize: 20, color: '#777788' }} />
-                    <Typography variant="body2" sx={{ color: '#777788' }}>
+                  <Box display="flex" alignItems="center" gap={0.8}>
+                    <LocationOnIcon sx={{ fontSize: 18, color: '#8E90A2' }} />
+                    <Typography variant="body2" sx={{ color: '#5E5D6E', fontWeight: 600 }}>
                       {event.location}
                     </Typography>
                   </Box>
                 )}
-              </Box>
+
+                <Chip
+                  label={isUpcoming ? 'Registration Open' : 'Concluded'}
+                  size="small"
+                  sx={{
+                    backgroundColor: isUpcoming ? '#D1FAE5' : '#F1F5F9',
+                    color: isUpcoming ? '#059669' : '#475569',
+                    fontWeight: 800,
+                    borderRadius: '8px',
+                  }}
+                />
+              </Stack>
             </Grid>
 
-            <Grid item xs={12} md={4} display="flex" justifyContent={{ xs: 'flex-start', md: 'flex-end' }}>
+            <Grid
+              item
+              xs={12}
+              md={4}
+              display="flex"
+              justifyContent={{ xs: 'flex-start', md: 'flex-end' }}
+            >
               {isParticipant ? (
                 <Box display="flex" alignItems="center" gap={1.5}>
                   <Chip
-                    icon={<CheckCircleIcon style={{ color: '#10B981' }} />}
-                    label="Registered"
-                    sx={{ backgroundColor: '#E6F4EA', color: '#10B981', fontWeight: 700 }}
+                    icon={<CheckCircleIcon style={{ color: '#059669' }} />}
+                    label="You are Registered"
+                    sx={{
+                      backgroundColor: '#D1FAE5',
+                      color: '#059669',
+                      fontWeight: 800,
+                      borderRadius: '8px',
+                      height: 36,
+                      px: 1,
+                    }}
                   />
                   <Button
-                    variant="ghost"
+                    variant="danger"
+                    size="small"
                     onClick={handleLeave}
-                    disabled={actionLoading}
-                    sx={{ color: '#EF4444' }}
+                    loading={actionLoading}
                   >
-                    Cancel Registration
+                    Cancel
                   </Button>
                 </Box>
               ) : (
                 <Button
                   variant="primary"
                   onClick={handleJoin}
-                  disabled={actionLoading}
+                  loading={actionLoading}
                   sx={{
-                    backgroundColor: '#4F2BCB',
-                    color: '#FFFFFF',
-                    px: 3.5,
+                    px: 4,
                     py: 1.2,
-                    borderRadius: '10px',
-                    fontWeight: 700,
+                    borderRadius: '12px',
+                    fontWeight: 800,
                     fontSize: '0.95rem',
-                    '&:hover': { backgroundColor: '#39209A' },
                   }}
                 >
-                  {actionLoading ? 'Registering...' : 'Register for Event'}
+                  Register for Event
                 </Button>
               )}
             </Grid>
@@ -312,36 +366,49 @@ const EventDetails = () => {
           sx={{
             '& .MuiTab-root': {
               textTransform: 'none',
-              fontWeight: 600,
+              fontWeight: 800,
               fontSize: '0.95rem',
-              color: '#777788',
+              color: '#8E90A2',
+              fontFamily: "'Plus Jakarta Sans', sans-serif",
               '&.Mui-selected': { color: '#4F2BCB' },
             },
-            '& .MuiTabs-indicator': { backgroundColor: '#4F2BCB', height: 3 },
+            '& .MuiTabs-indicator': { backgroundColor: '#4F2BCB', height: 3, borderRadius: '3px' },
           }}
         >
-          <Tab label="About" />
-          {isClubLeader && <Tab label={`Attendees (${participants.length})`} />}
+          <Tab label="About This Event" />
+          <Tab label={`Registered Attendees (${participants.length})`} />
         </Tabs>
       </Box>
 
       {activeTab === 0 && (
-        <Grid container spacing={4}>
+        <Grid container spacing={3.5}>
           <Grid item xs={12} md={8}>
             <Paper
               elevation={0}
               sx={{
-                p: 3.5,
-                borderRadius: '20px',
+                p: { xs: 3, sm: 4 },
+                borderRadius: '22px',
                 border: '1px solid #E9E7F2',
                 backgroundColor: '#FFFFFF',
+                boxShadow: '0 2px 8px rgba(79, 43, 203, 0.03)',
               }}
             >
-              <Typography variant="h6" sx={{ fontWeight: 700, color: '#20202A', mb: 1.5 }}>
-                About This Event
+              <Typography
+                variant="h6"
+                sx={{
+                  fontWeight: 900,
+                  color: '#20202A',
+                  mb: 1.5,
+                  fontFamily: "'Plus Jakarta Sans', sans-serif",
+                }}
+              >
+                Event Description & Overview
               </Typography>
-              <Typography variant="body1" sx={{ color: '#525266', lineHeight: 1.7, whiteSpace: 'pre-line' }}>
-                {event?.description || 'Join us for this exciting event hosted by the club!'}
+              <Typography
+                variant="body1"
+                sx={{ color: '#5E5D6E', lineHeight: 1.8, whiteSpace: 'pre-line', fontSize: '0.94rem' }}
+              >
+                {event?.description || 'Join us for this exciting university club event! All campus members are welcome.'}
               </Typography>
             </Paper>
           </Grid>
@@ -351,24 +418,34 @@ const EventDetails = () => {
               elevation={0}
               sx={{
                 p: 3,
-                borderRadius: '20px',
+                borderRadius: '22px',
                 border: '1px solid #E9E7F2',
                 backgroundColor: '#FFFFFF',
+                boxShadow: '0 2px 8px rgba(79, 43, 203, 0.03)',
               }}
             >
-              <Typography variant="h6" sx={{ fontWeight: 700, color: '#20202A', mb: 2.5, fontSize: '1.05rem' }}>
-                Event Schedule
+              <Typography
+                variant="h6"
+                sx={{
+                  fontWeight: 900,
+                  color: '#20202A',
+                  mb: 2.5,
+                  fontSize: '1.05rem',
+                  fontFamily: "'Plus Jakarta Sans', sans-serif",
+                }}
+              >
+                Event Schedule Highlights
               </Typography>
 
               <Box display="flex" flexDirection="column" gap={2}>
                 <Box display="flex" gap={1.5} alignItems="flex-start">
                   <AccessTimeIcon sx={{ fontSize: 18, color: '#4F2BCB', mt: 0.3 }} />
                   <Box>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#20202A' }}>
-                      Opening & Welcome
+                    <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#20202A' }}>
+                      Registration & Check-in
                     </Typography>
-                    <Typography variant="caption" sx={{ color: '#777788' }}>
-                      Welcome remarks and attendee check-in.
+                    <Typography variant="caption" sx={{ color: '#5E5D6E' }}>
+                      Attendee arrival, credential verification, and welcome kit.
                     </Typography>
                   </Box>
                 </Box>
@@ -376,11 +453,11 @@ const EventDetails = () => {
                 <Box display="flex" gap={1.5} alignItems="flex-start">
                   <AccessTimeIcon sx={{ fontSize: 18, color: '#4F2BCB', mt: 0.3 }} />
                   <Box>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#20202A' }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#20202A' }}>
                       Keynote & Activities
                     </Typography>
-                    <Typography variant="caption" sx={{ color: '#777788' }}>
-                      Main presentation and hands-on session.
+                    <Typography variant="caption" sx={{ color: '#5E5D6E' }}>
+                      Speaker presentations, interactive hands-on sessions, or tournament rounds.
                     </Typography>
                   </Box>
                 </Box>
@@ -388,11 +465,11 @@ const EventDetails = () => {
                 <Box display="flex" gap={1.5} alignItems="flex-start">
                   <AccessTimeIcon sx={{ fontSize: 18, color: '#4F2BCB', mt: 0.3 }} />
                   <Box>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#20202A' }}>
-                      Q&A and Networking
+                    <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#20202A' }}>
+                      Q&A, Networking & Awards
                     </Typography>
-                    <Typography variant="caption" sx={{ color: '#777788' }}>
-                      Open discussion and closing remarks.
+                    <Typography variant="caption" sx={{ color: '#5E5D6E' }}>
+                      Open participant discussion, photo session, and closing remarks.
                     </Typography>
                   </Box>
                 </Box>
@@ -402,24 +479,31 @@ const EventDetails = () => {
         </Grid>
       )}
 
-      {activeTab === 1 && isClubLeader && (
+      {activeTab === 1 && (
         <Paper
           elevation={0}
           sx={{
             p: 3.5,
-            borderRadius: '20px',
+            borderRadius: '22px',
             border: '1px solid #E9E7F2',
             backgroundColor: '#FFFFFF',
+            boxShadow: '0 2px 8px rgba(79, 43, 203, 0.03)',
           }}
         >
-          <Typography variant="h6" sx={{ fontWeight: 700, color: '#20202A', mb: 2.5 }}>
+          <Typography
+            variant="h6"
+            sx={{
+              fontWeight: 900,
+              color: '#20202A',
+              mb: 2.5,
+              fontFamily: "'Plus Jakarta Sans', sans-serif",
+            }}
+          >
             Registered Attendees ({participants.length})
           </Typography>
 
           {participants.length === 0 ? (
-            <Typography variant="body2" sx={{ color: '#777788' }}>
-              No registered attendees yet.
-            </Typography>
+            <EmptyState icon={<CalendarMonthIcon />} title="No registered attendees yet" message="Be the first to register for this event!" />
           ) : (
             <Grid container spacing={2}>
               {participants.map((p) => (
@@ -427,23 +511,50 @@ const EventDetails = () => {
                   <Box
                     sx={{
                       p: 2,
-                      borderRadius: '12px',
-                      border: '1px solid #E9E7F2',
-                      backgroundColor: '#FAF9FF',
+                      borderRadius: '16px',
+                      border: '1px solid #F1EFF8',
+                      backgroundColor: '#F8F7FD',
                       display: 'flex',
                       alignItems: 'center',
                       gap: 1.5,
                     }}
                   >
-                    <Avatar sx={{ width: 36, height: 36, bgcolor: '#4F2BCB', fontWeight: 700, fontSize: '0.9rem' }}>
+                    <Avatar
+                      sx={{
+                        width: 40,
+                        height: 40,
+                        bgcolor: '#EDE9FE',
+                        color: '#4F2BCB',
+                        fontWeight: 800,
+                        fontSize: '0.95rem',
+                      }}
+                    >
                       {(p.username || p.email || 'U').charAt(0).toUpperCase()}
                     </Avatar>
-                    <Box>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#20202A' }}>
+                    <Box sx={{ minWidth: 0, flex: 1 }}>
+                      <Typography
+                        variant="subtitle2"
+                        sx={{
+                          fontWeight: 800,
+                          color: '#20202A',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          fontFamily: "'Plus Jakarta Sans', sans-serif",
+                        }}
+                      >
                         {p.full_name || p.username || p.email}
                       </Typography>
                       {p.email && (
-                        <Typography variant="caption" sx={{ color: '#777788' }}>
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: '#5E5D6E',
+                            display: 'block',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                          }}
+                        >
                           {p.email}
                         </Typography>
                       )}
@@ -460,14 +571,14 @@ const EventDetails = () => {
       <Dialog
         open={deleteDialogOpen}
         onClose={() => setDeleteDialogOpen(false)}
-        PaperProps={{ sx: { borderRadius: '16px', p: 1 } }}
+        PaperProps={{ sx: { borderRadius: '22px', p: 1 } }}
       >
-        <DialogTitle sx={{ fontWeight: 700, color: '#20202A' }}>
+        <DialogTitle sx={{ fontWeight: 900, color: '#20202A' }}>
           Delete Event?
         </DialogTitle>
         <DialogContent>
-          <DialogContentText sx={{ color: '#777788' }}>
-            Are you sure you want to delete this event? This action cannot be undone.
+          <DialogContentText sx={{ color: '#5E5D6E' }}>
+            Are you sure you want to delete this event? This action will permanently remove all event tasks and attendee registrations.
           </DialogContentText>
         </DialogContent>
         <DialogActions sx={{ p: 2, gap: 1 }}>
@@ -475,12 +586,11 @@ const EventDetails = () => {
             Cancel
           </Button>
           <Button
-            variant="ghost"
+            variant="danger"
             onClick={handleDelete}
-            disabled={actionLoading}
-            sx={{ backgroundColor: '#EF4444', color: '#FFFFFF' }}
+            loading={actionLoading}
           >
-            {actionLoading ? 'Deleting...' : 'Delete Event'}
+            Delete Event
           </Button>
         </DialogActions>
       </Dialog>

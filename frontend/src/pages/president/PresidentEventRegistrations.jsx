@@ -24,8 +24,6 @@ import {
   DialogActions,
   MenuItem,
   Stack,
-  Card,
-  Grid,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SearchIcon from '@mui/icons-material/Search';
@@ -34,10 +32,16 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutlined';
+import HowToRegOutlinedIcon from '@mui/icons-material/HowToRegOutlined';
+import AssignmentIcon from '@mui/icons-material/Assignment';
 
 import { useAuth } from '../../context/AuthContext';
-import { fetchEventParticipants, addEventParticipant, removeEventParticipant, getEvent } from '../../api/eventApi';
+import {
+  fetchEventParticipants,
+  addEventParticipant,
+  removeEventParticipant,
+  getEvent,
+} from '../../api/eventApi';
 import { fetchClubMembers } from '../../api/adminApi';
 import api, { getImageUrl } from '../../api/axiosInstance';
 import Button from '../../components/Button';
@@ -116,7 +120,12 @@ const PresidentEventRegistrations = () => {
   };
 
   const handleRemove = async (userId, username) => {
-    if (!window.confirm(`Are you sure you want to remove ${username} from this event registration roster?`)) return;
+    if (
+      !window.confirm(
+        `Are you sure you want to remove ${username} from this event registration roster?`
+      )
+    )
+      return;
     try {
       await removeEventParticipant(eventId, userId);
       setSuccess(`Removed ${username} from event registration.`);
@@ -131,9 +140,16 @@ const PresidentEventRegistrations = () => {
       alert('No registrations to export.');
       return;
     }
-    const headers = ['ID', 'Username', 'Email', 'Full Name', 'Role'];
-    const rows = participants.map(p => [p.id, p.username, p.email, p.full_name || '', p.system_role]);
-    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+    const headers = ['ID', 'Username', 'Email', 'Full Name'];
+    const rows = participants.map((p) => [
+      p.id,
+      p.username,
+      p.email,
+      p.full_name || '',
+    ]);
+    const csvContent =
+      'data:text/csv;charset=utf-8,' +
+      [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
@@ -143,14 +159,15 @@ const PresidentEventRegistrations = () => {
     document.body.removeChild(link);
   };
 
-  const filteredParticipants = participants.filter(p =>
-    (p.username || '').toLowerCase().includes(search.toLowerCase()) ||
-    (p.email || '').toLowerCase().includes(search.toLowerCase()) ||
-    (p.full_name || '').toLowerCase().includes(search.toLowerCase())
+  const filteredParticipants = participants.filter(
+    (p) =>
+      (p.username || '').toLowerCase().includes(search.toLowerCase()) ||
+      (p.email || '').toLowerCase().includes(search.toLowerCase()) ||
+      (p.full_name || '').toLowerCase().includes(search.toLowerCase())
   );
 
-  const existingUserIds = new Set(participants.map(p => p.id));
-  const availableMembers = clubMembers.filter(m => !existingUserIds.has(m.user_id));
+  const existingUserIds = new Set(participants.map((p) => p.id));
+  const availableMembers = clubMembers.filter((m) => !existingUserIds.has(m.user_id));
 
   if (loading) {
     return (
@@ -161,9 +178,16 @@ const PresidentEventRegistrations = () => {
   }
 
   return (
-    <Box sx={{ maxWidth: 1150, mx: 'auto', pb: 6, width: '100%' }}>
-      {/* Top Back Link & Header */}
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2.5} flexWrap="wrap" gap={1.5}>
+    <Box sx={{ maxWidth: 1320, mx: 'auto', width: '100%', pb: 6 }}>
+      {/* Top Back Link & Actions */}
+      <Box
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        mb={2.5}
+        flexWrap="wrap"
+        gap={1.5}
+      >
         <Box
           onClick={() => navigate('/president/events')}
           sx={{
@@ -171,37 +195,52 @@ const PresidentEventRegistrations = () => {
             alignItems: 'center',
             gap: 0.8,
             color: '#4F2BCB',
-            fontWeight: 700,
+            fontWeight: 800,
             fontSize: '0.92rem',
             cursor: 'pointer',
+            fontFamily: "'Plus Jakarta Sans', sans-serif",
             '&:hover': { textDecoration: 'underline' },
           }}
         >
-          <ArrowBackIcon sx={{ fontSize: 18 }} /> Back to Event Management
+          <ArrowBackIcon sx={{ fontSize: 18 }} /> Back to Events
         </Box>
 
-        <Stack direction="row" spacing={1.5}>
+        <Stack direction="row" spacing={1.5} flexWrap="wrap">
+          <Button
+            variant="ghost"
+            startIcon={<AssignmentIcon />}
+            onClick={() => navigate(`/clubs/${event?.club_id || myClubId}/events/${eventId}/manage`)}
+          >
+            Task Board
+          </Button>
           <Button
             variant="ghost"
             startIcon={<FileDownloadOutlinedIcon />}
             onClick={exportCSV}
-            sx={{ color: '#4F2BCB', borderColor: '#D4CCF7', fontSize: '0.85rem' }}
           >
-            Export Registrations (.CSV)
+            Export CSV
           </Button>
           <Button
             variant="primary"
             startIcon={<PersonAddOutlinedIcon />}
             onClick={() => setAddModalOpen(true)}
-            sx={{ backgroundColor: '#4F2BCB', fontSize: '0.85rem' }}
+            sx={{ px: 2.2 }}
           >
             + Register Member
           </Button>
         </Stack>
       </Box>
 
-      {error && <Alert severity="error" sx={{ mb: 2.5, borderRadius: 2 }} onClose={() => setError('')}>{error}</Alert>}
-      {success && <Alert severity="success" sx={{ mb: 2.5, borderRadius: 2 }} onClose={() => setSuccess('')}>{success}</Alert>}
+      {error && (
+        <Alert severity="error" sx={{ mb: 2.5, borderRadius: '12px' }} onClose={() => setError('')}>
+          {error}
+        </Alert>
+      )}
+      {success && (
+        <Alert severity="success" sx={{ mb: 2.5, borderRadius: '12px' }} onClose={() => setSuccess('')}>
+          {success}
+        </Alert>
+      )}
 
       {/* Event Overview Hero Summary */}
       {event && (
@@ -209,7 +248,7 @@ const PresidentEventRegistrations = () => {
           elevation={0}
           sx={{
             p: 3,
-            borderRadius: '20px',
+            borderRadius: '22px',
             border: '1px solid #E9E7F2',
             backgroundColor: '#FFFFFF',
             mb: 3.5,
@@ -218,6 +257,7 @@ const PresidentEventRegistrations = () => {
             justifyContent: 'space-between',
             alignItems: { xs: 'flex-start', sm: 'center' },
             gap: 2.5,
+            boxShadow: '0 2px 8px rgba(79, 43, 203, 0.03)',
           }}
         >
           <Box>
@@ -225,28 +265,48 @@ const PresidentEventRegistrations = () => {
               <Chip
                 label="Registration Management"
                 size="small"
-                sx={{ backgroundColor: '#F3F0FF', color: '#4F2BCB', fontWeight: 800, fontSize: '0.75rem' }}
+                sx={{
+                  backgroundColor: '#F3F0FF',
+                  color: '#4F2BCB',
+                  fontWeight: 800,
+                  fontSize: '0.75rem',
+                  borderRadius: '8px',
+                }}
               />
               <Chip
                 label={`${participants.length} Registered`}
                 size="small"
-                sx={{ backgroundColor: '#D1FAE5', color: '#059669', fontWeight: 800, fontSize: '0.75rem' }}
+                sx={{
+                  backgroundColor: '#D1FAE5',
+                  color: '#059669',
+                  fontWeight: 800,
+                  fontSize: '0.75rem',
+                  borderRadius: '8px',
+                }}
               />
             </Box>
-            <Typography variant="h5" sx={{ fontWeight: 900, color: '#20202A', mb: 1 }}>
+            <Typography
+              variant="h5"
+              sx={{
+                fontWeight: 900,
+                color: '#20202A',
+                mb: 1,
+                fontFamily: "'Plus Jakarta Sans', sans-serif",
+              }}
+            >
               {event.title}
             </Typography>
             <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
               <Box display="flex" alignItems="center" gap={0.6}>
                 <CalendarMonthIcon sx={{ fontSize: 16, color: '#4F2BCB' }} />
-                <Typography variant="body2" sx={{ color: '#6E6D7A', fontWeight: 600 }}>
+                <Typography variant="body2" sx={{ color: '#5E5D6E', fontWeight: 600 }}>
                   {event.start_time ? new Date(event.start_time).toLocaleString() : 'TBD'}
                 </Typography>
               </Box>
               <Typography variant="body2" sx={{ color: '#CCD0DC' }}>•</Typography>
               <Box display="flex" alignItems="center" gap={0.6}>
                 <LocationOnIcon sx={{ fontSize: 16, color: '#4F2BCB' }} />
-                <Typography variant="body2" sx={{ color: '#6E6D7A', fontWeight: 600 }}>
+                <Typography variant="body2" sx={{ color: '#5E5D6E', fontWeight: 600 }}>
                   {event.location || 'Campus Center'}
                 </Typography>
               </Box>
@@ -255,174 +315,175 @@ const PresidentEventRegistrations = () => {
         </Paper>
       )}
 
-      {/* Registrations Search & Table */}
-      <Paper
-        elevation={0}
+      {/* Search Input */}
+      <TextField
+        fullWidth
+        placeholder="Search registered attendees by name or email..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
         sx={{
-          borderRadius: '20px',
-          border: '1px solid #E9E7F2',
-          backgroundColor: '#FFFFFF',
-          overflow: 'hidden',
+          mb: 3.5,
+          '& .MuiOutlinedInput-root': {
+            borderRadius: '16px',
+            backgroundColor: '#FFFFFF',
+          },
         }}
-      >
-        {/* Search Bar */}
-        <Box sx={{ p: 2.5, borderBottom: '1px solid #F0EFF8' }}>
-          <TextField
-            placeholder="Search registered attendees by name, username, or email..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            size="small"
-            fullWidth
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon sx={{ color: '#9DA0AE' }} />
-                </InputAdornment>
-              ),
-            }}
-            sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', borderColor: '#E9E7F2' } }}
-          />
-        </Box>
+        InputProps={{
+          startAdornment: (
+            <InputAdornment position="start">
+              <SearchIcon sx={{ color: '#8E90A2' }} />
+            </InputAdornment>
+          ),
+        }}
+      />
 
-        {filteredParticipants.length === 0 ? (
-          <Box p={4}>
-            <EmptyState
-              icon={<CheckCircleOutlineIcon />}
-              title="No Registrations Found"
-              message={search ? 'No participants match your search query.' : 'No members have registered for this event yet.'}
-              action={
-                <Button
-                  variant="primary"
-                  startIcon={<PersonAddOutlinedIcon />}
-                  onClick={() => setAddModalOpen(true)}
-                  sx={{ backgroundColor: '#4F2BCB' }}
+      {/* Registrations Table */}
+      {filteredParticipants.length === 0 ? (
+        <EmptyState
+          icon={<HowToRegOutlinedIcon />}
+          title="No registered attendees"
+          message="Members who register for this event will appear here."
+        />
+      ) : (
+        <TableContainer
+          component={Paper}
+          elevation={0}
+          sx={{
+            borderRadius: '22px',
+            border: '1px solid #E9E7F2',
+            boxShadow: '0 2px 8px rgba(79, 43, 203, 0.03)',
+            overflow: 'hidden',
+          }}
+        >
+          <Table>
+            <TableHead>
+              <TableRow sx={{ backgroundColor: '#F8F7FD' }}>
+                <TableCell sx={{ fontWeight: 800, color: '#20202A', py: 2 }}>Attendee</TableCell>
+                <TableCell sx={{ fontWeight: 800, color: '#20202A', py: 2 }}>Email Address</TableCell>
+                <TableCell sx={{ fontWeight: 800, color: '#20202A', py: 2 }}>Full Name</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 800, color: '#20202A', py: 2 }}>Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {filteredParticipants.map((p) => (
+                <TableRow
+                  key={p.id}
+                  sx={{
+                    '&:hover': { backgroundColor: '#FAF9FF' },
+                    transition: 'background-color 0.15s ease',
+                  }}
                 >
-                  Register a Member
-                </Button>
-              }
-            />
-          </Box>
-        ) : (
-          <TableContainer>
-            <Table>
-              <TableHead sx={{ backgroundColor: '#FBFBFE' }}>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 800, color: '#777788', fontSize: '0.8rem', textTransform: 'uppercase' }}>Participant</TableCell>
-                  <TableCell sx={{ fontWeight: 800, color: '#777788', fontSize: '0.8rem', textTransform: 'uppercase' }}>Email</TableCell>
-                  <TableCell sx={{ fontWeight: 800, color: '#777788', fontSize: '0.8rem', textTransform: 'uppercase' }}>Status</TableCell>
-                  <TableCell sx={{ fontWeight: 800, color: '#777788', fontSize: '0.8rem', textTransform: 'uppercase' }} align="right">Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {filteredParticipants.map((p) => (
-                  <TableRow key={p.id} sx={{ '&:hover': { backgroundColor: '#F9F8FD' } }}>
-                    <TableCell>
-                      <Box display="flex" alignItems="center" gap={1.5}>
-                        <Avatar
-                          src={getImageUrl(p.avatar_url)}
-                          sx={{
-                            width: 40,
-                            height: 40,
-                            backgroundColor: '#EAEAFF',
-                            color: '#4F2BCB',
-                            fontWeight: 800,
-                          }}
-                        >
-                          {(p?.username || p?.email || 'U').charAt(0).toUpperCase()}
-                        </Avatar>
-                        <Box>
-                          <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#20202A' }}>
-                            {p.full_name || p.username || p.email}
-                          </Typography>
-                          <Typography variant="caption" sx={{ color: '#9DA0AE' }}>
-                            @{p.username || 'user'}
-                          </Typography>
-                        </Box>
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" sx={{ color: '#555565', fontWeight: 500 }}>
-                        {p.email}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label="Confirmed / Attending"
-                        size="small"
+                  <TableCell sx={{ py: 2 }}>
+                    <Box display="flex" alignItems="center" gap={1.8}>
+                      <Avatar
+                        src={getImageUrl(p.avatar_url)}
                         sx={{
-                          backgroundColor: '#D1FAE5',
-                          color: '#059669',
+                          width: 38,
+                          height: 38,
+                          backgroundColor: '#EDE9FE',
+                          color: '#4F2BCB',
+                          fontWeight: 900,
+                          fontSize: '0.95rem',
+                        }}
+                      >
+                        {(p.username || p.email || 'U').charAt(0).toUpperCase()}
+                      </Avatar>
+                      <Typography
+                        variant="subtitle2"
+                        sx={{
                           fontWeight: 800,
-                          fontSize: '0.72rem',
+                          color: '#20202A',
+                          fontFamily: "'Plus Jakarta Sans', sans-serif",
+                        }}
+                      >
+                        {p.username}
+                      </Typography>
+                    </Box>
+                  </TableCell>
+                  <TableCell sx={{ py: 2 }}>
+                    <Typography variant="body2" sx={{ color: '#5E5D6E', fontWeight: 500 }}>
+                      {p.email}
+                    </Typography>
+                  </TableCell>
+                  <TableCell sx={{ py: 2 }}>
+                    <Typography variant="body2" sx={{ color: '#5E5D6E', fontWeight: 600 }}>
+                      {p.full_name || '—'}
+                    </Typography>
+                  </TableCell>
+                  <TableCell align="right" sx={{ py: 2 }}>
+                    <Tooltip title="Remove Attendee">
+                      <IconButton
+                        size="small"
+                        onClick={() => handleRemove(p.id, p.username)}
+                        sx={{
+                          color: '#EF4444',
+                          backgroundColor: '#FEF2F2',
                           borderRadius: '8px',
                         }}
-                      />
-                    </TableCell>
-                    <TableCell align="right">
-                      <Tooltip title="Remove Registration">
-                        <IconButton
-                          size="small"
-                          onClick={() => handleRemove(p.id, p.username)}
-                          sx={{ color: '#DC2626', backgroundColor: '#FEE2E2' }}
-                        >
-                          <DeleteOutlineIcon sx={{ fontSize: 18 }} />
-                        </IconButton>
-                      </Tooltip>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        )}
-      </Paper>
+                      >
+                        <DeleteOutlineIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      )}
 
-      {/* Add Member Modal */}
+      {/* Manual Registration Modal */}
       <Dialog
         open={addModalOpen}
         onClose={() => setAddModalOpen(false)}
-        maxWidth="xs"
+        maxWidth="sm"
         fullWidth
-        PaperProps={{ sx: { borderRadius: '20px' } }}
+        PaperProps={{ sx: { borderRadius: '24px', p: 1 } }}
       >
-        <DialogTitle sx={{ fontWeight: 800, color: '#20202A' }}>
+        <DialogTitle
+          sx={{
+            fontWeight: 900,
+            color: '#20202A',
+            fontFamily: "'Plus Jakarta Sans', sans-serif",
+          }}
+        >
           Register Club Member for Event
         </DialogTitle>
         <DialogContent dividers>
           <Box pt={1}>
             <TextField
               select
-              label="Select Club Member"
               fullWidth
+              label="Select Member"
               value={selectedUserId}
               onChange={(e) => setSelectedUserId(e.target.value)}
-              helperText="Choose a registered member from your club roster."
+              helperText="Choose a registered club member to add to this event's attendee roster."
             >
               {availableMembers.length === 0 ? (
                 <MenuItem disabled value="">
-                  All club members are already registered!
+                  <em>All club members are already registered</em>
                 </MenuItem>
               ) : (
                 availableMembers.map((m) => (
                   <MenuItem key={m.user_id} value={m.user_id}>
-                    {m.username} ({m.role})
+                    {m.username} ({m.email || 'No email'}) — {m.role}
                   </MenuItem>
                 ))
               )}
             </TextField>
           </Box>
         </DialogContent>
-        <DialogActions sx={{ p: 2.5 }}>
-          <Button variant="ghost" onClick={() => setAddModalOpen(false)} disabled={submitting}>
+        <DialogActions sx={{ p: 2.5, gap: 1 }}>
+          <Button variant="ghost" onClick={() => setAddModalOpen(false)}>
             Cancel
           </Button>
           <Button
             variant="primary"
             onClick={handleAddParticipant}
-            disabled={submitting || !selectedUserId}
-            sx={{ backgroundColor: '#4F2BCB' }}
+            loading={submitting}
+            disabled={availableMembers.length === 0}
           >
-            {submitting ? 'Registering...' : 'Confirm Registration'}
+            Confirm Registration
           </Button>
         </DialogActions>
       </Dialog>

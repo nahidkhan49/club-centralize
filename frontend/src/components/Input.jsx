@@ -3,19 +3,22 @@ import { TextField } from '@mui/material';
 import { styled } from '@mui/material/styles';
 
 const StyledTextField = styled(TextField)(({ theme }) => ({
-  margin: theme.spacing(1, 0),
+  margin: theme.spacing(0.8, 0),
   '& .MuiInputBase-root': {
-    borderRadius: 8,
-    backgroundColor: '#fff',
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    fontSize: '0.9rem',
+    fontFamily: "'Inter', sans-serif",
   },
   '& .MuiOutlinedInput-notchedOutline': {
-    borderColor: '#E2E8F0',
+    borderColor: '#E9E7F2',
   },
   '&:hover .MuiOutlinedInput-notchedOutline': {
-    borderColor: '#A5B4FC',
+    borderColor: '#D4CCF7',
   },
   '& .Mui-focused .MuiOutlinedInput-notchedOutline': {
-    borderColor: theme.palette.primary.main,
+    borderColor: '#4F2BCB',
+    borderWidth: '1.5px',
   },
 }));
 

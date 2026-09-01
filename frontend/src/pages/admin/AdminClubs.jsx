@@ -1,9 +1,25 @@
 import React, { useEffect, useState } from 'react';
 import {
-  Box, Typography, Grid, Paper, Avatar, Chip, TextField, InputAdornment,
-  Dialog, DialogTitle, DialogContent, DialogActions, MenuItem, Select,
-  FormControl, InputLabel, CircularProgress, Alert, Divider, IconButton, Tooltip,
-  DialogContentText
+  Box,
+  Typography,
+  Grid,
+  Paper,
+  Avatar,
+  Chip,
+  TextField,
+  InputAdornment,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  MenuItem,
+  CircularProgress,
+  Alert,
+  Divider,
+  IconButton,
+  Tooltip,
+  DialogContentText,
+  Stack,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import EditIcon from '@mui/icons-material/Edit';
@@ -17,8 +33,13 @@ import GroupsIcon from '@mui/icons-material/Groups';
 import EventIcon from '@mui/icons-material/Event';
 import { useNavigate } from 'react-router-dom';
 import {
-  fetchAllClubs, fetchClubMembers, assignClubRole, removeClubRole,
-  deleteClub, fetchAllUsers, fetchClubStats
+  fetchAllClubs,
+  fetchClubMembers,
+  assignClubRole,
+  removeClubRole,
+  deleteClub,
+  fetchAllUsers,
+  fetchClubStats,
 } from '../../api/adminApi';
 import { getClubLogoUrl } from '../../api/axiosInstance';
 import RoleChip from '../../components/RoleChip';
@@ -56,7 +77,7 @@ const AdminClubs = () => {
           try {
             const [m, s] = await Promise.all([
               fetchClubMembers(c.id),
-              fetchClubStats(c.id).catch(() => ({ member_count: 0, event_count: 0 }))
+              fetchClubStats(c.id).catch(() => ({ member_count: 0, event_count: 0 })),
             ]);
             membersMap[c.id] = Array.isArray(m) ? m : [];
             statsMap[c.id] = s || {};
@@ -75,7 +96,9 @@ const AdminClubs = () => {
     }
   };
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => {
+    loadData();
+  }, []);
 
   const openAssignModal = (club, role) => {
     setAssignModal({ open: true, club, role });
@@ -84,7 +107,10 @@ const AdminClubs = () => {
   };
 
   const handleAssign = async () => {
-    if (!selectedUserId) { setError('Please select a user'); return; }
+    if (!selectedUserId) {
+      setError('Please select a user');
+      return;
+    }
     setActionLoading(true);
     setError('');
     try {
@@ -105,7 +131,8 @@ const AdminClubs = () => {
   };
 
   const handleRemoveRole = async (club, role) => {
-    if (!window.confirm(`Are you sure you want to remove the current ${role} of ${club.name}?`)) return;
+    if (!window.confirm(`Are you sure you want to remove the current ${role} of ${club.name}?`))
+      return;
     setActionLoading(true);
     setError('');
     try {
@@ -140,9 +167,10 @@ const AdminClubs = () => {
     }
   };
 
-  const filtered = (Array.isArray(clubs) ? clubs : []).filter((c) =>
-    (c?.name || '').toLowerCase().includes(search.toLowerCase()) ||
-    (c?.category || '').toLowerCase().includes(search.toLowerCase())
+  const filtered = (Array.isArray(clubs) ? clubs : []).filter(
+    (c) =>
+      (c?.name || '').toLowerCase().includes(search.toLowerCase()) ||
+      (c?.category || '').toLowerCase().includes(search.toLowerCase())
   );
 
   if (loading) {
@@ -154,14 +182,30 @@ const AdminClubs = () => {
   }
 
   return (
-    <Box sx={{ maxWidth: 1200, mx: 'auto', py: 2 }}>
+    <Box sx={{ maxWidth: 1320, mx: 'auto', width: '100%', pb: 6 }}>
       {/* Header Bar */}
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3.5} flexWrap="wrap" gap={2}>
+      <Box
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        mb={3.5}
+        flexWrap="wrap"
+        gap={2}
+      >
         <Box>
-          <Typography variant="h4" sx={{ fontWeight: 800, color: '#20202A', fontSize: '1.8rem' }}>
+          <Typography
+            variant="h4"
+            sx={{
+              fontWeight: 900,
+              color: '#20202A',
+              fontSize: { xs: '1.5rem', sm: '1.85rem' },
+              fontFamily: "'Plus Jakarta Sans', sans-serif",
+              letterSpacing: '-0.02em',
+            }}
+          >
             Club Management (Admin)
           </Typography>
-          <Typography variant="body2" sx={{ color: '#777788', mt: 0.5 }}>
+          <Typography variant="body2" sx={{ color: '#5E5D6E', mt: 0.5, fontWeight: 500 }}>
             Centralized control center to create, update, assign leadership, and manage all university clubs.
           </Typography>
         </Box>
@@ -169,42 +213,40 @@ const AdminClubs = () => {
           variant="primary"
           startIcon={<AddIcon />}
           onClick={() => navigate('/clubs/create')}
-          sx={{
-            backgroundColor: '#4F2BCB',
-            color: '#FFFFFF',
-            px: 3,
-            py: 1,
-            borderRadius: '10px',
-            fontWeight: 700,
-            boxShadow: '0 4px 14px rgba(79, 43, 203, 0.25)',
-          }}
+          sx={{ px: 2.8 }}
         >
           + Create Club
         </Button>
       </Box>
 
-      {error && <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }} onClose={() => setError('')}>{error}</Alert>}
-      {success && <Alert severity="success" sx={{ mb: 3, borderRadius: 2 }} onClose={() => setSuccess('')}>{success}</Alert>}
+      {error && (
+        <Alert severity="error" sx={{ mb: 3, borderRadius: '12px' }} onClose={() => setError('')}>
+          {error}
+        </Alert>
+      )}
+      {success && (
+        <Alert severity="success" sx={{ mb: 3, borderRadius: '12px' }} onClose={() => setSuccess('')}>
+          {success}
+        </Alert>
+      )}
 
       {/* Search Input */}
       <TextField
         fullWidth
-        placeholder="Search clubs by name or category..."
+        placeholder="Search clubs by name, keywords, or category..."
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         sx={{
           mb: 3.5,
           '& .MuiOutlinedInput-root': {
-            borderRadius: '12px',
+            borderRadius: '16px',
             backgroundColor: '#FFFFFF',
-            '& fieldset': { borderColor: '#E9E7F2' },
-            '&.Mui-focused fieldset': { borderColor: '#4F2BCB' },
           },
         }}
         InputProps={{
           startAdornment: (
             <InputAdornment position="start">
-              <SearchIcon sx={{ color: '#9DA0AE' }} />
+              <SearchIcon sx={{ color: '#8E90A2' }} />
             </InputAdornment>
           ),
         }}
@@ -220,7 +262,6 @@ const AdminClubs = () => {
               variant="primary"
               startIcon={<AddIcon />}
               onClick={() => navigate('/clubs/create')}
-              sx={{ backgroundColor: '#4F2BCB' }}
             >
               Create Club
             </Button>
@@ -240,201 +281,254 @@ const AdminClubs = () => {
                   elevation={0}
                   sx={{
                     p: 3,
-                    borderRadius: '18px',
+                    borderRadius: '22px',
                     border: '1px solid #E9E7F2',
                     backgroundColor: '#FFFFFF',
                     height: '100%',
                     display: 'flex',
                     flexDirection: 'column',
-                    transition: 'box-shadow 0.2s ease, border-color 0.2s ease',
+                    boxShadow: '0 2px 8px rgba(79, 43, 203, 0.03)',
+                    transition: 'all 0.22s cubic-bezier(0.2, 0, 0, 1)',
                     '&:hover': {
-                      boxShadow: '0 8px 24px rgba(79, 43, 203, 0.08)',
+                      boxShadow: '0 10px 28px rgba(79, 43, 203, 0.08)',
                       borderColor: '#D4CCF7',
                     },
                   }}
                 >
-                  {/* Top Header: Logo + Name + Category + Action Icons */}
+                  {/* Top Bar: Logo, Name, Actions */}
                   <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
-                    <Box display="flex" alignItems="center" gap={2}>
+                    <Box display="flex" alignItems="center" gap={1.8}>
                       <Avatar
                         src={getClubLogoUrl(club)}
                         variant="rounded"
                         sx={{
-                          width: 54,
-                          height: 54,
-                          borderRadius: '12px',
+                          width: 52,
+                          height: 52,
+                          borderRadius: '14px',
                           backgroundColor: '#F3F0FF',
                           color: '#4F2BCB',
-                          fontWeight: 800,
-                          fontSize: '1.3rem',
-                          border: '1px solid #E2D9FF',
-                          boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                          fontWeight: 900,
+                          fontSize: '1.25rem',
+                          border: '1.5px solid #E0DBFF',
                         }}
                       >
-                        {club.name.charAt(0).toUpperCase()}
+                        {club.name?.charAt(0).toUpperCase()}
                       </Avatar>
                       <Box>
-                        <Typography variant="h6" sx={{ fontWeight: 800, color: '#20202A', fontSize: '1.05rem', lineHeight: 1.2, mb: 0.5 }}>
+                        <Typography
+                          variant="subtitle1"
+                          sx={{
+                            fontWeight: 900,
+                            color: '#20202A',
+                            fontFamily: "'Plus Jakarta Sans', sans-serif",
+                            fontSize: '1.05rem',
+                          }}
+                        >
                           {club.name}
                         </Typography>
-                        <Box display="flex" gap={0.8} alignItems="center" flexWrap="wrap">
+                        <Stack direction="row" spacing={1} mt={0.3}>
                           {club.category && (
                             <Chip
                               label={club.category}
                               size="small"
                               sx={{
-                                fontSize: '0.68rem',
-                                fontWeight: 700,
+                                fontSize: '0.7rem',
+                                fontWeight: 800,
                                 backgroundColor: '#F3F0FF',
                                 color: '#4F2BCB',
-                                height: 20,
+                                borderRadius: '6px',
                               }}
                             />
                           )}
-                          <Chip
-                            label={club.is_active ? 'Active' : 'Inactive'}
-                            size="small"
-                            sx={{
-                              fontSize: '0.68rem',
-                              fontWeight: 700,
-                              backgroundColor: club.is_active ? '#D1FAE5' : '#FEE2E2',
-                              color: club.is_active ? '#059669' : '#DC2626',
-                              height: 20,
-                            }}
-                          />
-                        </Box>
+                          {club.department && (
+                            <Chip
+                              label={`${club.department} Dept`}
+                              size="small"
+                              sx={{
+                                fontSize: '0.7rem',
+                                fontWeight: 700,
+                                backgroundColor: '#F1F5F9',
+                                color: '#475569',
+                                borderRadius: '6px',
+                              }}
+                            />
+                          )}
+                        </Stack>
                       </Box>
                     </Box>
 
-                    <Box display="flex" gap={0.5}>
-                      <Tooltip title="View Club Public Details">
-                        <IconButton size="small" onClick={() => navigate(`/clubs/${club.id}`)} sx={{ color: '#6E6D7A' }}>
+                    <Stack direction="row" spacing={0.5}>
+                      <Tooltip title="View Public Page">
+                        <IconButton
+                          size="small"
+                          onClick={() => navigate(`/clubs/${club.id}`)}
+                          sx={{ color: '#4F2BCB' }}
+                        >
                           <OpenInNewIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
-                      <Tooltip title="Edit Core Info & Logo">
-                        <IconButton size="small" onClick={() => navigate(`/clubs/${club.id}/edit`)} sx={{ color: '#4F2BCB' }}>
+                      <Tooltip title="Edit Club">
+                        <IconButton
+                          size="small"
+                          onClick={() => navigate(`/clubs/${club.id}/edit`)}
+                          sx={{ color: '#5E5D6E' }}
+                        >
                           <EditIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
                       <Tooltip title="Delete Club">
-                        <IconButton size="small" onClick={() => setDeleteModal({ open: true, club })} sx={{ color: '#EF4444' }}>
+                        <IconButton
+                          size="small"
+                          onClick={() => setDeleteModal({ open: true, club })}
+                          sx={{ color: '#EF4444' }}
+                        >
                           <DeleteIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
-                    </Box>
+                    </Stack>
                   </Box>
 
-                  <Typography
-                    variant="body2"
+                  {/* Club Stats Counters */}
+                  <Box
                     sx={{
-                      color: '#777788',
-                      fontSize: '0.86rem',
-                      mb: 2,
-                      display: '-webkit-box',
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden',
+                      p: 1.5,
+                      borderRadius: '14px',
+                      backgroundColor: '#F8F7FD',
+                      display: 'flex',
+                      gap: 2,
+                      mb: 2.5,
+                      border: '1px solid #F1EFF8',
                     }}
                   >
-                    {club.description || 'No description provided.'}
-                  </Typography>
-
-                  <Divider sx={{ borderColor: '#F3F0FF', mb: 2 }} />
-
-                  {/* Club Leadership Info */}
-                  <Box display="flex" flexDirection="column" gap={1.2} mb={2.5}>
-                    {/* President Row */}
-                    <Box display="flex" justifyContent="space-between" alignItems="center">
-                      <Typography variant="body2" sx={{ color: '#777788', fontWeight: 600, fontSize: '0.82rem' }}>
-                        President:
+                    <Box display="flex" alignItems="center" gap={0.8} sx={{ flex: 1 }}>
+                      <GroupsIcon sx={{ color: '#4F2BCB', fontSize: 18 }} />
+                      <Typography variant="caption" sx={{ color: '#5E5D6E', fontWeight: 700 }}>
+                        <strong>{stats.member_count ?? members.length}</strong> Members
                       </Typography>
-                      {president ? (
-                        <Box display="flex" alignItems="center" gap={1}>
-                          <Typography variant="body2" sx={{ fontWeight: 700, color: '#20202A', fontSize: '0.88rem' }}>
-                            {president.username}
-                          </Typography>
-                          <RoleChip role="president" />
-                          <Tooltip title="Remove President">
-                            <IconButton size="small" onClick={() => handleRemoveRole(club, 'president')} sx={{ color: '#EF4444', p: 0.2 }}>
-                              <PersonRemoveIcon sx={{ fontSize: 16 }} />
-                            </IconButton>
-                          </Tooltip>
-                        </Box>
-                      ) : (
-                        <Chip label="Unassigned" size="small" sx={{ fontSize: '0.7rem', fontWeight: 700, backgroundColor: '#FEF2F2', color: '#EF4444' }} />
-                      )}
                     </Box>
-
-                    {/* Secretary Row */}
-                    <Box display="flex" justifyContent="space-between" alignItems="center">
-                      <Typography variant="body2" sx={{ color: '#777788', fontWeight: 600, fontSize: '0.82rem' }}>
-                        Secretary:
+                    <Divider orientation="vertical" flexItem sx={{ borderColor: '#E9E7F2' }} />
+                    <Box display="flex" alignItems="center" gap={0.8} sx={{ flex: 1 }}>
+                      <EventIcon sx={{ color: '#059669', fontSize: 18 }} />
+                      <Typography variant="caption" sx={{ color: '#5E5D6E', fontWeight: 700 }}>
+                        <strong>{stats.event_count ?? 0}</strong> Events
                       </Typography>
-                      {secretary ? (
-                        <Box display="flex" alignItems="center" gap={1}>
-                          <Typography variant="body2" sx={{ fontWeight: 700, color: '#20202A', fontSize: '0.88rem' }}>
-                            {secretary.username}
-                          </Typography>
-                          <RoleChip role="secretary" />
-                          <Tooltip title="Remove Secretary">
-                            <IconButton size="small" onClick={() => handleRemoveRole(club, 'secretary')} sx={{ color: '#EF4444', p: 0.2 }}>
-                              <PersonRemoveIcon sx={{ fontSize: 16 }} />
-                            </IconButton>
-                          </Tooltip>
-                        </Box>
-                      ) : (
-                        <Chip label="Unassigned" size="small" sx={{ fontSize: '0.7rem', fontWeight: 700, backgroundColor: '#F3F0FF', color: '#777788' }} />
-                      )}
-                    </Box>
-
-                    {/* Stats summary */}
-                    <Box display="flex" justifyContent="space-between" alignItems="center" pt={0.5}>
-                      <Box display="flex" alignItems="center" gap={0.5} sx={{ color: '#777788', fontSize: '0.82rem' }}>
-                        <GroupsIcon sx={{ fontSize: 16, color: '#4F2BCB' }} />
-                        <span><strong>{stats.member_count ?? members.length}</strong> members</span>
-                      </Box>
-                      <Box display="flex" alignItems="center" gap={0.5} sx={{ color: '#777788', fontSize: '0.82rem' }}>
-                        <EventIcon sx={{ fontSize: 16, color: '#0EA5E9' }} />
-                        <span><strong>{stats.event_count ?? 0}</strong> events</span>
-                      </Box>
                     </Box>
                   </Box>
 
-                  {/* Role Assignment Action Buttons */}
-                  <Box mt="auto" display="flex" gap={1} flexWrap="wrap">
-                    <Button
-                      size="small"
-                      variant="ghost"
-                      startIcon={<PersonAddIcon />}
-                      onClick={() => openAssignModal(club, 'president')}
+                  {/* Leadership Assignments */}
+                  <Box sx={{ mt: 'auto' }}>
+                    <Typography
+                      variant="caption"
                       sx={{
-                        fontSize: '0.8rem',
-                        py: 0.6,
-                        color: '#B45309',
-                        borderColor: '#FEF3C7',
-                        backgroundColor: '#FFFBEB',
-                        '&:hover': { backgroundColor: '#FEF3C7' },
+                        fontWeight: 800,
+                        color: '#8E90A2',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.04em',
+                        fontSize: '0.68rem',
+                        display: 'block',
+                        mb: 1.2,
                       }}
                     >
-                      {president ? 'Change President' : 'Assign President'}
-                    </Button>
-                    <Button
-                      size="small"
-                      variant="ghost"
-                      startIcon={<PersonAddIcon />}
-                      onClick={() => openAssignModal(club, 'secretary')}
-                      sx={{
-                        fontSize: '0.8rem',
-                        py: 0.6,
-                        color: '#4F2BCB',
-                        borderColor: '#E9E7F2',
-                        backgroundColor: '#F7F6FC',
-                        '&:hover': { backgroundColor: '#F3F0FF' },
-                      }}
-                    >
-                      {secretary ? 'Change Secretary' : 'Assign Secretary'}
-                    </Button>
+                      Club Leadership Roster
+                    </Typography>
+
+                    <Stack spacing={1.2}>
+                      {/* President Slot */}
+                      <Box
+                        sx={{
+                          p: 1.2,
+                          borderRadius: '12px',
+                          border: '1px solid #F1EFF8',
+                          backgroundColor: president ? '#FFFFFF' : '#FAFAFC',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                        }}
+                      >
+                        <Box display="flex" alignItems="center" gap={1}>
+                          <RoleChip role="president" />
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              fontWeight: 700,
+                              color: president ? '#20202A' : '#8E90A2',
+                              fontSize: '0.85rem',
+                            }}
+                          >
+                            {president ? president.username : 'No President Assigned'}
+                          </Typography>
+                        </Box>
+                        {president ? (
+                          <Tooltip title="Remove President">
+                            <IconButton
+                              size="small"
+                              onClick={() => handleRemoveRole(club, 'president')}
+                              sx={{ color: '#EF4444' }}
+                            >
+                              <PersonRemoveIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        ) : (
+                          <Button
+                            variant="subtle"
+                            size="small"
+                            onClick={() => openAssignModal(club, 'president')}
+                            startIcon={<PersonAddIcon sx={{ fontSize: 14 }} />}
+                            sx={{ py: 0.4, px: 1.2, fontSize: '0.74rem' }}
+                          >
+                            Assign
+                          </Button>
+                        )}
+                      </Box>
+
+                      {/* Secretary Slot */}
+                      <Box
+                        sx={{
+                          p: 1.2,
+                          borderRadius: '12px',
+                          border: '1px solid #F1EFF8',
+                          backgroundColor: secretary ? '#FFFFFF' : '#FAFAFC',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                        }}
+                      >
+                        <Box display="flex" alignItems="center" gap={1}>
+                          <RoleChip role="secretary" />
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              fontWeight: 700,
+                              color: secretary ? '#20202A' : '#8E90A2',
+                              fontSize: '0.85rem',
+                            }}
+                          >
+                            {secretary ? secretary.username : 'No Secretary Assigned'}
+                          </Typography>
+                        </Box>
+                        {secretary ? (
+                          <Tooltip title="Remove Secretary">
+                            <IconButton
+                              size="small"
+                              onClick={() => handleRemoveRole(club, 'secretary')}
+                              sx={{ color: '#EF4444' }}
+                            >
+                              <PersonRemoveIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        ) : (
+                          <Button
+                            variant="subtle"
+                            size="small"
+                            onClick={() => openAssignModal(club, 'secretary')}
+                            startIcon={<PersonAddIcon sx={{ fontSize: 14 }} />}
+                            sx={{ py: 0.4, px: 1.2, fontSize: '0.74rem' }}
+                          >
+                            Assign
+                          </Button>
+                        )}
+                      </Box>
+                    </Stack>
                   </Box>
                 </Paper>
               </Grid>
@@ -443,93 +537,73 @@ const AdminClubs = () => {
         </Grid>
       )}
 
-      {/* Assign Leadership Role Modal */}
+      {/* Assign Role Dialog */}
       <Dialog
         open={assignModal.open}
-        onClose={() => setAssignModal({ ...assignModal, open: false })}
-        PaperProps={{ sx: { borderRadius: '18px', p: 1.5, minWidth: { xs: 320, sm: 440 } } }}
+        onClose={() => setAssignModal({ open: false, club: null, role: 'president' })}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: '24px', p: 1 } }}
       >
-        <DialogTitle sx={{ fontWeight: 800, color: '#20202A' }}>
-          Assign {assignModal.role === 'president' ? 'Club President' : 'Club Secretary'}
-          <Typography variant="body2" sx={{ color: '#777788', mt: 0.5, fontWeight: 500 }}>
-            Target Club: <strong>{assignModal.club?.name}</strong>
-          </Typography>
+        <DialogTitle
+          sx={{
+            fontWeight: 900,
+            color: '#20202A',
+            fontFamily: "'Plus Jakarta Sans', sans-serif",
+          }}
+        >
+          Assign {assignModal.role === 'president' ? 'President' : 'Secretary'} for {assignModal.club?.name}
         </DialogTitle>
-        <DialogContent>
-          {error && <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>{error}</Alert>}
-          <Typography variant="body2" sx={{ color: '#6E6D7A', mb: 2.5, fontSize: '0.88rem' }}>
-            Select any registered user on the platform. If the user is not currently in the club, they will be automatically enrolled as {assignModal.role}.
-          </Typography>
-          <FormControl fullWidth>
-            <InputLabel id="select-user-label">Select User</InputLabel>
-            <Select
-              labelId="select-user-label"
+        <DialogContent dividers>
+          <Box pt={1}>
+            <TextField
+              select
+              fullWidth
+              label="Select User Account"
               value={selectedUserId}
-              label="Select User"
               onChange={(e) => setSelectedUserId(e.target.value)}
-              sx={{ borderRadius: '10px' }}
+              helperText="Choose a registered student account to assign this leadership role."
             >
-              {users.length === 0 ? (
-                <MenuItem disabled value="">
-                  No users available
+              {users.map((u) => (
+                <MenuItem key={u.id} value={u.id}>
+                  {u.username} {u.email ? `(${u.email})` : ''}
                 </MenuItem>
-              ) : (
-                users.map((u) => (
-                  <MenuItem key={u.id} value={u.id}>
-                    {u.username} ({u.email}) {u.is_superuser && ' — [Admin]'}
-                  </MenuItem>
-                ))
-              )}
-            </Select>
-          </FormControl>
+              ))}
+            </TextField>
+          </Box>
         </DialogContent>
-        <DialogActions sx={{ p: 2, gap: 1 }}>
-          <Button variant="ghost" onClick={() => setAssignModal({ ...assignModal, open: false })}>
+        <DialogActions sx={{ p: 2.5, gap: 1 }}>
+          <Button
+            variant="ghost"
+            onClick={() => setAssignModal({ open: false, club: null, role: 'president' })}
+          >
             Cancel
           </Button>
-          <Button
-            variant="primary"
-            onClick={handleAssign}
-            disabled={actionLoading}
-            sx={{ backgroundColor: '#4F2BCB' }}
-          >
-            {actionLoading ? 'Assigning...' : `Confirm & Assign ${assignModal.role === 'president' ? 'President' : 'Secretary'}`}
+          <Button variant="primary" onClick={handleAssign} loading={actionLoading}>
+            Confirm Assignment
           </Button>
         </DialogActions>
       </Dialog>
 
-      {/* Delete Club Confirmation Dialog */}
+      {/* Delete Club Dialog */}
       <Dialog
         open={deleteModal.open}
         onClose={() => setDeleteModal({ open: false, club: null })}
-        PaperProps={{ sx: { borderRadius: '18px', p: 1.5, maxWidth: 440 } }}
+        PaperProps={{ sx: { borderRadius: '24px', p: 1 } }}
       >
-        <DialogTitle sx={{ fontWeight: 800, color: '#DC2626' }}>
-          Delete "{deleteModal.club?.name}"?
-        </DialogTitle>
+        <DialogTitle sx={{ fontWeight: 900, color: '#20202A' }}>Delete Club Organization?</DialogTitle>
         <DialogContent>
-          <DialogContentText sx={{ color: '#6E6D7A', fontSize: '0.9rem' }}>
-            Are you sure you want to permanently delete this club?
-            <br /><br />
-            This action will remove the club record along with all its events, announcements, and memberships. This cannot be undone.
+          <DialogContentText sx={{ color: '#5E5D6E' }}>
+            Are you sure you want to permanently delete <strong>{deleteModal.club?.name}</strong>?
+            This will delete all associated events, announcements, and memberships.
           </DialogContentText>
         </DialogContent>
-        <DialogActions sx={{ p: 2, gap: 1 }}>
+        <DialogActions sx={{ p: 2.5, gap: 1 }}>
           <Button variant="ghost" onClick={() => setDeleteModal({ open: false, club: null })}>
             Cancel
           </Button>
-          <Button
-            variant="ghost"
-            onClick={handleDeleteClub}
-            disabled={actionLoading}
-            sx={{
-              backgroundColor: '#EF4444',
-              color: '#FFFFFF',
-              fontWeight: 700,
-              '&:hover': { backgroundColor: '#DC2626' },
-            }}
-          >
-            {actionLoading ? 'Deleting...' : 'Yes, Delete Club'}
+          <Button variant="danger" onClick={handleDeleteClub} loading={actionLoading}>
+            Delete Organization
           </Button>
         </DialogActions>
       </Dialog>

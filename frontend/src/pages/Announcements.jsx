@@ -9,13 +9,11 @@ import {
   InputAdornment,
   MenuItem,
   CircularProgress,
-  Alert,
   Stack,
   Avatar,
 } from '@mui/material';
 import CampaignOutlinedIcon from '@mui/icons-material/CampaignOutlined';
 import SearchIcon from '@mui/icons-material/Search';
-import PersonOutlineIcon from '@mui/icons-material/PersonOutlined';
 import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import LocationOnOutlinedIcon from '@mui/icons-material/LocationOnOutlined';
@@ -28,11 +26,11 @@ import EmptyState from '../components/EmptyState';
 const ANNOUNCEMENT_TYPES = ['All', 'Urgent', 'General', 'Event Notice', 'Achievement', 'Election'];
 
 const TAG_CONFIG = {
-  Urgent: { bg: '#FEE2E2', color: '#DC2626' },
-  General: { bg: '#D1FAE5', color: '#059669' },
-  'Event Notice': { bg: '#FEF3C7', color: '#D97706' },
-  Achievement: { bg: '#E0F2FE', color: '#0284C7' },
-  Election: { bg: '#F3F0FF', color: '#7C3AED' },
+  Urgent: { bg: '#FEE2E2', color: '#DC2626', border: '#FECACA' },
+  General: { bg: '#D1FAE5', color: '#059669', border: '#A7F3D0' },
+  'Event Notice': { bg: '#FEF3C7', color: '#D97706', border: '#FDE68A' },
+  Achievement: { bg: '#DBEAFE', color: '#1D4ED8', border: '#BFDBFE' },
+  Election: { bg: '#F3F0FF', color: '#7C3AED', border: '#DDD6FE' },
 };
 
 const FALLBACK_POSTS = [
@@ -69,7 +67,6 @@ export default function Announcements() {
   const [selectedType, setSelectedType] = useState('All');
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
   const loadData = async () => {
     try {
@@ -112,15 +109,24 @@ export default function Announcements() {
   });
 
   return (
-    <Box sx={{ maxWidth: 1150, mx: 'auto', pb: 6, width: '100%' }}>
+    <Box sx={{ maxWidth: 1200, mx: 'auto', pb: 6, width: '100%' }}>
       {/* Header Bar */}
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3} flexWrap="wrap" gap={2}>
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3.5} flexWrap="wrap" gap={2}>
         <Box>
-          <Typography variant="h4" sx={{ fontWeight: 900, color: '#20202A', letterSpacing: '-0.02em' }}>
+          <Typography
+            variant="h4"
+            sx={{
+              fontWeight: 900,
+              color: '#20202A',
+              fontSize: { xs: '1.5rem', sm: '1.85rem' },
+              fontFamily: "'Plus Jakarta Sans', sans-serif",
+              letterSpacing: '-0.02em',
+            }}
+          >
             Club Announcements & Bulletins
           </Typography>
-          <Typography variant="body2" sx={{ color: '#777788', mt: 0.5 }}>
-            Official notices, urgent updates, and event alerts across all student clubs.
+          <Typography variant="body2" sx={{ color: '#5E5D6E', mt: 0.5, fontWeight: 500 }}>
+            Official notices, urgent updates, and event alerts across all university organizations.
           </Typography>
         </Box>
       </Box>
@@ -129,31 +135,31 @@ export default function Announcements() {
       <Paper
         elevation={0}
         sx={{
-          p: 2,
-          borderRadius: '16px',
+          p: 2.2,
+          borderRadius: '20px',
           border: '1px solid #E9E7F2',
           backgroundColor: '#FFFFFF',
           mb: 3.5,
           display: 'flex',
           flexDirection: 'column',
           gap: 2,
+          boxShadow: '0 2px 8px rgba(79, 43, 203, 0.03)',
         }}
       >
         <Box display="flex" gap={2} flexWrap="wrap" alignItems="center">
           <TextField
-            placeholder="Search announcements by keyword, topic, or club..."
+            placeholder="Search announcements by keyword, topic, or club name..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             size="small"
             sx={{
               flex: 1,
-              minWidth: 220,
-              '& .MuiOutlinedInput-root': { borderRadius: '12px', borderColor: '#E9E7F2' },
+              minWidth: { xs: '100%', sm: 260 },
             }}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <SearchIcon sx={{ color: '#9DA0AE' }} />
+                  <SearchIcon sx={{ color: '#8E90A2' }} />
                 </InputAdornment>
               ),
             }}
@@ -165,11 +171,10 @@ export default function Announcements() {
             value={selectedClubId}
             onChange={(e) => setSelectedClubId(e.target.value)}
             sx={{
-              minWidth: 200,
-              '& .MuiOutlinedInput-root': { borderRadius: '12px', borderColor: '#E9E7F2' },
+              minWidth: { xs: '100%', sm: 220 },
             }}
           >
-            <MenuItem value="all">All Clubs</MenuItem>
+            <MenuItem value="all">All Student Clubs</MenuItem>
             {clubs.map((c) => (
               <MenuItem key={c.id} value={c.id}>
                 {c.name}
@@ -180,23 +185,33 @@ export default function Announcements() {
 
         {/* Category Pills */}
         <Stack direction="row" spacing={1} overflow="auto" pb={0.5}>
-          {ANNOUNCEMENT_TYPES.map((type) => (
-            <Chip
-              key={type}
-              label={type}
-              clickable
-              onClick={() => setSelectedType(type)}
-              sx={{
-                fontWeight: 700,
-                fontSize: '0.8rem',
-                backgroundColor: selectedType === type ? '#4F2BCB' : '#FBFBFE',
-                color: selectedType === type ? '#FFFFFF' : '#6E6D7A',
-                border: '1px solid',
-                borderColor: selectedType === type ? '#4F2BCB' : '#E9E7F2',
-                borderRadius: '10px',
-              }}
-            />
-          ))}
+          {ANNOUNCEMENT_TYPES.map((type) => {
+            const isSelected = selectedType === type;
+            return (
+              <Chip
+                key={type}
+                label={type}
+                clickable
+                onClick={() => setSelectedType(type)}
+                sx={{
+                  fontWeight: 800,
+                  fontSize: '0.8rem',
+                  backgroundColor: isSelected ? '#4F2BCB' : '#F8F7FD',
+                  color: isSelected ? '#FFFFFF' : '#5E5D6E',
+                  border: '1px solid',
+                  borderColor: isSelected ? '#4F2BCB' : '#E9E7F2',
+                  borderRadius: '10px',
+                  py: 1.8,
+                  px: 0.5,
+                  transition: 'all 0.18s ease',
+                  '&:hover': {
+                    backgroundColor: isSelected ? '#39209A' : '#F3F0FF',
+                    color: isSelected ? '#FFFFFF' : '#4F2BCB',
+                  },
+                }}
+              />
+            );
+          })}
         </Stack>
       </Paper>
 
@@ -223,37 +238,54 @@ export default function Announcements() {
                 elevation={0}
                 sx={{
                   p: 3,
-                  borderRadius: '20px',
+                  borderRadius: '22px',
                   border: '1px solid #E9E7F2',
                   backgroundColor: '#FFFFFF',
-                  transition: 'all 0.2s ease',
+                  boxShadow: '0 2px 8px rgba(79, 43, 203, 0.03)',
+                  transition: 'all 0.22s ease',
                   '&:hover': {
                     borderColor: '#4F2BCB',
-                    boxShadow: '0 6px 22px rgba(79, 43, 203, 0.06)',
+                    boxShadow: '0 8px 24px rgba(79, 43, 203, 0.08)',
+                    transform: 'translateY(-2px)',
                   },
                 }}
               >
                 {/* Header Row */}
                 <Box display="flex" justifyContent="space-between" alignItems="flex-start" gap={1.5} mb={1}>
-                  <Box>
-                    <Typography variant="h6" sx={{ fontWeight: 800, color: '#20202A', fontSize: '1.1rem', mb: 0.5 }}>
+                  <Box sx={{ minWidth: 0, flex: 1 }}>
+                    <Typography
+                      variant="h6"
+                      sx={{
+                        fontWeight: 900,
+                        color: '#20202A',
+                        fontSize: '1.15rem',
+                        mb: 0.6,
+                        fontFamily: "'Plus Jakarta Sans', sans-serif",
+                      }}
+                    >
                       {item.title}
                     </Typography>
 
-                    <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap">
+                    <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap" gap={0.5}>
                       {item.club_name && (
-                        <Box display="flex" alignItems="center" gap={0.5}>
+                        <Box display="flex" alignItems="center" gap={0.6}>
                           <BusinessOutlinedIcon sx={{ fontSize: 16, color: '#4F2BCB' }} />
-                          <Typography variant="caption" sx={{ color: '#4F2BCB', fontWeight: 700 }}>
+                          <Typography variant="caption" sx={{ color: '#4F2BCB', fontWeight: 800 }}>
                             {item.club_name}
                           </Typography>
                         </Box>
                       )}
 
                       <Box display="flex" alignItems="center" gap={0.5}>
-                        <AccessTimeIcon sx={{ fontSize: 15, color: '#9DA0AE' }} />
-                        <Typography variant="caption" sx={{ color: '#777788', fontWeight: 500 }}>
-                          {item.created_at ? new Date(item.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : 'Recent'}
+                        <AccessTimeIcon sx={{ fontSize: 15, color: '#8E90A2' }} />
+                        <Typography variant="caption" sx={{ color: '#5E5D6E', fontWeight: 600 }}>
+                          {item.created_at
+                            ? new Date(item.created_at).toLocaleDateString(undefined, {
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric',
+                              })
+                            : 'Recent'}
                         </Typography>
                       </Box>
                     </Stack>
@@ -265,30 +297,24 @@ export default function Announcements() {
                     sx={{
                       backgroundColor: tagConfig.bg,
                       color: tagConfig.color,
+                      border: `1px solid ${tagConfig.border}`,
                       fontWeight: 800,
-                      fontSize: '0.72rem',
+                      fontSize: '0.74rem',
                       borderRadius: '8px',
-                      height: 24,
+                      height: 26,
+                      px: 0.5,
+                      flexShrink: 0,
                     }}
                   />
                 </Box>
 
                 {/* Content */}
-                <Typography variant="body2" sx={{ color: '#444455', lineHeight: 1.75, my: 1.5 }}>
+                <Typography
+                  variant="body2"
+                  sx={{ color: '#5E5D6E', lineHeight: 1.75, my: 1.8, fontSize: '0.9rem' }}
+                >
                   {item.content}
                 </Typography>
-
-                {/* Action Buttons */}
-                <Box display="flex" justifyContent="flex-end" gap={1}>
-                  <Button
-                    variant="ghost"
-                    size="small"
-                    onClick={() => alert(`Viewing full notice for "${item.title}"`)}
-                    sx={{ color: '#4F2BCB', borderColor: '#D4CCF7', fontSize: '0.78rem' }}
-                  >
-                    View Full Notice →
-                  </Button>
-                </Box>
               </Paper>
             );
           })}

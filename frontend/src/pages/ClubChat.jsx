@@ -10,12 +10,10 @@ import {
   IconButton,
   CircularProgress,
   Alert,
-  Divider,
   List,
   ListItem,
   ListItemAvatar,
   ListItemText,
-  Badge,
   Stack,
   Tooltip,
   useTheme,
@@ -25,18 +23,22 @@ import SendIcon from '@mui/icons-material/Send';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ForumIcon from '@mui/icons-material/Forum';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import MarkChatUnreadIcon from '@mui/icons-material/MarkChatUnread';
 import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
 
 import { useAuth } from '../context/AuthContext';
-import { fetchClubMessages, sendClubMessage, fetchChatParticipants, clearClubMessages } from '../api/adminApi';
+import {
+  fetchClubMessages,
+  sendClubMessage,
+  fetchChatParticipants,
+  clearClubMessages,
+} from '../api/adminApi';
 import api, { getImageUrl } from '../api/axiosInstance';
 
 const ClubChat = () => {
   const { clubId } = useParams();
   const navigate = useNavigate();
-  const { user, systemRole, memberships } = useAuth();
-  
+  const { user, memberships } = useAuth();
+
   const currentUserId = Number(localStorage.getItem('user_id'));
 
   const [club, setClub] = useState(null);
@@ -45,15 +47,15 @@ const ClubChat = () => {
   const [content, setContent] = useState('');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
-  
+
   // Officer state
   const [isOfficer, setIsOfficer] = useState(false);
   const [participants, setParticipants] = useState([]);
-  const [selectedUser, setSelectedUser] = useState(null); // The member the officer is chatting with
+  const [selectedUser, setSelectedUser] = useState(null);
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const [mobileView, setMobileView] = useState('list'); // 'list' | 'chat'
+  const [mobileView, setMobileView] = useState('list');
 
   const messagesEndRef = useRef(null);
 
@@ -62,25 +64,24 @@ const ClubChat = () => {
     setMobileView('chat');
   };
 
-  // Determine role and load club details
   const checkRoleAndLoadClub = async () => {
     try {
       setLoading(true);
       setError('');
-      
+
       const clubRes = await api.get(`/clubs/${clubId}`);
       setClub(clubRes.data);
 
-      // Check if user is officer (president/secretary) of this club, or superuser
       const isSuper = user?.is_superuser;
       const clubMembership = memberships.find((m) => Number(m.club_id) === Number(clubId));
-      const hasOfficerRole = clubMembership && (clubMembership.role === 'president' || clubMembership.role === 'secretary');
-      
+      const hasOfficerRole =
+        clubMembership &&
+        (clubMembership.role === 'president' || clubMembership.role === 'secretary');
+
       const officerFlag = isSuper || hasOfficerRole;
       setIsOfficer(officerFlag);
 
       if (officerFlag) {
-        // Load chat participants (members who messaged)
         const parts = await fetchChatParticipants(clubId).catch(() => []);
         setParticipants(parts);
         if (parts.length > 0) {
@@ -99,12 +100,9 @@ const ClubChat = () => {
     checkRoleAndLoadClub();
   }, [clubId, memberships]);
 
-  // Load message history
   const loadMessages = async () => {
     if (!clubId) return;
     try {
-      // If officer, load messages of the selected member
-      // If member, load messages of the current user
       const targetUserId = isOfficer ? selectedUser?.user_id : currentUserId;
       if (isOfficer && !targetUserId) return;
 
@@ -115,12 +113,10 @@ const ClubChat = () => {
     }
   };
 
-  // Poll for new messages every 4 seconds to make the chat feel alive
   useEffect(() => {
     loadMessages();
     const interval = setInterval(() => {
       loadMessages();
-      // Also refresh participant list if officer to get new alerts
       if (isOfficer) {
         fetchChatParticipants(clubId)
           .then((parts) => {
@@ -132,7 +128,6 @@ const ClubChat = () => {
     return () => clearInterval(interval);
   }, [clubId, isOfficer, selectedUser]);
 
-  // Scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -147,8 +142,7 @@ const ClubChat = () => {
       const sentMsg = await sendClubMessage(clubId, content.trim(), targetUserId);
       setMessages((prev) => [...prev, sentMsg]);
       setContent('');
-      
-      // Update last message in local participants list if officer
+
       if (isOfficer && selectedUser) {
         setParticipants((prev) =>
           prev.map((p) =>
@@ -166,15 +160,18 @@ const ClubChat = () => {
   };
 
   const handleDeleteChat = async () => {
-    if (!window.confirm("Are you sure you want to delete this entire chat conversation? This action is permanent and cannot be undone.")) {
+    if (
+      !window.confirm(
+        'Are you sure you want to delete this conversation history? This action is permanent.'
+      )
+    ) {
       return;
     }
     try {
       const targetUserId = isOfficer ? selectedUser?.user_id : null;
       await clearClubMessages(clubId, targetUserId);
       setMessages([]);
-      
-      // Update last message preview in roster list if officer
+
       if (isOfficer && selectedUser) {
         setParticipants((prev) =>
           prev.map((p) =>
@@ -198,21 +195,31 @@ const ClubChat = () => {
   }
 
   return (
-    <Box sx={{ maxWidth: 1200, mx: 'auto', width: '100%', height: { xs: 'calc(100vh - 120px)', md: 'calc(100vh - 165px)' }, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      
+    <Box
+      sx={{
+        maxWidth: 1320,
+        mx: 'auto',
+        width: '100%',
+        height: { xs: 'calc(100vh - 120px)', md: 'calc(100vh - 150px)' },
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+      }}
+    >
       {/* Header Bar */}
       <Paper
         elevation={0}
         sx={{
           p: 2,
           mb: 2,
-          borderRadius: '16px',
+          borderRadius: '18px',
           border: '1px solid #E9E7F2',
           backgroundColor: '#FFFFFF',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           flexShrink: 0,
+          boxShadow: '0 2px 8px rgba(79, 43, 203, 0.03)',
         }}
       >
         <Box display="flex" alignItems="center" gap={2}>
@@ -223,17 +230,43 @@ const ClubChat = () => {
             <Avatar
               src={getImageUrl(club?.logo_url)}
               variant="rounded"
-              sx={{ width: 40, height: 40, backgroundColor: '#F3F0FF', border: '1px solid #E0DBFF' }}
+              sx={{
+                width: 44,
+                height: 44,
+                borderRadius: '12px',
+                backgroundColor: '#F3F0FF',
+                color: '#4F2BCB',
+                fontWeight: 900,
+                border: '1px solid #E0DBFF',
+              }}
             >
               {club?.name?.charAt(0).toUpperCase()}
             </Avatar>
             <Box>
-              <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#20202A' }}>
+              <Typography
+                variant="subtitle1"
+                sx={{
+                  fontWeight: 900,
+                  color: '#20202A',
+                  fontFamily: "'Plus Jakarta Sans', sans-serif",
+                }}
+              >
                 {club?.name} Chatroom
               </Typography>
-              <Typography variant="caption" sx={{ color: '#777788', display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <ForumIcon sx={{ fontSize: 12 }} />
-                {isOfficer ? 'Personal Officer Console' : 'Direct Channel with Club Officers'}
+              <Typography
+                variant="caption"
+                sx={{
+                  color: '#5E5D6E',
+                  fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 0.6,
+                }}
+              >
+                <ForumIcon sx={{ fontSize: 13, color: '#4F2BCB' }} />
+                {isOfficer
+                  ? 'Leadership Officer Console'
+                  : 'Direct Communication with Club Leadership'}
               </Typography>
             </Box>
           </Box>
@@ -244,43 +277,66 @@ const ClubChat = () => {
         </IconButton>
       </Paper>
 
-      {error && <Alert severity="error" sx={{ mb: 2, borderRadius: 2, flexShrink: 0 }}>{error}</Alert>}
+      {error && (
+        <Alert severity="error" sx={{ mb: 2, borderRadius: '12px', flexShrink: 0 }}>
+          {error}
+        </Alert>
+      )}
 
-      {/* Main Panel */}
+      {/* Main Chat Panel */}
       <Grid container spacing={2} sx={{ flex: 1, minHeight: 0, height: '100%', overflow: 'hidden' }}>
-        
-        {/* LEFT: Sidebar of members (Only visible to Club Officers) */}
+        {/* Left: Member Roster for Officers */}
         {isOfficer && (!isMobile || mobileView === 'list') && (
-          <Grid item xs={12} md={4} sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+          <Grid
+            item
+            xs={12}
+            md={4}
+            sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}
+          >
             <Paper
               elevation={0}
               sx={{
                 flex: 1,
-                borderRadius: '18px',
+                borderRadius: '20px',
                 border: '1px solid #E9E7F2',
                 backgroundColor: '#FFFFFF',
                 display: 'flex',
                 flexDirection: 'column',
                 overflow: 'hidden',
+                boxShadow: '0 2px 8px rgba(79, 43, 203, 0.03)',
               }}
             >
-              <Box p={2} sx={{ backgroundColor: '#FBFBFE', borderBottom: '1px solid #F0EFF8' }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#444455' }}>
+              <Box p={2} sx={{ backgroundColor: '#F8F7FD', borderBottom: '1px solid #F1EFF8' }}>
+                <Typography
+                  variant="subtitle2"
+                  sx={{
+                    fontWeight: 900,
+                    color: '#20202A',
+                    fontFamily: "'Plus Jakarta Sans', sans-serif",
+                  }}
+                >
                   Member Channels ({participants.length})
                 </Typography>
-                <Typography variant="caption" sx={{ color: '#9DA0AE' }}>
+                <Typography variant="caption" sx={{ color: '#8E90A2' }}>
                   Select a member to view their direct chat.
                 </Typography>
               </Box>
 
-              <List sx={{ flex: 1, overflowY: 'auto', p: 1 }}>
+              <List sx={{ flex: 1, overflowY: 'auto', p: 1.2 }}>
                 {participants.length === 0 ? (
-                  <Box display="flex" flexDirection="column" alignItems="center" py={8} px={2} textAlign="center">
+                  <Box
+                    display="flex"
+                    flexDirection="column"
+                    alignItems="center"
+                    py={8}
+                    px={2}
+                    textAlign="center"
+                  >
                     <ForumIcon sx={{ fontSize: 40, color: '#D4CCF7', mb: 1.5 }} />
-                    <Typography variant="body2" sx={{ fontWeight: 700, color: '#777788' }}>
-                      No active chats
+                    <Typography variant="body2" sx={{ fontWeight: 700, color: '#5E5D6E' }}>
+                      No active member chats
                     </Typography>
-                    <Typography variant="caption" sx={{ color: '#9DA0AE' }}>
+                    <Typography variant="caption" sx={{ color: '#8E90A2' }}>
                       Chats will appear here as soon as members send messages.
                     </Typography>
                   </Box>
@@ -288,7 +344,10 @@ const ClubChat = () => {
                   participants.map((part) => {
                     const isSelected = selectedUser?.user_id === part.user_id;
                     const dateStr = part.last_message_time
-                      ? new Date(part.last_message_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                      ? new Date(part.last_message_time).toLocaleTimeString([], {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })
                       : '';
 
                     return (
@@ -298,26 +357,42 @@ const ClubChat = () => {
                         selected={isSelected}
                         onClick={() => selectParticipant(part)}
                         sx={{
-                          borderRadius: '12px',
+                          borderRadius: '14px',
                           mb: 0.8,
+                          p: 1.2,
                           '&.Mui-selected': {
                             backgroundColor: '#F3F0FF',
-                            '&:hover': { backgroundColor: '#EAEAFF' },
+                            border: '1px solid #D4CCF7',
+                            '&:hover': { backgroundColor: '#EDE9FE' },
                           },
                         }}
                       >
                         <ListItemAvatar>
-                          <Avatar src={getImageUrl(part.avatar_url)} sx={{ backgroundColor: '#EAEAFF', color: '#4F2BCB', fontWeight: 800 }}>
+                          <Avatar
+                            src={getImageUrl(part.avatar_url)}
+                            sx={{
+                              backgroundColor: '#EDE9FE',
+                              color: '#4F2BCB',
+                              fontWeight: 800,
+                            }}
+                          >
                             {part.username?.charAt(0).toUpperCase()}
                           </Avatar>
                         </ListItemAvatar>
                         <ListItemText
                           primary={
                             <Box display="flex" justifyContent="space-between" alignItems="center">
-                              <Typography variant="subtitle2" sx={{ fontWeight: 800, color: isSelected ? '#4F2BCB' : '#20202A' }}>
+                              <Typography
+                                variant="subtitle2"
+                                sx={{
+                                  fontWeight: 800,
+                                  color: isSelected ? '#4F2BCB' : '#20202A',
+                                  fontFamily: "'Plus Jakarta Sans', sans-serif",
+                                }}
+                              >
                                 {part.username}
                               </Typography>
-                              <Typography variant="caption" sx={{ color: '#9DA0AE' }}>
+                              <Typography variant="caption" sx={{ color: '#8E90A2' }}>
                                 {dateStr}
                               </Typography>
                             </Box>
@@ -326,7 +401,7 @@ const ClubChat = () => {
                             <Typography
                               variant="caption"
                               sx={{
-                                color: '#777788',
+                                color: '#5E5D6E',
                                 display: 'block',
                                 textOverflow: 'ellipsis',
                                 overflow: 'hidden',
@@ -346,149 +421,261 @@ const ClubChat = () => {
           </Grid>
         )}
 
+        {/* Right: Message Stream Viewport */}
         {(!isOfficer || !isMobile || mobileView === 'chat') && (
-          /* RIGHT: Chat bubbles viewport */
-          <Grid item xs={12} md={isOfficer ? 8 : 12} sx={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
+          <Grid
+            item
+            xs={12}
+            md={isOfficer ? 8 : 12}
+            sx={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}
+          >
             <Paper
               elevation={0}
               sx={{
                 flex: 1,
-                borderRadius: '18px',
+                borderRadius: '20px',
                 border: '1px solid #E9E7F2',
                 backgroundColor: '#FFFFFF',
                 display: 'flex',
                 flexDirection: 'column',
                 overflow: 'hidden',
+                boxShadow: '0 2px 8px rgba(79, 43, 203, 0.03)',
               }}
             >
               {/* Conversation Header */}
-              <Box p={2} sx={{ backgroundColor: '#FBFBFE', borderBottom: '1px solid #F0EFF8', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+              <Box
+                p={2}
+                sx={{
+                  backgroundColor: '#F8F7FD',
+                  borderBottom: '1px solid #F1EFF8',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexShrink: 0,
+                }}
+              >
                 <Box display="flex" alignItems="center" gap={1.5}>
                   {isMobile && isOfficer && (
-                    <IconButton onClick={() => setMobileView('list')} sx={{ color: '#4F2BCB', p: 0.5, mr: 0.5 }}>
+                    <IconButton
+                      onClick={() => setMobileView('list')}
+                      sx={{ color: '#4F2BCB', p: 0.5, mr: 0.5 }}
+                    >
                       <ArrowBackIcon />
                     </IconButton>
                   )}
                   <Avatar
-                    src={isOfficer ? getImageUrl(selectedUser?.avatar_url) : getImageUrl(club?.logo_url)}
-                    sx={{ width: 34, height: 34, backgroundColor: '#EAEAFF', color: '#4F2BCB', fontWeight: 800 }}
+                    src={
+                      isOfficer
+                        ? getImageUrl(selectedUser?.avatar_url)
+                        : getImageUrl(club?.logo_url)
+                    }
+                    sx={{
+                      width: 36,
+                      height: 36,
+                      backgroundColor: '#EDE9FE',
+                      color: '#4F2BCB',
+                      fontWeight: 800,
+                    }}
                   >
-                    {isOfficer ? selectedUser?.username?.charAt(0).toUpperCase() : club?.name?.charAt(0).toUpperCase()}
+                    {isOfficer
+                      ? selectedUser?.username?.charAt(0).toUpperCase()
+                      : club?.name?.charAt(0).toUpperCase()}
                   </Avatar>
                   <Box>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#20202A' }}>
+                    <Typography
+                      variant="subtitle2"
+                      sx={{
+                        fontWeight: 800,
+                        color: '#20202A',
+                        fontFamily: "'Plus Jakarta Sans', sans-serif",
+                      }}
+                    >
                       {isOfficer ? selectedUser?.username : `Club Officers (${club?.name})`}
                     </Typography>
-                    <Typography variant="caption" sx={{ color: '#059669', display: 'flex', alignItems: 'center', gap: 0.5, fontWeight: 700 }}>
-                      <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: '#10B981', display: 'inline-block' }}></span>
-                      Active Persistent Session
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        color: '#059669',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 0.6,
+                        fontWeight: 700,
+                      }}
+                    >
+                      <span
+                        style={{
+                          width: 7,
+                          height: 7,
+                          borderRadius: '50%',
+                          backgroundColor: '#10B981',
+                          display: 'inline-block',
+                        }}
+                      ></span>
+                      Persistent Direct Channel
                     </Typography>
                   </Box>
                 </Box>
 
-                {/* Delete Conversation Button */}
                 <Tooltip title="Delete Conversation History">
                   <IconButton
                     onClick={handleDeleteChat}
                     disabled={messages.length === 0}
                     sx={{
                       color: '#EF4444',
-                      backgroundColor: '#FEF2F2',
-                      '&:hover': { backgroundColor: '#FEE2E2' },
-                      '&.Mui-disabled': { backgroundColor: 'transparent', color: '#C4C4D4' }
+                      backgroundColor: '#FEE2E2',
+                      borderRadius: '8px',
+                      '&:hover': { backgroundColor: '#FECACA' },
+                      '&.Mui-disabled': { backgroundColor: 'transparent', color: '#C4C4D4' },
                     }}
                   >
-                    <DeleteOutlinedIcon />
+                    <DeleteOutlinedIcon fontSize="small" />
                   </IconButton>
                 </Tooltip>
               </Box>
 
-            {/* Messages Viewport */}
-            <Box sx={{ flex: 1, p: 3, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 2, backgroundColor: '#FAFAFD' }}>
-              {messages.length === 0 ? (
-                <Box display="flex" flexDirection="column" alignItems="center" justifyContext="center" my="auto" py={6} textAlign="center">
-                  <ForumIcon sx={{ fontSize: 44, color: '#D4CCF7', mb: 1.5 }} />
-                  <Typography variant="body2" sx={{ fontWeight: 700, color: '#777788' }}>
-                    Start of chat history
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: '#9DA0AE', maxWidth: 280, mt: 0.5 }}>
-                    Type a message below to begin chatting. Refreshing or logging out will not clear this chat.
-                  </Typography>
-                </Box>
-              ) : (
-                messages.map((msg) => {
-                  const isMe = msg.sender_id === currentUserId;
-                  const timeStr = new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-                  return (
-                    <Box
-                      key={msg.id}
-                      sx={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: isMe ? 'flex-end' : 'flex-start',
-                        maxWidth: '80%',
-                        alignSelf: isMe ? 'flex-end' : 'flex-start',
-                      }}
-                    >
-                      <Box
-                        sx={{
-                          p: 1.8,
-                          borderRadius: isMe ? '18px 18px 2px 18px' : '18px 18px 18px 2px',
-                          backgroundColor: isMe ? '#4F2BCB' : '#FFFFFF',
-                          color: isMe ? '#FFFFFF' : '#20202A',
-                          boxShadow: isMe ? '0 3px 10px rgba(79, 43, 203, 0.15)' : '0 2px 8px rgba(0,0,0,0.04)',
-                          border: isMe ? 'none' : '1px solid #E9E7F2',
-                        }}
-                      >
-                        <Typography variant="body2" sx={{ wordBreak: 'break-word', fontWeight: 500, lineHeight: 1.5 }}>
-                          {msg.content}
-                        </Typography>
-                      </Box>
-                      <Stack direction="row" spacing={0.6} mt={0.5} pl={isMe ? 0 : 0.5} pr={isMe ? 0.5 : 0} alignItems="center">
-                        <Typography variant="caption" sx={{ color: '#9DA0AE', fontSize: '0.68rem', fontWeight: 600 }}>
-                          {isMe ? 'You' : msg.sender_name} • {timeStr}
-                        </Typography>
-                      </Stack>
-                    </Box>
-                  );
-                })
-              )}
-              <div ref={messagesEndRef} />
-            </Box>
-
-            {/* Input Footer */}
-            <Box component="form" onSubmit={handleSend} p={2} sx={{ backgroundColor: '#FFFFFF', borderTop: '1px solid #F0EFF8', display: 'flex', gap: 1.5 }}>
-              <TextField
-                fullWidth
-                size="small"
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                placeholder={isOfficer ? "Type a reply..." : "Send a message to the club officers..."}
-                disabled={sending}
-                autoComplete="off"
-                InputProps={{
-                  sx: { borderRadius: '12px' },
-                }}
-              />
-              <IconButton
-                type="submit"
-                disabled={!content.trim() || sending}
+              {/* Messages Viewport */}
+              <Box
                 sx={{
-                  backgroundColor: '#4F2BCB',
-                  color: '#FFFFFF',
-                  '&:hover': { backgroundColor: '#39209A' },
-                  '&.Mui-disabled': { backgroundColor: '#F0EFF8', color: '#C4C4D4' },
+                  flex: 1,
+                  p: 3,
+                  overflowY: 'auto',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 2,
+                  backgroundColor: '#FAF9FF',
                 }}
               >
-                {sending ? <CircularProgress size={20} color="inherit" /> : <SendIcon sx={{ fontSize: 20 }} />}
-              </IconButton>
-            </Box>
+                {messages.length === 0 ? (
+                  <Box
+                    display="flex"
+                    flexDirection="column"
+                    alignItems="center"
+                    my="auto"
+                    py={6}
+                    textAlign="center"
+                  >
+                    <ForumIcon sx={{ fontSize: 44, color: '#D4CCF7', mb: 1.5 }} />
+                    <Typography
+                      variant="body2"
+                      sx={{ fontWeight: 800, color: '#20202A', fontFamily: "'Plus Jakarta Sans', sans-serif" }}
+                    >
+                      Start of conversation
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: '#8E90A2', maxWidth: 300, mt: 0.5 }}>
+                      Type a message below to begin chatting with club leadership.
+                    </Typography>
+                  </Box>
+                ) : (
+                  messages.map((msg) => {
+                    const isMe = msg.sender_id === currentUserId;
+                    const timeStr = new Date(msg.created_at).toLocaleTimeString([], {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    });
 
+                    return (
+                      <Box
+                        key={msg.id}
+                        sx={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: isMe ? 'flex-end' : 'flex-start',
+                          maxWidth: '75%',
+                          alignSelf: isMe ? 'flex-end' : 'flex-start',
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            p: 2,
+                            borderRadius: isMe ? '18px 18px 2px 18px' : '18px 18px 18px 2px',
+                            backgroundColor: isMe ? '#4F2BCB' : '#FFFFFF',
+                            color: isMe ? '#FFFFFF' : '#20202A',
+                            boxShadow: isMe
+                              ? '0 4px 14px rgba(79, 43, 203, 0.2)'
+                              : '0 2px 8px rgba(0,0,0,0.04)',
+                            border: isMe ? 'none' : '1px solid #E9E7F2',
+                          }}
+                        >
+                          <Typography
+                            variant="body2"
+                            sx={{ wordBreak: 'break-word', fontWeight: 500, lineHeight: 1.55 }}
+                          >
+                            {msg.content}
+                          </Typography>
+                        </Box>
+                        <Stack
+                          direction="row"
+                          spacing={0.6}
+                          mt={0.5}
+                          pl={isMe ? 0 : 0.5}
+                          pr={isMe ? 0.5 : 0}
+                          alignItems="center"
+                        >
+                          <Typography
+                            variant="caption"
+                            sx={{ color: '#8E90A2', fontSize: '0.7rem', fontWeight: 600 }}
+                          >
+                            {isMe ? 'You' : msg.sender_name} • {timeStr}
+                          </Typography>
+                        </Stack>
+                      </Box>
+                    );
+                  })
+                )}
+                <div ref={messagesEndRef} />
+              </Box>
+
+              {/* Input Footer */}
+              <Box
+                component="form"
+                onSubmit={handleSend}
+                p={2}
+                sx={{
+                  backgroundColor: '#FFFFFF',
+                  borderTop: '1px solid #F1EFF8',
+                  display: 'flex',
+                  gap: 1.5,
+                  alignItems: 'center',
+                }}
+              >
+                <TextField
+                  fullWidth
+                  size="small"
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  placeholder={
+                    isOfficer
+                      ? 'Type a reply to this member...'
+                      : 'Send a message to the club officers...'
+                  }
+                  disabled={sending}
+                  autoComplete="off"
+                  InputProps={{
+                    sx: { borderRadius: '12px' },
+                  }}
+                />
+                <IconButton
+                  type="submit"
+                  disabled={!content.trim() || sending}
+                  sx={{
+                    backgroundColor: '#4F2BCB',
+                    color: '#FFFFFF',
+                    p: 1.2,
+                    borderRadius: '12px',
+                    '&:hover': { backgroundColor: '#39209A' },
+                    '&.Mui-disabled': { backgroundColor: '#F3F0FF', color: '#C4C4D4' },
+                  }}
+                >
+                  {sending ? (
+                    <CircularProgress size={20} color="inherit" />
+                  ) : (
+                    <SendIcon sx={{ fontSize: 20 }} />
+                  )}
+                </IconButton>
+              </Box>
             </Paper>
           </Grid>
         )}
-
       </Grid>
     </Box>
   );

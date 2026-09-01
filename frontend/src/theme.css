@@ -1,48 +1,110 @@
-/* Design system variables matching reference screenshot */
+/* Centralized Design Tokens - Preserving Original #4F2BCB Palette */
 :root {
-  /* Primary purple palette */
+  /* Primary Purple Palette */
   --color-primary: #4F2BCB;
   --color-primary-hover: #39209A;
+  --color-primary-active: #301985;
   --color-primary-light: #F3F0FF;
+  --color-primary-subtle: rgba(79, 43, 203, 0.08);
+  --color-primary-border: #D4CCF7;
+
+  /* Secondary & Accent Violet */
   --color-secondary: #7C3AED;
+  --color-secondary-hover: #6D28D9;
+  --color-secondary-light: #EDE9FE;
+  --color-accent-gradient: linear-gradient(135deg, #4F2BCB 0%, #7C3AED 100%);
+  --color-banner-gradient: linear-gradient(135deg, #4F2BCB 0%, #6838EE 60%, #7C3AED 100%);
+  --color-card-gradient: linear-gradient(180deg, rgba(255, 255, 255, 1) 0%, rgba(250, 249, 255, 0.6) 100%);
 
-  /* Backgrounds */
+  /* Canvas & Surfaces */
   --color-bg: #FAF9FF;
-  --color-bg-secondary: #F3F0FF;
-  --color-header-bg: #4F2BCB;
-
-  /* Surfaces */
+  --color-bg-alt: #F4F2FF;
   --color-surface: #FFFFFF;
+  --color-surface-hover: #F8F7FD;
 
-  /* Text */
+  /* Typography Colors */
   --color-text-primary: #20202A;
-  --color-text-secondary: #6E6D7A;
-  --color-text-muted: #9DA0AE;
+  --color-text-secondary: #5E5D6E;
+  --color-text-muted: #8E90A2;
+  --color-text-inverse: #FFFFFF;
 
-  /* Borders */
+  /* Borders & Dividers */
   --color-border: #E9E7F2;
+  --color-border-subtle: #F1EFF8;
+  --color-border-focus: #4F2BCB;
 
-  /* Status colors */
+  /* Status Tokens */
   --color-success: #10B981;
+  --color-success-bg: #D1FAE5;
+  --color-success-text: #059669;
+
   --color-warning: #F59E0B;
+  --color-warning-bg: #FEF3C7;
+  --color-warning-text: #D97706;
+
   --color-danger: #EF4444;
-  --color-info: #0EA5E9;
+  --color-danger-bg: #FEE2E2;
+  --color-danger-text: #DC2626;
+
+  --color-info: #3B82F6;
+  --color-info-bg: #DBEAFE;
+  --color-info-text: #1D4ED8;
+
+  /* Shadows */
+  --shadow-xs: 0 1px 2px rgba(79, 43, 203, 0.04);
+  --shadow-sm: 0 2px 8px rgba(79, 43, 203, 0.05);
+  --shadow-md: 0 4px 16px rgba(79, 43, 203, 0.07);
+  --shadow-lg: 0 12px 28px rgba(79, 43, 203, 0.10);
+  --shadow-xl: 0 20px 40px rgba(79, 43, 203, 0.14);
+
+  /* Radii */
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+  --radius-pill: 9999px;
+
+  /* Typography */
+  --font-heading: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-body: 'Inter', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-/* Global reset */
+/* Global Reset */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
 html, body {
   margin: 0;
   padding: 0;
-  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  width: 100%;
+  min-height: 100%;
+  font-family: var(--font-body);
   background-color: var(--color-bg);
   color: var(--color-text-primary);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  color: var(--color-text-primary);
+  margin: 0 0 0.5rem 0;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+p {
+  margin: 0 0 0.5rem 0;
 }
 
 a {
   color: var(--color-primary);
   text-decoration: none;
+  transition: color 0.2s ease;
 }
 
 a:hover {
@@ -53,18 +115,21 @@ button, input, textarea, select {
   font-family: inherit;
 }
 
-/* Scrollbar customization */
+/* Custom Scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
 }
+
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
 ::-webkit-scrollbar-thumb {
-  background: #D4D4E2;
-  border-radius: 10px;
+  background: #D4D2E5;
+  border-radius: var(--radius-pill);
 }
+
 ::-webkit-scrollbar-thumb:hover {
-  background: #B5B5C9;
+  background: #B6B2D4;
 }

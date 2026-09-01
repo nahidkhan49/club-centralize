@@ -1,13 +1,35 @@
 import React, { useEffect, useState } from 'react';
 import {
-  Box, Typography, Paper, Grid, CircularProgress, Alert, Dialog,
-  DialogTitle, DialogContent, DialogActions, TextField, Tooltip, IconButton, MenuItem, Select, FormControl, InputLabel
+  Box,
+  Typography,
+  Paper,
+  Grid,
+  CircularProgress,
+  Alert,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Tooltip,
+  IconButton,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Select,
+  Stack,
+  Chip,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CampaignIcon from '@mui/icons-material/Campaign';
-import { fetchAllAnnouncements, createAnnouncement, updateAnnouncement, deleteAnnouncement } from '../../api/announcementsApi';
+import {
+  fetchAllAnnouncements,
+  createAnnouncement,
+  updateAnnouncement,
+  deleteAnnouncement,
+} from '../../api/announcementsApi';
 import { fetchAllClubs } from '../../api/adminApi';
 import Button from '../../components/Button';
 import EmptyState from '../../components/EmptyState';
@@ -124,28 +146,52 @@ const AdminAnnouncements = () => {
   }
 
   return (
-    <Box sx={{ maxWidth: 1000, mx: 'auto', py: 2 }}>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+    <Box sx={{ maxWidth: 1320, mx: 'auto', width: '100%', pb: 6 }}>
+      <Box
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        mb={3.5}
+        flexWrap="wrap"
+        gap={2}
+      >
         <Box>
-          <Typography variant="h5" sx={{ fontWeight: 800, color: '#20202A' }}>
-            Platform Announcements
+          <Typography
+            variant="h4"
+            sx={{
+              fontWeight: 900,
+              color: '#20202A',
+              fontSize: { xs: '1.5rem', sm: '1.85rem' },
+              fontFamily: "'Plus Jakarta Sans', sans-serif",
+              letterSpacing: '-0.02em',
+            }}
+          >
+            Platform Bulletins & Notices
           </Typography>
-          <Typography variant="body2" sx={{ color: '#777788' }}>
-            Manage announcements and broadcast notices across all clubs.
+          <Typography variant="body2" sx={{ color: '#5E5D6E', mt: 0.5, fontWeight: 500 }}>
+            Broadcast platform-wide notifications or club-specific announcements.
           </Typography>
         </Box>
         <Button
           variant="primary"
           startIcon={<AddIcon />}
           onClick={openCreateModal}
-          sx={{ backgroundColor: '#4F2BCB' }}
+          sx={{ px: 2.5 }}
         >
           New Announcement
         </Button>
       </Box>
 
-      {error && <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }} onClose={() => setError('')}>{error}</Alert>}
-      {success && <Alert severity="success" sx={{ mb: 2, borderRadius: 2 }} onClose={() => setSuccess('')}>{success}</Alert>}
+      {error && (
+        <Alert severity="error" sx={{ mb: 2.5, borderRadius: '12px' }} onClose={() => setError('')}>
+          {error}
+        </Alert>
+      )}
+      {success && (
+        <Alert severity="success" sx={{ mb: 2.5, borderRadius: '12px' }} onClose={() => setSuccess('')}>
+          {success}
+        </Alert>
+      )}
 
       {announcements.length === 0 ? (
         <EmptyState
@@ -157,7 +203,6 @@ const AdminAnnouncements = () => {
               variant="primary"
               startIcon={<AddIcon />}
               onClick={openCreateModal}
-              sx={{ backgroundColor: '#4F2BCB' }}
             >
               Write First Announcement
             </Button>
@@ -171,47 +216,89 @@ const AdminAnnouncements = () => {
                 elevation={0}
                 sx={{
                   p: 3,
-                  borderRadius: '16px',
+                  borderRadius: '22px',
                   border: '1px solid #E9E7F2',
+                  backgroundColor: '#FFFFFF',
                   display: 'flex',
                   flexDirection: 'column',
                   height: '100%',
-                  '&:hover': { boxShadow: '0 4px 20px rgba(79,43,203,0.08)' },
+                  boxShadow: '0 2px 8px rgba(79, 43, 203, 0.03)',
+                  transition: 'all 0.22s ease',
+                  '&:hover': {
+                    borderColor: '#4F2BCB',
+                    boxShadow: '0 8px 24px rgba(79, 43, 203, 0.08)',
+                  },
                 }}
               >
-                <Box display="flex" justifyContent="space-between" mb={1} alignItems="flex-start">
-                  <Box>
-                    <Typography variant="caption" sx={{ color: '#4F2BCB', fontWeight: 800, textTransform: 'uppercase' }}>
-                      {getClubName(ann.club_id)}
-                    </Typography>
-                    <Typography variant="h6" sx={{ fontWeight: 700, color: '#20202A', fontSize: '1.05rem', mt: 0.5 }}>
+                <Box display="flex" justifyContent="space-between" mb={1.2} alignItems="flex-start" gap={1.5}>
+                  <Box sx={{ minWidth: 0, flex: 1 }}>
+                    <Chip
+                      label={getClubName(ann.club_id)}
+                      size="small"
+                      sx={{
+                        backgroundColor: '#F3F0FF',
+                        color: '#4F2BCB',
+                        fontWeight: 800,
+                        fontSize: '0.72rem',
+                        borderRadius: '6px',
+                        border: '1px solid #D4CCF7',
+                        mb: 0.8,
+                      }}
+                    />
+                    <Typography
+                      variant="h6"
+                      sx={{
+                        fontWeight: 800,
+                        color: '#20202A',
+                        fontSize: '1.08rem',
+                        fontFamily: "'Plus Jakarta Sans', sans-serif",
+                      }}
+                    >
                       {ann.title}
                     </Typography>
                   </Box>
-                  <Box sx={{ flexShrink: 0 }}>
+                  <Stack direction="row" spacing={0.5} sx={{ flexShrink: 0 }}>
                     <Tooltip title="Edit">
-                      <IconButton size="small" onClick={() => openEditModal(ann)} sx={{ color: '#4F2BCB' }}>
+                      <IconButton
+                        size="small"
+                        onClick={() => openEditModal(ann)}
+                        sx={{ color: '#4F2BCB', backgroundColor: '#F3F0FF', borderRadius: '8px' }}
+                      >
                         <EditIcon fontSize="small" />
                       </IconButton>
                     </Tooltip>
                     <Tooltip title="Delete">
-                      <IconButton size="small" onClick={() => handleDelete(ann.id)} sx={{ color: '#EF4444' }}>
+                      <IconButton
+                        size="small"
+                        onClick={() => handleDelete(ann.id)}
+                        sx={{ color: '#EF4444', backgroundColor: '#FEE2E2', borderRadius: '8px' }}
+                      >
                         <DeleteIcon fontSize="small" />
                       </IconButton>
                     </Tooltip>
-                  </Box>
+                  </Stack>
                 </Box>
 
-                <Typography variant="body2" sx={{ color: '#6E6D7A', mb: 2, whiteSpace: 'pre-line' }}>
+                <Typography
+                  variant="body2"
+                  sx={{ color: '#5E5D6E', mb: 2, whiteSpace: 'pre-line', lineHeight: 1.7 }}
+                >
                   {ann.content}
                 </Typography>
 
-                <Box mt="auto" display="flex" justifyContent="space-between" alignItems="center" pt={1.5}>
-                  <Typography variant="caption" sx={{ color: '#9DA0AE', fontWeight: 600 }}>
+                <Box
+                  mt="auto"
+                  display="flex"
+                  justifyContent="space-between"
+                  alignItems="center"
+                  pt={1.5}
+                  borderTop="1px solid #F1EFF8"
+                >
+                  <Typography variant="caption" sx={{ color: '#8E90A2', fontWeight: 600 }}>
                     Published: {new Date(ann.created_at).toLocaleDateString()}
                   </Typography>
                   {ann.source_location && (
-                    <Typography variant="caption" sx={{ color: '#777788', fontWeight: 700 }}>
+                    <Typography variant="caption" sx={{ color: '#5E5D6E', fontWeight: 700 }}>
                       Source: {ann.source_location}
                     </Typography>
                   )}
@@ -228,19 +315,20 @@ const AdminAnnouncements = () => {
         onClose={() => setModalOpen(false)}
         fullWidth
         maxWidth="sm"
-        PaperProps={{ sx: { borderRadius: '20px', p: 1.5 } }}
+        PaperProps={{ sx: { borderRadius: '24px', p: 1 } }}
       >
-        <DialogTitle sx={{ fontWeight: 800, color: '#20202A' }}>
+        <DialogTitle
+          sx={{
+            fontWeight: 900,
+            color: '#20202A',
+            fontFamily: "'Plus Jakarta Sans', sans-serif",
+          }}
+        >
           {editingItem ? 'Edit Announcement' : 'Write Announcement'}
         </DialogTitle>
         <Box component="form" onSubmit={handleSubmit}>
-          <DialogContent>
-            {error && <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>{error}</Alert>}
-
-            <Box sx={{ mb: 2.5 }}>
-              <Typography variant="body2" sx={{ fontWeight: 600, color: '#20202A', mb: 0.8 }}>
-                Select Club (Optional)
-              </Typography>
+          <DialogContent dividers>
+            <Stack spacing={2.2} pt={1}>
               <FormControl fullWidth size="small">
                 <InputLabel id="select-club-label">Target Club</InputLabel>
                 <Select
@@ -248,61 +336,38 @@ const AdminAnnouncements = () => {
                   value={form.club_id}
                   label="Target Club"
                   onChange={(e) => setForm({ ...form, club_id: e.target.value })}
-                  sx={{ borderRadius: '10px' }}
                 >
                   <MenuItem value="">Platform / General</MenuItem>
                   {clubs.map((c) => (
-                    <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>
+                    <MenuItem key={c.id} value={c.id}>
+                      {c.name}
+                    </MenuItem>
                   ))}
                 </Select>
               </FormControl>
-            </Box>
 
-            <Box sx={{ mb: 2.5 }}>
-              <Typography variant="body2" sx={{ fontWeight: 600, color: '#20202A', mb: 0.8 }}>
-                Source Department / Location
-              </Typography>
               <TextField
                 fullWidth
+                label="Source Department / Location"
                 name="source_location"
                 placeholder="e.g. Website Administration"
                 value={form.source_location}
                 onChange={(e) => setForm({ ...form, source_location: e.target.value })}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    backgroundColor: '#F3F6FC',
-                    borderRadius: '10px',
-                  },
-                }}
               />
-            </Box>
 
-            <Box sx={{ mb: 2.5 }}>
-              <Typography variant="body2" sx={{ fontWeight: 600, color: '#20202A', mb: 0.8 }}>
-                Title *
-              </Typography>
               <TextField
                 fullWidth
+                label="Title *"
                 name="title"
-                placeholder="e.g. Platform Upgrade"
+                placeholder="e.g. Platform Maintenance Notice"
                 value={form.title}
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
                 required
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    backgroundColor: '#F3F6FC',
-                    borderRadius: '10px',
-                  },
-                }}
               />
-            </Box>
 
-            <Box>
-              <Typography variant="body2" sx={{ fontWeight: 600, color: '#20202A', mb: 0.8 }}>
-                Announcement Content *
-              </Typography>
               <TextField
                 fullWidth
+                label="Announcement Content *"
                 name="content"
                 multiline
                 rows={5}
@@ -310,26 +375,15 @@ const AdminAnnouncements = () => {
                 value={form.content}
                 onChange={(e) => setForm({ ...form, content: e.target.value })}
                 required
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    backgroundColor: '#F3F6FC',
-                    borderRadius: '10px',
-                  },
-                }}
               />
-            </Box>
+            </Stack>
           </DialogContent>
-          <DialogActions sx={{ p: 2, gap: 1 }}>
+          <DialogActions sx={{ p: 2.5, gap: 1 }}>
             <Button variant="ghost" onClick={() => setModalOpen(false)} disabled={submitting}>
               Cancel
             </Button>
-            <Button
-              type="submit"
-              variant="primary"
-              disabled={submitting}
-              sx={{ backgroundColor: '#4F2BCB' }}
-            >
-              {submitting ? 'Submitting...' : editingItem ? 'Save Changes' : 'Publish Announcement'}
+            <Button variant="primary" type="submit" loading={submitting}>
+              {editingItem ? 'Save Changes' : 'Publish Announcement'}
             </Button>
           </DialogActions>
         </Box>

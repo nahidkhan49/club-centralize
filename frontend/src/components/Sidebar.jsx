@@ -18,65 +18,129 @@ import CampaignOutlinedIcon from '@mui/icons-material/CampaignOutlined';
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined';
 import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined';
 import PeopleAltOutlinedIcon from '@mui/icons-material/PeopleAltOutlined';
-import AdminPanelSettingsOutlinedIcon from '@mui/icons-material/AdminPanelSettingsOutlined';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { AuthContext } from '../context/AuthContext';
 import { getImageUrl } from '../api/axiosInstance';
 
-const DRAWER_WIDTH = 240;
+const DRAWER_WIDTH = 254;
 
-// Nav items per role
-const NAV_ITEMS = {
+// Grouped Nav Items per Role
+const NAV_SECTIONS = {
   admin: [
-    { label: 'Dashboard',      icon: <DashboardOutlinedIcon />,           path: '/admin/dashboard' },
-    { label: 'Clubs',          icon: <BusinessOutlinedIcon />,            path: '/admin/clubs' },
-    { label: 'Users',          icon: <PeopleAltOutlinedIcon />,           path: '/admin/users' },
-    { label: 'Events',         icon: <EventOutlinedIcon />,               path: '/admin/events' },
-    { label: 'Announcements',  icon: <CampaignOutlinedIcon />,            path: '/admin/announcements' },
-    { label: 'Profile',        icon: <PersonOutlinedIcon />,              path: '/profile' },
+    {
+      title: 'OVERVIEW',
+      items: [
+        { label: 'Dashboard', icon: <DashboardOutlinedIcon />, path: '/admin/dashboard' },
+      ],
+    },
+    {
+      title: 'MANAGEMENT',
+      items: [
+        { label: 'All Clubs', icon: <BusinessOutlinedIcon />, path: '/admin/clubs' },
+        { label: 'User Directory', icon: <PeopleAltOutlinedIcon />, path: '/admin/users' },
+        { label: 'Events Hub', icon: <EventOutlinedIcon />, path: '/admin/events' },
+        { label: 'Announcements', icon: <CampaignOutlinedIcon />, path: '/admin/announcements' },
+      ],
+    },
+    {
+      title: 'ACCOUNT',
+      items: [
+        { label: 'My Profile', icon: <PersonOutlinedIcon />, path: '/profile' },
+      ],
+    },
   ],
   president: [
-    { label: 'Dashboard',      icon: <DashboardOutlinedIcon />,           path: '/president/dashboard' },
-    { label: 'My Club',        icon: <BusinessOutlinedIcon />,            path: '/president/club' },
-    { label: 'Browse Clubs',   icon: <GroupsOutlinedIcon />,              path: '/clubs' },
-    { label: 'Members',        icon: <GroupsOutlinedIcon />,              path: '/president/members' },
-    { label: 'Manage Events',  icon: <EventOutlinedIcon />,               path: '/president/events' },
-    { label: 'Manage Announcements', icon: <CampaignOutlinedIcon />,      path: '/president/announcements' },
-    { label: 'All Events',     icon: <EventOutlinedIcon />,               path: '/events' },
-    { label: 'Announcements Wall', icon: <CampaignOutlinedIcon />,        path: '/announcements' },
-    { label: 'Profile',        icon: <PersonOutlinedIcon />,              path: '/profile' },
+    {
+      title: 'OVERVIEW',
+      items: [
+        { label: 'Dashboard', icon: <DashboardOutlinedIcon />, path: '/president/dashboard' },
+        { label: 'My Club Hub', icon: <BusinessOutlinedIcon />, path: '/president/club' },
+      ],
+    },
+    {
+      title: 'CLUB OPERATIONS',
+      items: [
+        { label: 'Member Roster', icon: <PeopleAltOutlinedIcon />, path: '/president/members' },
+        { label: 'Manage Events', icon: <EventOutlinedIcon />, path: '/president/events' },
+        { label: 'Broadcasts', icon: <CampaignOutlinedIcon />, path: '/president/announcements' },
+      ],
+    },
+    {
+      title: 'CAMPUS',
+      items: [
+        { label: 'Browse Clubs', icon: <GroupsOutlinedIcon />, path: '/clubs' },
+        { label: 'Campus Events', icon: <EventOutlinedIcon />, path: '/events' },
+        { label: 'Notice Wall', icon: <CampaignOutlinedIcon />, path: '/announcements' },
+      ],
+    },
+    {
+      title: 'ACCOUNT',
+      items: [
+        { label: 'My Profile', icon: <PersonOutlinedIcon />, path: '/profile' },
+      ],
+    },
   ],
   secretary: [
-    { label: 'Dashboard',      icon: <DashboardOutlinedIcon />,           path: '/secretary/dashboard' },
-    { label: 'My Club',        icon: <BusinessOutlinedIcon />,            path: '/secretary/club' },
-    { label: 'Browse Clubs',   icon: <GroupsOutlinedIcon />,              path: '/clubs' },
-    { label: 'Members',        icon: <GroupsOutlinedIcon />,              path: '/secretary/members' },
-    { label: 'Manage Events',  icon: <EventOutlinedIcon />,               path: '/secretary/events' },
-    { label: 'Manage Announcements', icon: <CampaignOutlinedIcon />,      path: '/secretary/announcements' },
-    { label: 'All Events',     icon: <EventOutlinedIcon />,               path: '/events' },
-    { label: 'Announcements Wall', icon: <CampaignOutlinedIcon />,        path: '/announcements' },
-    { label: 'Profile',        icon: <PersonOutlinedIcon />,              path: '/profile' },
+    {
+      title: 'OVERVIEW',
+      items: [
+        { label: 'Dashboard', icon: <DashboardOutlinedIcon />, path: '/secretary/dashboard' },
+        { label: 'My Club Hub', icon: <BusinessOutlinedIcon />, path: '/secretary/club' },
+      ],
+    },
+    {
+      title: 'CLUB OPERATIONS',
+      items: [
+        { label: 'Member Roster', icon: <PeopleAltOutlinedIcon />, path: '/secretary/members' },
+        { label: 'Manage Events', icon: <EventOutlinedIcon />, path: '/secretary/events' },
+        { label: 'Broadcasts', icon: <CampaignOutlinedIcon />, path: '/secretary/announcements' },
+      ],
+    },
+    {
+      title: 'CAMPUS',
+      items: [
+        { label: 'Browse Clubs', icon: <GroupsOutlinedIcon />, path: '/clubs' },
+        { label: 'Campus Events', icon: <EventOutlinedIcon />, path: '/events' },
+        { label: 'Notice Wall', icon: <CampaignOutlinedIcon />, path: '/announcements' },
+      ],
+    },
+    {
+      title: 'ACCOUNT',
+      items: [
+        { label: 'My Profile', icon: <PersonOutlinedIcon />, path: '/profile' },
+      ],
+    },
   ],
   member: [
-    { label: 'Dashboard',      icon: <DashboardOutlinedIcon />,           path: '/dashboard' },
-    { label: 'Clubs',          icon: <GroupsOutlinedIcon />,              path: '/clubs' },
-    { label: 'Events',         icon: <EventOutlinedIcon />,               path: '/events' },
-    { label: 'Announcements',  icon: <CampaignOutlinedIcon />,            path: '/announcements' },
-    { label: 'Profile',        icon: <PersonOutlinedIcon />,              path: '/profile' },
+    {
+      title: 'OVERVIEW',
+      items: [
+        { label: 'Dashboard', icon: <DashboardOutlinedIcon />, path: '/dashboard' },
+      ],
+    },
+    {
+      title: 'CAMPUS LIFE',
+      items: [
+        { label: 'Student Clubs', icon: <GroupsOutlinedIcon />, path: '/clubs' },
+        { label: 'Events & Workshops', icon: <EventOutlinedIcon />, path: '/events' },
+        { label: 'Announcements', icon: <CampaignOutlinedIcon />, path: '/announcements' },
+      ],
+    },
+    {
+      title: 'ACCOUNT',
+      items: [
+        { label: 'My Profile', icon: <PersonOutlinedIcon />, path: '/profile' },
+      ],
+    },
   ],
 };
 
-// Fallback roles use member nav
-const getNavItems = (systemRole) =>
-  NAV_ITEMS[systemRole] || NAV_ITEMS.member;
-
-// Role display labels for the sidebar bottom pill
 const ROLE_LABELS = {
-  admin:          { label: 'Website Admin',  color: '#DC2626', bg: '#FEE2E2' },
-  president:      { label: 'President',      color: '#B45309', bg: '#FEF3C7' },
-  secretary:      { label: 'Secretary',      color: '#7C3AED', bg: '#F3F0FF' },
+  admin: { label: 'Platform Admin', color: '#DC2626', bg: '#FEE2E2' },
+  president: { label: 'President', color: '#B45309', bg: '#FEF3C7' },
+  secretary: { label: 'Secretary', color: '#7C3AED', bg: '#F3F0FF' },
   vice_president: { label: 'Vice President', color: '#4F2BCB', bg: '#EEF2FF' },
-  member:         { label: 'Member',         color: '#475569', bg: '#F1F5F9' },
+  member: { label: 'Campus Member', color: '#475569', bg: '#F1F5F9' },
 };
 
 const SidebarContent = ({ onItemClick }) => {
@@ -84,11 +148,10 @@ const SidebarContent = ({ onItemClick }) => {
   const navigate = useNavigate();
   const { user, systemRole, presidentOfClubs, secretaryOfClubs } = useContext(AuthContext);
 
-  const navItems = getNavItems(systemRole);
+  const sections = NAV_SECTIONS[systemRole] || NAV_SECTIONS.member;
   const initial = user?.username?.charAt(0)?.toUpperCase() || '?';
   const roleInfo = ROLE_LABELS[systemRole] || ROLE_LABELS.member;
 
-  // Club name shown under role
   let clubName = '';
   if (systemRole === 'president' && presidentOfClubs?.length > 0) {
     clubName = presidentOfClubs[0].club_name;
@@ -111,149 +174,188 @@ const SidebarContent = ({ onItemClick }) => {
         flexDirection: 'column',
         backgroundColor: '#FFFFFF',
         borderRight: '1px solid #E9E7F2',
-        pt: 1,
+        overflowY: 'auto',
       }}
     >
-      {/* Logo area (below top bar) */}
-      <Box sx={{ px: 2.5, py: 2, mb: 1 }}>
-        <Typography
-          variant="subtitle2"
-          sx={{ color: '#9DA0AE', fontWeight: 700, fontSize: '0.7rem', letterSpacing: '0.08em', textTransform: 'uppercase' }}
-        >
-          Navigation
-        </Typography>
+      {/* Navigation Sections */}
+      <Box sx={{ flex: 1, py: 2, px: 2 }}>
+        {sections.map((section, idx) => (
+          <Box key={section.title} sx={{ mb: idx === sections.length - 1 ? 0 : 2.5 }}>
+            <Typography
+              variant="caption"
+              sx={{
+                px: 1.5,
+                mb: 1,
+                display: 'block',
+                color: '#8E90A2',
+                fontWeight: 800,
+                fontSize: '0.68rem',
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                fontFamily: "'Plus Jakarta Sans', sans-serif",
+              }}
+            >
+              {section.title}
+            </Typography>
+
+            <List disablePadding>
+              {section.items.map((item) => {
+                const isActive =
+                  location.pathname === item.path ||
+                  (item.path !== '/dashboard' &&
+                    item.path !== '/admin/dashboard' &&
+                    item.path !== '/president/dashboard' &&
+                    item.path !== '/secretary/dashboard' &&
+                    location.pathname.startsWith(item.path + '/'));
+
+                return (
+                  <ListItem key={item.path} disablePadding sx={{ mb: 0.6 }}>
+                    <ListItemButton
+                      onClick={() => handleNav(item.path)}
+                      sx={{
+                        borderRadius: '12px',
+                        py: 1.1,
+                        px: 1.6,
+                        backgroundColor: isActive ? '#F3F0FF' : 'transparent',
+                        color: isActive ? '#4F2BCB' : '#5E5D6E',
+                        fontWeight: isActive ? 800 : 600,
+                        transition: 'all 0.18s ease',
+                        position: 'relative',
+                        '&:hover': {
+                          backgroundColor: isActive ? '#EDE9FE' : '#FAF9FF',
+                          color: '#4F2BCB',
+                          transform: 'translateX(2px)',
+                        },
+                      }}
+                    >
+                      <ListItemIcon
+                        sx={{
+                          minWidth: 34,
+                          color: isActive ? '#4F2BCB' : '#8E90A2',
+                          '& .MuiSvgIcon-root': { fontSize: 20 },
+                          transition: 'color 0.18s ease',
+                        }}
+                      >
+                        {item.icon}
+                      </ListItemIcon>
+                      <ListItemText
+                        primary={item.label}
+                        primaryTypographyProps={{
+                          fontSize: '0.88rem',
+                          fontWeight: isActive ? 800 : 600,
+                          fontFamily: "'Plus Jakarta Sans', sans-serif",
+                        }}
+                      />
+                      {isActive && (
+                        <Box
+                          sx={{
+                            width: 5,
+                            height: 22,
+                            borderRadius: '4px',
+                            backgroundColor: '#4F2BCB',
+                            position: 'absolute',
+                            right: 6,
+                          }}
+                        />
+                      )}
+                    </ListItemButton>
+                  </ListItem>
+                );
+              })}
+            </List>
+          </Box>
+        ))}
       </Box>
 
-      {/* Nav items */}
-      <List sx={{ flex: 1, px: 1.5 }}>
-        {navItems.map((item) => {
-          const isActive = location.pathname === item.path || location.pathname.startsWith(item.path + '/');
-          return (
-            <ListItem key={item.path} disablePadding sx={{ mb: 0.5 }}>
-              <ListItemButton
-                onClick={() => handleNav(item.path)}
-                sx={{
-                  borderRadius: '10px',
-                  py: 1,
-                  px: 1.5,
-                  backgroundColor: isActive ? '#F3F0FF' : 'transparent',
-                  color: isActive ? '#4F2BCB' : '#555565',
-                  fontWeight: isActive ? 700 : 500,
-                  '&:hover': {
-                    backgroundColor: isActive ? '#ECEAFF' : '#FAF9FF',
-                    color: '#4F2BCB',
-                  },
-                }}
-              >
-                <ListItemIcon
-                  sx={{
-                    minWidth: 36,
-                    color: isActive ? '#4F2BCB' : '#9DA0AE',
-                    '& .MuiSvgIcon-root': { fontSize: 20 },
-                  }}
-                >
-                  {item.icon}
-                </ListItemIcon>
-                <ListItemText
-                  primary={item.label}
-                  primaryTypographyProps={{
-                    fontSize: '0.88rem',
-                    fontWeight: isActive ? 700 : 500,
-                  }}
-                />
-                {isActive && (
-                  <Box
-                    sx={{
-                      width: 4,
-                      height: 20,
-                      borderRadius: '4px',
-                      backgroundColor: '#4F2BCB',
-                      flexShrink: 0,
-                      ml: 1,
-                    }}
-                  />
-                )}
-              </ListItemButton>
-            </ListItem>
-          );
-        })}
-      </List>
+      {/* User / Role Profile Card in Sidebar Footer */}
+      <Box sx={{ p: 2, borderTop: '1px solid #F1EFF8' }}>
+        <Box
+          onClick={() => handleNav('/profile')}
+          sx={{
+            p: 1.5,
+            borderRadius: '14px',
+            backgroundColor: '#F8F7FD',
+            border: '1px solid #E9E7F2',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+            '&:hover': {
+              backgroundColor: '#F3F0FF',
+              borderColor: '#D4CCF7',
+              transform: 'translateY(-1px)',
+              boxShadow: '0 4px 12px rgba(79, 43, 203, 0.08)',
+            },
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2, minWidth: 0 }}>
+            <Avatar
+              src={getImageUrl(user?.avatar_url || user?.avatarUrl)}
+              sx={{
+                width: 38,
+                height: 38,
+                backgroundColor: '#4F2BCB',
+                color: '#FFFFFF',
+                fontWeight: 800,
+                fontSize: '0.92rem',
+                border: '1.5px solid #FFFFFF',
+                boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
+                flexShrink: 0,
+              }}
+            >
+              {user?.avatar_url || user?.avatarUrl ? null : initial}
+            </Avatar>
 
-      {/* User / Role bottom pill */}
-      <Box
-        sx={{
-          p: 2,
-          m: 2,
-          borderRadius: '12px',
-          backgroundColor: '#F7F6FC',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          border: '1px solid #E9E7F2',
-          cursor: 'pointer',
-          '&:hover': { backgroundColor: '#ECEAFF' },
-        }}
-        onClick={() => handleNav('/profile')}
-      >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, overflow: 'hidden' }}>
-          <Avatar
-            src={getImageUrl(user?.avatar_url || user?.avatarUrl)}
-            sx={{
-              width: 36,
-              height: 36,
-              backgroundColor: '#4F2BCB',
-              color: '#FFFFFF',
-              fontWeight: 700,
-              fontSize: '0.9rem',
-            }}
-          >
-            {user?.avatar_url || user?.avatarUrl ? null : initial}
-          </Avatar>
-          <Box sx={{ minWidth: 0 }}>
-            <Typography
-              variant="body2"
-              sx={{
-                fontWeight: 700,
-                color: '#20202A',
-                fontSize: '0.82rem',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {user?.username || 'User'}
-            </Typography>
-            <Box
-              sx={{
-                display: 'inline-block',
-                px: 0.8,
-                py: 0.1,
-                borderRadius: '20px',
-                backgroundColor: roleInfo.bg,
-                mt: 0.3,
-              }}
-            >
-              <Typography sx={{ fontSize: '0.65rem', fontWeight: 700, color: roleInfo.color }}>
-                {roleInfo.label}
-              </Typography>
-            </Box>
-            {clubName && (
+            <Box sx={{ minWidth: 0 }}>
               <Typography
+                variant="body2"
                 sx={{
-                  fontSize: '0.65rem',
-                  color: '#777788',
+                  fontWeight: 800,
+                  color: '#20202A',
+                  fontSize: '0.84rem',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
-                  mt: 0.2,
+                  lineHeight: 1.2,
                 }}
               >
-                {clubName}
+                {user?.username || 'User'}
               </Typography>
-            )}
+              <Box
+                sx={{
+                  display: 'inline-block',
+                  px: 0.8,
+                  py: 0.1,
+                  borderRadius: '6px',
+                  backgroundColor: roleInfo.bg,
+                  mt: 0.3,
+                }}
+              >
+                <Typography sx={{ fontSize: '0.64rem', fontWeight: 800, color: roleInfo.color }}>
+                  {roleInfo.label}
+                </Typography>
+              </Box>
+              {clubName && (
+                <Typography
+                  sx={{
+                    fontSize: '0.66rem',
+                    color: '#5E5D6E',
+                    fontWeight: 600,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    mt: 0.2,
+                  }}
+                >
+                  {clubName}
+                </Typography>
+              )}
+            </Box>
           </Box>
+
+          <ChevronRightIcon sx={{ fontSize: 18, color: '#8E90A2', flexShrink: 0 }} />
         </Box>
-        <ChevronRightIcon sx={{ fontSize: 18, color: '#9DA0AE', flexShrink: 0 }} />
       </Box>
     </Box>
   );
@@ -262,7 +364,7 @@ const SidebarContent = ({ onItemClick }) => {
 const Sidebar = ({ mobileOpen, onMobileClose }) => {
   return (
     <>
-      {/* Mobile drawer */}
+      {/* Mobile Drawer */}
       <Drawer
         variant="temporary"
         open={mobileOpen}
@@ -270,13 +372,19 @@ const Sidebar = ({ mobileOpen, onMobileClose }) => {
         ModalProps={{ keepMounted: true }}
         sx={{
           display: { xs: 'block', md: 'none' },
-          '& .MuiDrawer-paper': { width: DRAWER_WIDTH, boxSizing: 'border-box', mt: '64px' },
+          '& .MuiDrawer-paper': {
+            width: DRAWER_WIDTH,
+            boxSizing: 'border-box',
+            mt: '64px',
+            height: 'calc(100vh - 64px)',
+            borderRight: '1px solid #E9E7F2',
+          },
         }}
       >
         <SidebarContent onItemClick={onMobileClose} />
       </Drawer>
 
-      {/* Desktop permanent drawer */}
+      {/* Desktop Permanent Drawer */}
       <Drawer
         variant="permanent"
         sx={{

@@ -169,7 +169,7 @@ def delete_user(
     db: Session = Depends(get_db),
     admin_user: User = Depends(get_current_admin_user)
 ):
-    """Admin-only: Delete a user and cleanly cascade their memberships and event registrations."""
+    """Admin-only: Delete a user and cleanly cascade all their related records."""
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
@@ -177,16 +177,49 @@ def delete_user(
     if user.id == admin_user.id:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot delete your own account")
 
+    from sqlalchemy import or_
     from app.models.membership import Membership
+    from app.models.membership_request import MembershipRequest
     from app.models.event_participant import event_participants
+    from app.models.club_message import ClubMessage
+    from app.models.notification import Notification
+    from app.models.event_task import EventTask
+    from app.models.announcement import Announcement
 
-    # 1. Clean up memberships
-    db.query(Membership).filter(Membership.user_id == user_id).delete()
+    try:
+        # 1. Clean up memberships
+        db.query(Membership).filter(Membership.user_id == user_id).delete(synchronize_session=False)
 
-    # 2. Clean up event registrations
-    db.execute(event_participants.delete().where(event_participants.c.user_id == user_id))
+        # 2. Clean up membership requests
+        db.query(MembershipRequest).filter(MembershipRequest.user_id == user_id).delete(synchronize_session=False)
+        db.query(MembershipRequest).filter(MembershipRequest.reviewed_by_id == user_id).update({"reviewed_by_id": None}, synchronize_session=False)
 
-    # 3. Delete user
-    db.delete(user)
-    db.commit()
+        # 3. Clean up event registrations
+        db.execute(event_participants.delete().where(event_participants.c.user_id == user_id))
+
+        # 4. Clean up club messages
+        db.query(ClubMessage).filter(
+            or_(ClubMessage.user_id == user_id, ClubMessage.sender_id == user_id)
+        ).delete(synchronize_session=False)
+
+        # 5. Clean up notifications
+        db.query(Notification).filter(Notification.user_id == user_id).delete(synchronize_session=False)
+
+        # 6. Unassign tasks or null creator references
+        db.query(EventTask).filter(EventTask.assigned_to == user_id).update({"assigned_to": None}, synchronize_session=False)
+        db.query(EventTask).filter(EventTask.assigned_by == user_id).update({"assigned_by": None}, synchronize_session=False)
+
+        # 7. Reassign authored announcements to the acting admin
+        db.query(Announcement).filter(Announcement.author_id == user_id).update({"author_id": admin_user.id}, synchronize_session=False)
+
+        # 8. Delete user
+        db.delete(user)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete user: {str(e)}"
+        )
+
     return None

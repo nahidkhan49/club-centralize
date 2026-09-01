@@ -95,15 +95,17 @@ const AdminUsers = () => {
   const handleDeleteUser = async (userId, username) => {
     if (
       !window.confirm(
-        `Are you sure you want to delete user "${username}"? This action is permanent and will remove their profile and all active memberships.`
+        `Are you sure you want to delete user "${username}"? This action is permanent and will remove their profile, messages, memberships, and related records.`
       )
     ) {
       return;
     }
+    setError('');
+    setSuccess('');
     try {
       await deleteUser(userId);
       setSuccess(`User "${username}" was successfully deleted.`);
-      load();
+      await load();
     } catch (e) {
       setError(e?.response?.data?.detail || 'Failed to delete user');
     }
